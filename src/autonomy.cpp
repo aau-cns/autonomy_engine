@@ -14,7 +14,6 @@
 #include "autonomy.h"
 
 #include <ros/ros.h>
-#include <std_srvs/Trigger.h>
 #include <iostream>
 #include <string>
 
@@ -24,24 +23,27 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle nh)
   // Reconfigure
   reconfigure_srv_.setCallback(reconfigure_cb_);
 
-  // Services
-  safety_srv = nh.advertiseService("safety_node_srv", &AmazeAutonomy::SafetyNodeCallback, this);
+  // Service Server
+  safety_srv = nh.advertiseService("/safety_srv_in", &AmazeAutonomy::SafetyNodeCallback, this);
+
+  // Service Clients
+  safety_takeoff_ready = nh.serviceClient<ros_watchdog::wdstart>("/watchdog/start");
 
   // Subscriber
-  sub_safety_node_heartbeat_ =
-      nh.subscribe("safety_node_heartbeat_in", 10, &AmazeAutonomy::SafetyNodeHeartBeatCallback, this);
+  sub_safety_node_heartbeat_ = nh.subscribe("/watchdog/status", 10, &AmazeAutonomy::SafetyNodeHeartBeatCallback, this);
 
   // Publisher
   // pub_some_topic_ = nh.advertise<std_msgs::Empty>("autonomy_out", 5);
 }
 
-bool AmazeAutonomy::SafetyNodeCallback(std_srvs::Trigger::Request& request, std_srvs::Trigger::Response& response)
+bool AmazeAutonomy::SafetyNodeCallback(ros_watchdog::wderror::Request& request,
+                                       ros_watchdog::wderror::Response& response)
 {
-  std::cout << "Got Service Request" << std::endl;
+  std::cout << "Got Service Request with some Error Status" << std::endl;
   return true;
 }
 
-void AmazeAutonomy::SafetyNodeHeartBeatCallback(const std_msgs::EmptyConstPtr& meas)
+void AmazeAutonomy::SafetyNodeHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas)
 {
   std::cout << "Got Safety Node Heartbeat" << std::endl;
 }
@@ -50,6 +52,21 @@ void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig& config, uint3
 {
   if (config.option_a)
   {
-    std::cout << "Option A was choosen in the Reconfigure GUI" << std::endl;
+    // std::cout << "Option A was choosen in the Reconfigure GUI" << std::endl;
+
+    ros_watchdog::wdstart srv;
+    srv.request.source = "Autonomy";
+    srv.request.startup_time = 5;  // Timeout in seconds
+
+    if (safety_takeoff_ready.call(srv))
+    {
+      ROS_INFO("Succesfull %i", srv.response.successful);
+    }
+    else
+    {
+      ROS_ERROR("Failed to Call Safety Node with Takeoff Ready Service");
+    }
+
+    config.option_a = false;
   }
 }

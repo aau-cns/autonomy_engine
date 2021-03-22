@@ -14,8 +14,10 @@
 #ifndef AMAZEAUTONOMY_H
 #define AMAZEAUTONOMY_H
 
+#include <autonomy_msgs/SystemStatus.h>
 #include <ros/ros.h>
-#include <std_msgs/Empty.h>
+#include <ros_watchdog/wderror.h>
+#include <ros_watchdog/wdstart.h>
 #include <std_srvs/Trigger.h>
 
 #include <amaze_autonomy/autonomyConfig.h>
@@ -35,12 +37,15 @@ public:
   // Subscriber
   ros::Subscriber sub_safety_node_heartbeat_;
 
-  // Service
+  // Service Server
   ros::ServiceServer safety_srv;
-  bool SafetyNodeCallback(std_srvs::Trigger::Request& request, std_srvs::Trigger::Response& response);
+  bool SafetyNodeCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response);
+
+  // Service Clients
+  ros::ServiceClient safety_takeoff_ready;
 
   // Sensor Callbacks
-  void SafetyNodeHeartBeatCallback(const std_msgs::EmptyConstPtr& meas);
+  void SafetyNodeHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas);
 
   // Publisher
   // ros::Publisher pub_some_topic_;
