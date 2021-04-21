@@ -1,5 +1,8 @@
-// Copyright (C) 2021 Christian Brommer, Control of Networked Systems, Universitaet Klagenfurt, Austria
+// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Control of Networked Systems, Universitaet Klagenfurt, Austria
+//
 // You can contact the author at <christian.brommer@ieee.org>
+// and <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -12,61 +15,52 @@
 // DEALINGS IN THE SOFTWARE.
 
 #include "autonomy.h"
+#include "colors.h"
 
 #include <ros/ros.h>
 #include <iostream>
 #include <string>
 
-AmazeAutonomy::AmazeAutonomy(ros::NodeHandle nh)
-  : reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2))
+AmazeAutonomy::AmazeAutonomy(ros::NodeHandle nh, boost::asio::io_service &io, int timeout_ms) :
+  nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2))
 {
   // Reconfigure
   reconfigure_srv_.setCallback(reconfigure_cb_);
 
   // Service Server
-  safety_srv = nh.advertiseService("/safety_srv_in", &AmazeAutonomy::SafetyNodeCallback, this);
+  safety_srv = nh_.advertiseService("/safety_srv_in", &AmazeAutonomy::SafetyNodeCallback, this);
 
-  // Service Clients
-  safety_takeoff_ready = nh.serviceClient<ros_watchdog::wdstart>("/watchdog/start");
+  // Subscriber to watchdog (system status) heartbeat
+  sub_safety_node_heartbeat_ = nh_.subscribe("/watchdog/status", 10, &AmazeAutonomy::WatchdogHeartBeatCallback, this);
 
-  // Subscriber
-  sub_safety_node_heartbeat_ = nh.subscribe("/watchdog/status", 10, &AmazeAutonomy::SafetyNodeHeartBeatCallback, this);
-
-  // Publisher
-  // pub_some_topic_ = nh.advertise<std_msgs::Empty>("autonomy_out", 5);
+  // Instanciate timeout timer
+  std::make_shared<Timer>(io, timeout_ms);
 }
 
-bool AmazeAutonomy::SafetyNodeCallback(ros_watchdog::wderror::Request& request,
-                                       ros_watchdog::wderror::Response& response)
+bool AmazeAutonomy::SafetyNodeCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response)
 {
   std::cout << "Got Service Request with some Error Status" << std::endl;
   return true;
 }
 
-void AmazeAutonomy::SafetyNodeHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas)
+void AmazeAutonomy::WatchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas)
 {
-  std::cout << "Got Safety Node Heartbeat" << std::endl;
+  // Restart timeout timer
+  try {
+
+  } catch (const std::exception&) {
+    std::cout << BOLD(RED("Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
+
+    // Take action here ...
+
+  }
 }
 
 void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level)
 {
   if (config.option_a)
   {
-    // std::cout << "Option A was choosen in the Reconfigure GUI" << std::endl;
-
-    ros_watchdog::wdstart srv;
-    srv.request.source = "Autonomy";
-    srv.request.startup_time = 5;  // Timeout in seconds
-
-    if (safety_takeoff_ready.call(srv))
-    {
-      ROS_INFO("Succesfull %i", srv.response.successful);
-    }
-    else
-    {
-      ROS_ERROR("Failed to Call Safety Node with Takeoff Ready Service");
-    }
-
+    std::cout << "Option A was choosen in the Reconfigure GUI" << std::endl;
     config.option_a = false;
   }
 }

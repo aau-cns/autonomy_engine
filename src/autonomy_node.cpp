@@ -1,5 +1,8 @@
-// Copyright (C) 2021 Christian Brommer, Control of Networked Systems, Universitaet Klagenfurt, Austria
+// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Control of Networked Systems, Universitaet Klagenfurt, Austria
+//
 // You can contact the author at <christian.brommer@ieee.org>
+// and <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -16,14 +19,34 @@
 
 int main(int argc, char* argv[])
 {
+  // Init ros node
   ros::init(argc, argv, "amaze_autonomy");
   ros::NodeHandle nh;
 
+  // Provide a reliable low-latency communication. However, this affect the bandwidth
+  // If you encounter bandwith saturation issues comment this line
   ros::TransportHints().tcpNoDelay();
 
   ROS_INFO("Starting the AMAZE Autonomy");
 
-  AmazeAutonomy autonomy(nh);
+  // Instantiate boost io service
+  boost::asio::io_service io;
+
+  // Define timeout in milliseconds for watchdog heartbeat
+  int timeout_ms;
+
+  // get timeout from roslaunch
+  if(!nh.getParam("watchdog_timeout_ms", timeout_ms)) {
+    std::cout << std::endl;
+    ROS_ERROR("No watchdog timeout defined, this must be slightly greater than the heartbeat frequency of the watchdog");
+    std::exit(EXIT_FAILURE);
+  }
+
+  // Instanciate AMAZE autonomy
+  AmazeAutonomy autonomy(nh, io, timeout_ms);
+
+  // Run boost io service
+  io.run();
 
   ros::spin();
 }
