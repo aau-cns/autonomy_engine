@@ -16,19 +16,24 @@
 
 #include "timer.h"
 
-Timer::Timer(boost::asio::io_service &io, int ms) :
-  timer_(io), timeout_(boost::posix_time::millisec(ms)) {}
+Timer::Timer(boost::asio::io_service &io, int &ms) :
+  timer_(io), timeout_(ms) {}
 
-void Timer::setTimeout(const int ms)
+void Timer::setTimeout(const int &ms)
 {
   // Set timeout in milliseconds and
-  timeout_ = boost::posix_time::millisec(ms);
+  timeout_ = ms;
+}
+
+const int& Timer::getTimeout() const
+{
+  return timeout_;
 }
 
 void Timer::restartTimer()
 {
   // Start asynchronous waiting
-  timer_.expires_from_now(timeout_);
+  timer_.expires_from_now(boost::posix_time::millisec(timeout_));
   timer_.async_wait(boost::bind(&Timer::timeoutHandler, this));
 }
 

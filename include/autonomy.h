@@ -18,6 +18,7 @@
 #define AMAZEAUTONOMY_H
 
 #include <autonomy_msgs/SystemStatus.h>
+#include <sensor_msgs/Imu.h>
 #include <ros/ros.h>
 #include <ros_watchdog/wderror.h>
 #include <ros_watchdog/wdstart.h>
@@ -26,7 +27,9 @@
 #include <dynamic_reconfigure/server.h>
 #include <boost/bind/bind.hpp>
 
+#include "autonomy_options.h"
 #include "timer.h"
+#include "sensors.h"
 
 class AmazeAutonomy
 {
@@ -37,42 +40,22 @@ class AmazeAutonomy
      * @brief Autonomy constructor
      * @param Ros NodeHandle
      * @param Reference to boost io service
-     * @param timeout in milliseconds
      */
-    AmazeAutonomy(ros::NodeHandle nh, boost::asio::io_service &io, int timeout_ms);
+    AmazeAutonomy(ros::NodeHandle &nh, boost::asio::io_service &io);
 
   private:
 
     /**
-     * @brief Nodehandler
+     * @brief Load paramters from the ros node handler
+     * @param ROS node handler reference
+     * @param autonomyOptions object reference
      */
-    ros::NodeHandle nh_;
+    void parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts);
 
     /**
-     * @brief Dynamic reconfigure server and callback
+     * @brief Watchdog service callback
      */
-    dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig> reconfigure_srv_;
-    dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig>::CallbackType reconfigure_cb_;
-
-    /**
-     * @brief Subscribers
-     */
-    ros::Subscriber sub_safety_node_heartbeat_;
-
-    /**
-     * @brief Publisher
-     */
-
-    /**
-     * @brief Services
-     */
-    ros::ServiceServer safety_srv;
-    bool SafetyNodeCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response);
-
-    /**
-     * @brief Timeout timer
-     */
-    std::shared_ptr<Timer> timer_;
+    bool WatchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response);
 
     /**
      * @brief Watchdog (system status) heartbeat callback
@@ -83,6 +66,37 @@ class AmazeAutonomy
      * @brief Configuration callback for dynamic reconfigure
      */
     void configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level);
+
+    /**
+     * @brief IMU callback
+     */
+    void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
+
+    /// Nodehandler
+    ros::NodeHandle nh_;
+
+    /// Autonomy options
+    autonomyOptions opts_;
+
+    /// Dynamic reconfigure server and callback
+    dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig> reconfigure_srv_;
+    dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig>::CallbackType reconfigure_cb_;
+
+    /// Subscribers
+    ros::Subscriber sub_safety_node_heartbeat_;
+    ros::Subscriber sub_imu_;
+
+    /// Publishers
+
+
+    /// Safety service server
+    ros::ServiceServer safety_srv;
+
+    /// Timeout timer
+    std::shared_ptr<Timer> timer_;
+
+    /// IMU measurement buffer
+    std::vector<imuData> imu_data_buffer_;
 
 };
 

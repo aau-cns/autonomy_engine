@@ -32,18 +32,8 @@ int main(int argc, char* argv[])
   // Instantiate boost io service
   boost::asio::io_service io;
 
-  // Define timeout in milliseconds for watchdog heartbeat
-  int timeout_ms;
-
-  // get timeout from roslaunch
-  if(!nh.getParam("watchdog_timeout_ms", timeout_ms)) {
-    std::cout << std::endl;
-    ROS_ERROR("No watchdog timeout defined, this must be slightly greater than the heartbeat frequency of the watchdog");
-    std::exit(EXIT_FAILURE);
-  }
-
   // Instanciate AMAZE autonomy
-  AmazeAutonomy autonomy(nh, io, timeout_ms);
+  AmazeAutonomy autonomy(nh, io);
 
   // Run boost io service
   io.run();

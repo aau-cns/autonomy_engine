@@ -29,15 +29,21 @@ class Timer
     /**
      * @brief Timer constructur
      * @param reference to io service
-     * @param timeout in milliseconds
+     * @param reference to int (timeout in milliseconds)
      */
-    Timer(boost::asio::io_service &io, int ms);
+    Timer(boost::asio::io_service &io, int &ms);
 
     /**
      * @brief Set timeout
-     * @param double milliseconds
+     * @param reference to int milliseconds
      */
-    void setTimeout(const int ms);
+    void setTimeout(const int &ms);
+
+    /**
+     * @brief Get timeout
+     * @return timeout
+     */
+    const int& getTimeout() const;
 
     /**
      * @brief Start or restart timer, this function call
@@ -47,19 +53,13 @@ class Timer
 
   private:
 
-    /**
-     * @brief Deadline_timer
-     */
+    /// Deadline_timer
     boost::asio::deadline_timer timer_;
 
-    /**
-     * @brief Timeout in milliseconds
-     */
-    boost::posix_time::millisec timeout_;
+    /// Timeout in milliseconds
+    int timeout_;
 
-    /**
-     * @brief Timeout handler function
-     */
+    /// Timeout handler function
     void timeoutHandler();
 
 };
