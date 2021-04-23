@@ -104,7 +104,12 @@ Possible states for the action and info streams, are:
 
 <div style="page-break-after: always;"></div>
 
+## System Block-Diagram
+
+![mission_control_layer](./resources/mission_control_layer.png)
+
 ## Autonomy Sequence
+
 ```plantuml
 @startuml
 
