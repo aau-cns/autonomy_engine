@@ -26,7 +26,7 @@
 struct imuData
 {
 
-    /// Timestamp of the reading
+    /// Timestamp of the reading (s)
     double timestamp;
 
     /// Gyroscope reading, angular velocity (rad/s)

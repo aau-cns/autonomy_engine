@@ -17,19 +17,22 @@
 #ifndef AMAZEAUTONOMY_H
 #define AMAZEAUTONOMY_H
 
-#include <autonomy_msgs/SystemStatus.h>
-#include <sensor_msgs/Imu.h>
 #include <ros/ros.h>
 #include <ros_watchdog/wderror.h>
 #include <ros_watchdog/wdstart.h>
+#include <autonomy_msgs/SystemStatus.h>
+#include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
 #include <amaze_autonomy/autonomyConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <boost/bind/bind.hpp>
+#include <iostream>
+#include <string>
 
 #include "autonomy_options.h"
 #include "timer.h"
 #include "sensors.h"
+#include "mathematics.h"
 
 class AmazeAutonomy
 {
@@ -71,6 +74,12 @@ class AmazeAutonomy
      * @brief IMU callback
      */
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
+
+    /**
+     * @brief Function that will use the buffered IMU data to check the "flatness" of the platform.
+     * @return Return true if the platform is "flat" and if there are no errors otherwise return false
+     */
+    [[nodiscard]] bool checkFlatness();
 
     /// Nodehandler
     ros::NodeHandle nh_;
