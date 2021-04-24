@@ -19,9 +19,9 @@
 
 int main(int argc, char* argv[])
 {
-  // Init ros node
+  // Init ros node with private nodehandler
   ros::init(argc, argv, "amaze_autonomy");
-  ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
 
   // Provide a reliable low-latency communication. However, this affect the bandwidth
   // If you encounter bandwith saturation issues comment this line
@@ -29,14 +29,31 @@ int main(int argc, char* argv[])
 
   ROS_INFO("Starting the AMAZE Autonomy");
 
+  // Start asynch (multi-threading) spinner
+  ros::AsyncSpinner spinner(0);
+  spinner.start();
+
   // Instantiate boost io service
   boost::asio::io_service io;
 
-  // Instanciate AMAZE autonomy
-  AmazeAutonomy autonomy(nh, io);
+  try {
 
-  // Run boost io service
-  io.run();
+    // Instanciate AMAZE autonomy
+    AmazeAutonomy autonomy(nh, io);
 
-  ros::spin();
+    // Run boost io service
+    io.run();
+
+    //Start Interface with user
+    autonomy.userInterface();
+
+  } catch (const std::exception&) {
+    std::cout << std::endl;
+    ROS_ERROR("Failed to run AMAZE Autonomy");
+  }
+
+  // Wait for the node to be killed
+  ros::waitForShutdown();
+
+  return EXIT_SUCCESS;
 }

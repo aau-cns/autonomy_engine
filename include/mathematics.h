@@ -27,8 +27,8 @@
  * @param 3x1 vector
  * @return 3x3 skew-symmetric matrix
  */
-inline Eigen::Matrix3d skew(const Eigen::Vector3d &w)
-{
+inline Eigen::Matrix3d skew(const Eigen::Vector3d &w) {
+
   Eigen::Matrix3d skew;
 
   skew << 0, -w(2), w(1),
@@ -43,8 +43,8 @@ inline Eigen::Matrix3d skew(const Eigen::Vector3d &w)
  * @param 9x1 vector in row-major order
  * @return 3x3 Rotation matrix
  */
-inline Eigen::Matrix3d Rot(const std::vector<double> &x)
-{
+inline Eigen::Matrix3d Rot(const std::vector<double> &x) {
+
   Eigen::Matrix3d R;
 
   R << x.at(0),x.at(1),x.at(2),
@@ -56,14 +56,15 @@ inline Eigen::Matrix3d Rot(const std::vector<double> &x)
 
 /**
  * @brief Rotation matrix to euler angles conversion.
- *        roll = rotation about x
- *        pitch = rotation about y
- *        yaw = rotation abot z
+ *
+ * roll = rotation about x
+ * pitch = rotation about y
+ * yaw = rotation abot z
+ *
  * @param 3x3 Rotation matrix
  * @return 3x1 vector
  */
-inline Eigen::Vector3d eul(const Eigen::Matrix3d &R)
-{
+inline Eigen::Vector3d eul(const Eigen::Matrix3d &R) {
   double eps = 1.0e-3;
   double roll = 0;
   double pitch = 0;
@@ -71,15 +72,13 @@ inline Eigen::Vector3d eul(const Eigen::Matrix3d &R)
 
   Eigen::Vector3d eul;
 
-  if ((abs(R(2,0)) - 1) < eps)
-  {
+  if ((abs(R(2,0)) - 1) < eps) {
     pitch = -asin(R(2,0));
     roll = atan2(R(2,1)/cos(roll), R(2,2)/cos(roll));
     yaw = atan2(R(1,0)/cos(roll), R(0,0)/cos(roll));
   } else {
     yaw = 0.0;
-    if(abs(R(2,0) + 1) < eps)
-    {
+    if(abs(R(2,0) + 1) < eps) {
       pitch = M_PI/2;
       roll = atan2(R(0,1), R(0,2));
     } else {
@@ -91,9 +90,5 @@ inline Eigen::Vector3d eul(const Eigen::Matrix3d &R)
 
   return eul;
 }
-
-
-
-
 
 #endif  // MATHEMATICS_H

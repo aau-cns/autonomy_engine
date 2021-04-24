@@ -46,8 +46,7 @@ class Timer
     const int& getTimeout() const;
 
     /**
-     * @brief Start or restart timer, this function call
-     *        will deleate any pending asynch wait
+     * @brief Start or restart timer, this function call will deleate any pending asynch wait
      */
     void restartTimer();
 

@@ -34,8 +34,7 @@
 #include "sensors.h"
 #include "mathematics.h"
 
-class AmazeAutonomy
-{
+class AmazeAutonomy {
 
   public:
 
@@ -46,14 +45,26 @@ class AmazeAutonomy
      */
     AmazeAutonomy(ros::NodeHandle &nh, boost::asio::io_service &io);
 
+    /**
+     * @brief Function that will use the buffered IMU data to check the "flatness" of the platform.
+     * @return Return true if the platform is "flat" and if there are no errors otherwise return false
+     */
+    [[nodiscard]] bool checkFlatness();
+
+    /**
+     * @brief Function that defines the interface with the user.
+     */
+    void userInterface();
+
   private:
 
     /**
      * @brief Load paramters from the ros node handler
      * @param ROS node handler reference
      * @param autonomyOptions object reference
+     * @return boolean true in case of success, false in case of failure
      */
-    void parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts);
+    [[nodiscard]] bool parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts);
 
     /**
      * @brief Watchdog service callback
@@ -74,12 +85,6 @@ class AmazeAutonomy
      * @brief IMU callback
      */
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
-
-    /**
-     * @brief Function that will use the buffered IMU data to check the "flatness" of the platform.
-     * @return Return true if the platform is "flat" and if there are no errors otherwise return false
-     */
-    [[nodiscard]] bool checkFlatness();
 
     /// Nodehandler
     ros::NodeHandle nh_;
@@ -106,6 +111,9 @@ class AmazeAutonomy
 
     /// IMU measurement buffer
     std::vector<imuData> imu_data_buffer_;
+
+    /// Selected mission ID
+    int mission_id_ = 0;
 
 };
 

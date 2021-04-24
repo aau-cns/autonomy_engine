@@ -29,8 +29,8 @@ template <typename T>
 std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
 
   // Check vector is not empty
-  if (!v.empty())
-  {
+  if (!v.empty()) {
+
     // Copy element of vector into output stream
     std::copy (v.begin(), v.end(), std::ostream_iterator<T>(out, ", "));
   }

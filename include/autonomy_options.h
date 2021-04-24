@@ -19,20 +19,28 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
+
 #include "colors.h"
 #include "utilities.h"
 
 /**
- * @brief Struct for autonomy options. Matricies are defined as vectors in Row-Major order
+ * @brief Struct for autonomy options.
+ *
+ * This struct contains information mainly got from the
+ * parameter server that are used by the autonomy.
+ * Matricies are defined as vectors in Row-Major order
  */
-struct autonomyOptions
-{
+struct autonomyOptions {
 
   /// Timeout in milliseconds for watchdog heartbeat (100ms default)
   int timeout;
 
+  /// IMU topic
+  std::string imu_topic;
+
   /// Window of time in seconds for sensor readings during pre-flight checks (1s default)
-  int sensor_readings_window = 1;
+  double sensor_readings_window = 1;
 
   /// pitch-roll angle threshold in degree (10.0deg default)
   double angle_threshold = 10.0;
@@ -41,13 +49,23 @@ struct autonomyOptions
   /// in the IMU frame (I_x = R_IP * P_x) (Identity default)
   std::vector<double> R_IP = {1,0,0,0,1,0,0,0,1};
 
+  /// Number of missions to be loaded
+  int number_missions = 0;
+
+  /// Mission map <Mission ID <Mission description, Mission filepath>>
+  std::map<int, std::pair<std::string, std::string>> missions;
+
   /// Print function
-  void printAutonomyOptions()
-  {
-    std::cout << YELLOW("Watchdog heartbeat timeout: ") << timeout << YELLOW(" ms") << std::endl;
-    std::cout << YELLOW("Sensor reading time window during pre-flight checks: ") << sensor_readings_window << YELLOW(" s") << std::endl;
-    std::cout << YELLOW("Pitch-Roll angle threshold: ") << angle_threshold << YELLOW(" deg") << std::endl;
-    std::cout << YELLOW("IMU-Platform Rotation R_IP: ") << std::endl << R_IP << std::endl;
+  void printAutonomyOptions() {
+
+    std::cout << std::endl << BOLD(YELLOW("---------- LOADED PARAMETERS ----------")) << std::endl << std::endl;
+    std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: ")) << timeout << "ms" << std::endl;
+    std::cout << BOLD(YELLOW(" - IMU topic: ")) << imu_topic << std::endl;
+    std::cout << BOLD(YELLOW(" - Sensor reading time window during pre-flight checks: ")) << sensor_readings_window << "s" << std::endl;
+    std::cout << BOLD(YELLOW(" - Pitch-Roll angle threshold: ")) << angle_threshold << "deg" << std::endl;
+    std::cout << BOLD(YELLOW(" - IMU-Platform Rotation R_IP: ")) << R_IP << std::endl;
+    std::cout << BOLD(YELLOW(" - Number of missions: ")) << number_missions << std::endl;
+    std::cout << std::endl << BOLD(YELLOW("---------------------------------------")) << std::endl;
   }
 
 };

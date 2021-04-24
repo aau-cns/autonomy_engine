@@ -18,13 +18,15 @@
 #include "colors.h"
 
 AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh, boost::asio::io_service &io) :
-  nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2))
-{
+  nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2)) {
 
   // Parse options
-  parseRosParams(nh_, opts_);
+  if(!parseRosParams(nh_, opts_))
+  {
+      throw std::exception();
+  }
 
-  // Print options
+  // Print option
   opts_.printAutonomyOptions();
 
   // Set dynamic reconfigure callback
@@ -37,49 +39,95 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh, boost::asio::io_service &io) :
   sub_safety_node_heartbeat_ = nh_.subscribe("/watchdog/status", 10, &AmazeAutonomy::WatchdogHeartBeatCallback, this);
 
   // Instanciate timeout timer
-  timer_ = std::make_shared<Timer>(io, opts_.timeout);
+  timer_ = std::make_shared<Timer>(io, opts_.timeout);  
 }
 
-void AmazeAutonomy::parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts)
-{
+bool AmazeAutonomy::parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts) {
 
-  // get params
+  // Get watchdog timer timeout
   nh.param<int>("watchdog_timeout_ms", opts.timeout, opts.timeout);
-  nh.param<int>("sensor_readings_window", opts.sensor_readings_window, opts.sensor_readings_window);
-  nh.param<double>("angle_threshold", opts.angle_threshold, opts.angle_threshold);
-  nh.param<std::vector<double>>("R_IP", opts.R_IP, opts.R_IP);
-}
 
-bool AmazeAutonomy::WatchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response)
-{
-  std::cout << "Got Service Request with some Error Status" << std::endl;
+  // Get sensor reading window
+  nh.param<double>("sensor_readings_window", opts.sensor_readings_window, opts.sensor_readings_window);
+
+  // Get roll and pitch angle threshold for platform flatness check
+  nh.param<double>("angle_threshold", opts.angle_threshold, opts.angle_threshold);
+
+  // Get IMU-Platform rotation
+  nh.param<std::vector<double>>("R_IP", opts.R_IP, opts.R_IP);
+
+  // Get param that does not have a default value and therefore the existance must be checked
+  if(!nh.getParam("imu_topic", opts.imu_topic)) {
+    std::cout << std::endl << BOLD(RED("No IMU topic defined")) << std::endl;
+    return false;
+  }
+
+  // Get missions information
+  nh.param<int>("missions/number", opts.number_missions, opts.number_missions);
+  if (opts.number_missions == 0) {
+    std::cout << std::endl << BOLD(RED("No missions defined")) << std::endl;
+    return false;
+  } else {
+    for (int i = 1; i <= opts.number_missions; ++i) {
+      std::string description, filepath;
+      if(!nh.getParam("missions/mission_" + std::to_string(i) + "/description", description) && !nh.getParam("missions/mission_" + std::to_string(i) + "/filepath", filepath)) {
+        std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " is not correctly defined")) << std::endl;
+        return false;
+      }
+      opts.missions.insert({i,std::make_pair(description,filepath)});
+    }
+  }
+
+  // Success
   return true;
 }
 
-void AmazeAutonomy::WatchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas)
-{
+bool AmazeAutonomy::WatchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response) {
+  std::cout << std::endl << BOLD(RED("Got Service Request with some Error Status")) << std::endl;
+  return true;
+}
+
+void AmazeAutonomy::WatchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas) {
   // Restart timeout timer
   try {
     timer_->restartTimer();
   } catch (const std::exception&) {
-    std::cout << BOLD(RED("Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
+    std::cout << std::endl << BOLD(RED("Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
 
     // Take action here ...
 
   }
 }
 
-void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level)
-{
-  if (config.option_a)
-  {
+void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level) {
+  if (config.option_a) {
     std::cout << "Option A was choosen in the Reconfigure GUI" << std::endl;
     config.option_a = false;
   }
 }
 
-void AmazeAutonomy::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
-{
+void AmazeAutonomy::userInterface() {
+
+  // Print missions
+  std::cout << std::endl << BOLD(GREEN("Please select one of the following mission by inputting the mission ID")) << std::endl << std::endl;
+  for (auto &it : opts_.missions) {
+    std::cout << BOLD(GREEN(" - ID: ")) << it.first << BOLD(GREEN(" DESCRIPTION: ")) << it.second.first << std::endl;
+  }
+
+  // Get ID of mission being executed
+  std::cout << std::endl << BOLD(GREEN(">>> "));
+  std::cin >> mission_id_;
+
+  // Check validity of mission id
+  if (mission_id_ == 0 || mission_id_ > opts_.number_missions) {
+    std::cout << std::endl << BOLD(RED("Wrong mission ID chosen")) << std::endl;
+    throw std::exception();
+  }
+
+}
+
+void AmazeAutonomy::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
+
   // Parse incoming message and fill out specified data structure
   imuData meas;
   meas.timestamp = msg->header.stamp.toSec();
@@ -90,8 +138,8 @@ void AmazeAutonomy::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
   imu_data_buffer_.emplace_back(meas);
 
   // Remove oldest if sensor reading window width is reached
-  if ((meas.timestamp - imu_data_buffer_.begin()->timestamp) > opts_.sensor_readings_window)
-  {
+  if ((meas.timestamp - imu_data_buffer_.begin()->timestamp) > opts_.sensor_readings_window) {
+
     // Since we check everytime a new measurement is added to the buffer it would
     // be sufficient to simply remove the first element, however it is more robust
     // to check everytime how many elements we should remove.
@@ -107,11 +155,10 @@ void AmazeAutonomy::imuCallback(const sensor_msgs::Imu::ConstPtr& msg)
 
 }
 
-bool AmazeAutonomy::checkFlatness()
-{
+bool AmazeAutonomy::checkFlatness() {
+
   // Return if buffer is empty
-  if(imu_data_buffer_.empty())
-  {
+  if(imu_data_buffer_.empty()) {
       return false;
   }
 
@@ -120,8 +167,7 @@ bool AmazeAutonomy::checkFlatness()
   Eigen::Vector3d ang_mean = Eigen::Vector3d::Zero();
 
   // Calculate the mean acceleration and the mean angular velocity
-  for (auto &it : imu_data_buffer_)
-  {
+  for (auto &it : imu_data_buffer_) {
     acc_mean += it.am;
     ang_mean += it.wm;
   }
@@ -161,16 +207,11 @@ bool AmazeAutonomy::checkFlatness()
   Eigen::Vector3d eul_ang = eul(R_GP);
 
   // Compare roll and pitch with thresholds
-  if (eul_ang(0) > opts_.angle_threshold || eul_ang(1) > opts_.angle_threshold)
-  {
-    std::cout << BOLD(RED("Platform not flat! roll reading: ")) << eul_ang(0) << BOLD(RED(" pitch reading: ")) << eul_ang(1) << std::endl;
+  if (eul_ang(0) > opts_.angle_threshold || eul_ang(1) > opts_.angle_threshold) {
+    std::cout << std::endl << BOLD(RED("Platform not flat! roll reading: ")) << eul_ang(0) << BOLD(RED(" pitch reading: ")) << eul_ang(1) << std::endl;
     return false;
   }
 
   // test passed
   return true;
-
-
-
-
 }
