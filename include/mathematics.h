@@ -32,8 +32,8 @@ inline Eigen::Matrix3d skew(const Eigen::Vector3d &w) {
   Eigen::Matrix3d skew;
 
   skew << 0, -w(2), w(1),
-         w(2), 0, -w(0),
-         -w(1), w(0), 0;
+          w(2), 0, -w(0),
+          -w(1), w(0), 0;
 
   return skew;
 }
@@ -55,6 +55,13 @@ inline Eigen::Matrix3d Rot(const std::vector<double> &x) {
 }
 
 /**
+ * @brief Conversion from radians to degrees.
+ */
+inline double rad2deg(const double rad) {
+  return rad * 180 / M_PI;
+}
+
+/**
  * @brief Rotation matrix to euler angles conversion.
  *
  * roll = rotation about x
@@ -62,7 +69,7 @@ inline Eigen::Matrix3d Rot(const std::vector<double> &x) {
  * yaw = rotation abot z
  *
  * @param 3x3 Rotation matrix
- * @return 3x1 vector
+ * @return 3x1 vector of angles in degree
  */
 inline Eigen::Vector3d eul(const Eigen::Matrix3d &R) {
   double eps = 1.0e-3;
@@ -86,7 +93,7 @@ inline Eigen::Vector3d eul(const Eigen::Matrix3d &R) {
       roll = atan2(-R(0,1), -R(0,2));
     }
   }
-  eul << roll, pitch, yaw;
+  eul << rad2deg(roll), rad2deg(pitch), rad2deg(yaw);
 
   return eul;
 }
