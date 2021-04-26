@@ -32,7 +32,7 @@ class Timer
      * @brief Timer constructur
      * @param reference to int (timeout in milliseconds)
      */
-    Timer(int &ms);
+    Timer(const int &ms);
 
     /**
      * @brief Timer destructor

@@ -33,27 +33,24 @@
  */
 struct autonomyOptions {
 
-  /// Timeout in milliseconds for watchdog heartbeat (100ms default)
-  int timeout = 100;
+  /// Timeout in milliseconds for watchdog heartbeat
+  const int timeout;
 
   /// IMU topic
-  std::string imu_topic;
+  const std::string imu_topic;
 
-  /// Window of time in seconds for sensor readings during pre-flight checks (1s default)
-  double sensor_readings_window = 1;
+  /// Window of time in seconds for sensor readings during pre-flight checks
+  const double sensor_readings_window;
 
-  /// pitch-roll angle threshold in degree (10.0deg default)
-  double angle_threshold = 10.0;
+  /// pitch-roll angle threshold in degree
+  const double angle_threshold;
 
   /// Rotation matrix that rotates vector in the platform frame (P_x) to vector
-  /// in the IMU frame (I_x = R_IP * P_x) (Identity default)
-  std::vector<double> R_IP = {1,0,0,0,1,0,0,0,1};
-
-  /// Number of missions to be loaded
-  int number_missions = 0;
+  /// in the IMU frame (I_x = R_IP * P_x)
+  const std::vector<double> R_IP;
 
   /// Mission map <Mission ID <Mission description, Mission filepath>>
-  std::map<int, std::pair<std::string, std::string>> missions;
+  const std::map<int, std::pair<std::string, std::string>> missions;
 
   /// Print function
   void printAutonomyOptions() {
@@ -64,7 +61,7 @@ struct autonomyOptions {
     std::cout << BOLD(YELLOW(" - Sensor reading time window during pre-flight checks: ")) << sensor_readings_window << "s" << std::endl;
     std::cout << BOLD(YELLOW(" - Pitch-Roll angle threshold: ")) << angle_threshold << "deg" << std::endl;
     std::cout << BOLD(YELLOW(" - IMU-Platform Rotation R_IP: ")) << R_IP << std::endl;
-    std::cout << BOLD(YELLOW(" - Number of missions: ")) << number_missions << std::endl;
+    std::cout << BOLD(YELLOW(" - Number of missions: ")) << missions.size() << std::endl;
     std::cout << std::endl << BOLD(YELLOW("---------------------------------------")) << std::endl;
   }
 

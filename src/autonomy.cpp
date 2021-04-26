@@ -21,13 +21,13 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2)) {
 
   // Parse options
-  if(!parseRosParams(nh_, opts_))
+  if(!parseRosParams())
   {
       throw std::exception();
   }
 
   // Print option
-  opts_.printAutonomyOptions();
+  opts_->printAutonomyOptions();
 
   // Set dynamic reconfigure callback
   reconfigure_srv_.setCallback(reconfigure_cb_);
@@ -39,45 +39,56 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   sub_safety_node_heartbeat_ = nh_.subscribe("/watchdog/status", 10, &AmazeAutonomy::watchdogHeartBeatCallback, this);
 
   // Instanciate timeout timer and connect signal
-  timer_ = std::make_shared<Timer>(opts_.timeout);
-  timer_->sh_.connect(boost::bind(&AmazeAutonomy::watchdogTimerOverflow, this));
+  timer_ = std::make_shared<Timer>(opts_->timeout);
+  timer_->sh_.connect(boost::bind(&AmazeAutonomy::watchdogTimerOverflowHandler, this));
 }
 
-bool AmazeAutonomy::parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts) {
+bool AmazeAutonomy::parseRosParams() {
+
+  // Define auxilliary variables and default values
+  int watchdog_timeout_ms = 100;
+  double sensor_readings_window_s = 1.0;
+  double angle_threshold_deg = 10.0;
+  int n_missions = 0;
+  std::vector<double> R_IP = {1,0,0,0,1,0,0,0,1};
+  std::string imu_topic, description, filepath;
+  std::map<int, std::pair<std::string, std::string>> missions;
 
   // Get watchdog timer timeout
-  nh.param<int>("watchdog_timeout_ms", opts.timeout, opts.timeout);
+  nh_.param<int>("watchdog_timeout_ms", watchdog_timeout_ms, watchdog_timeout_ms);
 
   // Get sensor reading window
-  nh.param<double>("sensor_readings_window", opts.sensor_readings_window, opts.sensor_readings_window);
+  nh_.param<double>("sensor_readings_window", sensor_readings_window_s, sensor_readings_window_s);
 
   // Get roll and pitch angle threshold for platform flatness check
-  nh.param<double>("angle_threshold", opts.angle_threshold, opts.angle_threshold);
+  nh_.param<double>("angle_threshold", angle_threshold_deg, angle_threshold_deg);
 
   // Get IMU-Platform rotation
-  nh.param<std::vector<double>>("R_IP", opts.R_IP, opts.R_IP);
+  nh_.param<std::vector<double>>("R_IP", R_IP, R_IP);
 
-  // Get param that does not have a default value and therefore the existance must be checked
-  if(!nh.getParam("imu_topic", opts.imu_topic)) {
+  // Get imu topic
+  if(!nh_.getParam("imu_topic", imu_topic)) {
     std::cout << std::endl << BOLD(RED("No IMU topic defined")) << std::endl;
     return false;
   }
 
   // Get missions information
-  nh.param<int>("missions/number", opts.number_missions, opts.number_missions);
-  if (opts.number_missions == 0) {
+  nh_.param<int>("missions/number", n_missions, n_missions);
+  if (n_missions == 0) {
     std::cout << std::endl << BOLD(RED("No missions defined")) << std::endl;
     return false;
   } else {
-    for (int i = 1; i <= opts.number_missions; ++i) {
-      std::string description, filepath;
-      if(!nh.getParam("missions/mission_" + std::to_string(i) + "/description", description) && !nh.getParam("missions/mission_" + std::to_string(i) + "/filepath", filepath)) {
+    for (int i = 1; i <= n_missions; ++i) {
+      if(!nh_.getParam("missions/mission_" + std::to_string(i) + "/description", description) && !nh_.getParam("missions/mission_" + std::to_string(i) + "/filepath", filepath)) {
         std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " is not correctly defined")) << std::endl;
         return false;
       }
-      opts.missions.insert({i,std::make_pair(description,filepath)});
+      missions.insert({i,std::make_pair(description,filepath)});
     }
   }
+
+  // Make options
+  opts_ = std::make_shared<autonomyOptions>(autonomyOptions({watchdog_timeout_ms, imu_topic, sensor_readings_window_s, angle_threshold_deg, R_IP, missions}));
 
   // Success
   return true;
@@ -97,7 +108,7 @@ void AmazeAutonomy::watchdogHeartBeatCallback(const autonomy_msgs::SystemStatusC
 
 }
 
-void AmazeAutonomy::watchdogTimerOverflow() {
+void AmazeAutonomy::watchdogTimerOverflowHandler() {
 
   // print message of watchdog timer overflow
   std::cout << std::endl << BOLD(RED("Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
@@ -117,7 +128,7 @@ void AmazeAutonomy::userInterface() {
 
   // Print missions
   std::cout << std::endl << BOLD(GREEN("Please select one of the following mission by inputting the mission ID")) << std::endl << std::endl;
-  for (auto &it : opts_.missions) {
+  for (auto &it : opts_->missions) {
     std::cout << BOLD(GREEN(" - ID: ")) << it.first << BOLD(GREEN(" DESCRIPTION: ")) << it.second.first << std::endl;
   }
 
@@ -126,7 +137,7 @@ void AmazeAutonomy::userInterface() {
   std::cin >> mission_id_;
 
   // Check validity of mission id
-  if (mission_id_ == 0 || mission_id_ > opts_.number_missions) {
+  if (mission_id_ == 0 || mission_id_ > opts_->missions.size()) {
     std::cout << std::endl << BOLD(RED("Wrong mission ID chosen")) << std::endl;
     throw std::exception();
   }
@@ -145,13 +156,13 @@ void AmazeAutonomy::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
   imu_data_buffer_.emplace_back(meas);
 
   // Remove oldest if sensor reading window width is reached
-  if ((meas.timestamp - imu_data_buffer_.begin()->timestamp) > opts_.sensor_readings_window) {
+  if ((meas.timestamp - imu_data_buffer_.begin()->timestamp) > opts_->sensor_readings_window) {
 
     // Since we check everytime a new measurement is added to the buffer it would
     // be sufficient to simply remove the first element, however it is more robust
     // to check everytime how many elements we should remove.
 
-    double Dt = meas.timestamp - opts_.sensor_readings_window;
+    double Dt = meas.timestamp - opts_->sensor_readings_window;
 
     // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
     auto it = std::find_if(imu_data_buffer_.begin(), imu_data_buffer_.end(), [&Dt](imuData meas){return meas.timestamp > Dt;});
@@ -208,13 +219,13 @@ bool AmazeAutonomy::checkFlatness() {
   R_GI.block(0,2,3,1) = z_axis;
 
   // Apply Rotation between the imu and the platform
-  Eigen::Matrix3d R_GP = R_GI*Rot(opts_.R_IP);
+  Eigen::Matrix3d R_GP = R_GI*Rot(opts_->R_IP);
 
   // Convert Rotation matrix to euler angles
   Eigen::Vector3d eul_ang = eul(R_GP);
 
   // Compare roll and pitch with thresholds
-  if (eul_ang(0) > opts_.angle_threshold || eul_ang(1) > opts_.angle_threshold) {
+  if (eul_ang(0) > opts_->angle_threshold || eul_ang(1) > opts_->angle_threshold) {
     std::cout << std::endl << BOLD(RED("Platform not flat! roll reading: ")) << eul_ang(0) << BOLD(RED(" pitch reading: ")) << eul_ang(1) << std::endl;
     return false;
   }

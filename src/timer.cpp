@@ -17,7 +17,7 @@
 #include "timer.h"
 #include "colors.h"
 
-Timer::Timer(int &ms) {
+Timer::Timer(const int &ms) {
 
   // Make timer
   timer_ = std::make_shared<boost::asio::deadline_timer>(io_);

@@ -60,11 +60,9 @@ class AmazeAutonomy {
 
     /**
      * @brief Load paramters from the ros node handler
-     * @param ROS node handler reference
-     * @param autonomyOptions object reference
      * @return boolean true in case of success, false in case of failure
      */
-    [[nodiscard]] bool parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts);
+    [[nodiscard]] bool parseRosParams();
 
     /**
      * @brief Watchdog service callback
@@ -79,7 +77,7 @@ class AmazeAutonomy {
     /**
      * @brief Callback method called when a watchdog timer overflow occurs
      */
-    void watchdogTimerOverflow();
+    void watchdogTimerOverflowHandler();
 
     /**
      * @brief Configuration callback for dynamic reconfigure
@@ -95,7 +93,7 @@ class AmazeAutonomy {
     ros::NodeHandle nh_;
 
     /// Autonomy options
-    autonomyOptions opts_;
+    std::shared_ptr<autonomyOptions> opts_;
 
     /// Dynamic reconfigure server and callback
     dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig> reconfigure_srv_;
@@ -118,7 +116,7 @@ class AmazeAutonomy {
     std::vector<imuData> imu_data_buffer_;
 
     /// Selected mission ID
-    int mission_id_ = 0;
+    size_t mission_id_ = 0;
 
 };
 
