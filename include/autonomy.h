@@ -57,7 +57,6 @@ class AmazeAutonomy {
 
   private:
 
-
     /**
      * @brief Load paramters from the ros node handler
      * @return boolean true in case of success, false in case of failure
@@ -89,6 +88,11 @@ class AmazeAutonomy {
      */
     void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
 
+    /**
+     * @brief Run preflight checks
+     */
+    [[nodiscard]] bool preFlightChecks();
+
     /// Nodehandler
     ros::NodeHandle nh_;
 
@@ -100,7 +104,7 @@ class AmazeAutonomy {
     dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig>::CallbackType reconfigure_cb_;
 
     /// Subscribers
-    ros::Subscriber sub_safety_node_heartbeat_;
+    ros::Subscriber sub_watchdog_heartbeat_;
     ros::Subscriber sub_imu_;
 
     /// Publishers

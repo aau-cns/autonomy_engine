@@ -36,7 +36,7 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   safety_srv = nh_.advertiseService("/safety_srv_in", &AmazeAutonomy::watchdogCallback, this);
 
   // Subscriber to watchdog (system status) heartbeat
-  sub_safety_node_heartbeat_ = nh_.subscribe("/watchdog/status", 10, &AmazeAutonomy::watchdogHeartBeatCallback, this);
+  sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 10, &AmazeAutonomy::watchdogHeartBeatCallback, this);
 
   // Instanciate timeout timer and connect signal
   timer_ = std::make_shared<Timer>(opts_->timeout);
@@ -140,6 +140,15 @@ void AmazeAutonomy::userInterface() {
   if (mission_id_ == 0 || mission_id_ > opts_->missions.size()) {
     std::cout << std::endl << BOLD(RED("Wrong mission ID chosen")) << std::endl;
     throw std::exception();
+  } else {
+    std::cout << std::endl << BOLD(GREEN(" - Selected mission with ID: ")) << mission_id_ << std::endl;
+  }
+
+  // check result of preflight checks
+  std::cout << std::endl << BOLD(GREEN("Start Pre-Flight Checks ...")) << std::endl;
+  if (!AmazeAutonomy::preFlightChecks()) {
+    std::cout << std::endl << BOLD(RED("Pre-Flight checks failure")) << std::endl;
+    throw std::exception();
   }
 
 }
@@ -165,10 +174,10 @@ void AmazeAutonomy::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
     double Dt = meas.timestamp - opts_->sensor_readings_window;
 
     // Get iterator to first element that has to be kept (timestamp > Dt (meas.timestamp - timestamp < window))
-    auto it = std::find_if(imu_data_buffer_.begin(), imu_data_buffer_.end(), [&Dt](imuData meas){return meas.timestamp > Dt;});
+    auto it = std::find_if(imu_data_buffer_.begin(), imu_data_buffer_.end(), [&Dt](imuData meas){return meas.timestamp >= Dt;});
 
-    // Remove all 1elements starting from the beginning until the first element that has to be kept
-    imu_data_buffer_.erase(imu_data_buffer_.begin(), it);
+    // Remove all 1elements starting from the beginning until the first element that has to be kept (excluded)
+    imu_data_buffer_.erase(imu_data_buffer_.begin(), it-1);
   }
 
 }
@@ -176,8 +185,15 @@ void AmazeAutonomy::imuCallback(const sensor_msgs::Imu::ConstPtr& msg) {
 bool AmazeAutonomy::checkFlatness() {
 
   // Return if buffer is empty
-  if(imu_data_buffer_.empty()) {
+  if (imu_data_buffer_.empty()) {
+      std::cout << std::endl << BOLD(RED("No IMU measurements available to check platform flatness")) << std::endl;
       return false;
+  }
+
+  // Return if minimum window is not reached
+  if ((imu_data_buffer_.end()->timestamp - imu_data_buffer_.begin()->timestamp) < opts_->sensor_readings_window) {
+    std::cout << std::endl << BOLD(RED("Not enough IMU measurements available to check platform flatness")) << std::endl;
+    return false;
   }
 
   // Define mean acceleration and mean angular velocity
@@ -204,8 +220,6 @@ bool AmazeAutonomy::checkFlatness() {
   Eigen::Vector3d x_axis = e_1-z_axis*z_axis.transpose()*e_1;
   x_axis= x_axis/x_axis.norm();
 
-  // TODO: implement skew
-
   // Get y axis from the cross product of these two
   Eigen::Vector3d y_axis = skew(z_axis)*x_axis;
 
@@ -228,8 +242,30 @@ bool AmazeAutonomy::checkFlatness() {
   if (eul_ang(0) > opts_->angle_threshold || eul_ang(1) > opts_->angle_threshold) {
     std::cout << std::endl << BOLD(RED("Platform not flat! roll reading: ")) << eul_ang(0) << BOLD(RED(" pitch reading: ")) << eul_ang(1) << std::endl;
     return false;
+  } else {
+    std::cout << std::endl << BOLD(GREEN("Platform is flat! roll reading: ")) << eul_ang(0) << BOLD(GREEN(" pitch reading: ")) << eul_ang(1) << std::endl;
   }
 
   // test passed
   return true;
+}
+
+bool AmazeAutonomy::preFlightChecks() {
+
+  // Subscribe to IMU
+  sub_imu_ = nh_.subscribe(opts_->imu_topic, 999, &AmazeAutonomy::imuCallback, this);
+
+  // Sleep (at least twice sensor reading window) to get imu measurements
+  usleep(static_cast<__useconds_t>(opts_->sensor_readings_window*2e6));
+
+  // Check flatness
+  if(!checkFlatness()) {
+    return false;
+  }
+
+   // Shutdown IMU subscriber
+   sub_imu_.shutdown();
+
+  return true;
+
 }
