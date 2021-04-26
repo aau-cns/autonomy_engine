@@ -34,15 +34,15 @@ int main(int argc, char* argv[])
   spinner.start();
 
   // Instantiate boost io service
-  boost::asio::io_service io;
+  //boost::asio::io_service io;
 
   try {
 
     // Instanciate AMAZE autonomy
-    AmazeAutonomy autonomy(nh, io);
+    AmazeAutonomy autonomy(nh);
 
     // Run boost io service
-    io.run();
+    //io.run();
 
     //Start Interface with user
     autonomy.userInterface();

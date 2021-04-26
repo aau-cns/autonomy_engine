@@ -41,9 +41,8 @@ class AmazeAutonomy {
     /**
      * @brief Autonomy constructor
      * @param Ros NodeHandle
-     * @param Reference to boost io service
      */
-    AmazeAutonomy(ros::NodeHandle &nh, boost::asio::io_service &io);
+    AmazeAutonomy(ros::NodeHandle &nh);
 
     /**
      * @brief Function that will use the buffered IMU data to check the "flatness" of the platform.
@@ -58,6 +57,7 @@ class AmazeAutonomy {
 
   private:
 
+
     /**
      * @brief Load paramters from the ros node handler
      * @param ROS node handler reference
@@ -69,12 +69,17 @@ class AmazeAutonomy {
     /**
      * @brief Watchdog service callback
      */
-    bool WatchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response);
+    bool watchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response);
 
     /**
      * @brief Watchdog (system status) heartbeat callback
      */
-    void WatchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas);
+    void watchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas);
+
+    /**
+     * @brief Callback method called when a watchdog timer overflow occurs
+     */
+    void watchdogTimerOverflow();
 
     /**
      * @brief Configuration callback for dynamic reconfigure

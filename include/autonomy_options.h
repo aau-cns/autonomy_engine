@@ -34,7 +34,7 @@
 struct autonomyOptions {
 
   /// Timeout in milliseconds for watchdog heartbeat (100ms default)
-  int timeout;
+  int timeout = 100;
 
   /// IMU topic
   std::string imu_topic;

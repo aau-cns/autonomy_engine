@@ -17,7 +17,7 @@
 #include "autonomy.h"
 #include "colors.h"
 
-AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh, boost::asio::io_service &io) :
+AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2)) {
 
   // Parse options
@@ -33,13 +33,14 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh, boost::asio::io_service &io) :
   reconfigure_srv_.setCallback(reconfigure_cb_);
 
   // Advertise watchdog service
-  safety_srv = nh_.advertiseService("/safety_srv_in", &AmazeAutonomy::WatchdogCallback, this);
+  safety_srv = nh_.advertiseService("/safety_srv_in", &AmazeAutonomy::watchdogCallback, this);
 
   // Subscriber to watchdog (system status) heartbeat
-  sub_safety_node_heartbeat_ = nh_.subscribe("/watchdog/status", 10, &AmazeAutonomy::WatchdogHeartBeatCallback, this);
+  sub_safety_node_heartbeat_ = nh_.subscribe("/watchdog/status", 10, &AmazeAutonomy::watchdogHeartBeatCallback, this);
 
-  // Instanciate timeout timer
-  timer_ = std::make_shared<Timer>(io, opts_.timeout);  
+  // Instanciate timeout timer and connect signal
+  timer_ = std::make_shared<Timer>(opts_.timeout);
+  timer_->sh_.connect(boost::bind(&AmazeAutonomy::watchdogTimerOverflow, this));
 }
 
 bool AmazeAutonomy::parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts) {
@@ -82,21 +83,27 @@ bool AmazeAutonomy::parseRosParams(ros::NodeHandle &nh, autonomyOptions &opts) {
   return true;
 }
 
-bool AmazeAutonomy::WatchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response) {
+bool AmazeAutonomy::watchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response) {
   std::cout << std::endl << BOLD(RED("Got Service Request with some Error Status")) << std::endl;
   return true;
 }
 
-void AmazeAutonomy::WatchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas) {
+void AmazeAutonomy::watchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas) {
+
   // Restart timeout timer
-  try {
-    timer_->restartTimer();
-  } catch (const std::exception&) {
-    std::cout << std::endl << BOLD(RED("Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
+  timer_->resetTimer();
 
-    // Take action here ...
+  // Do something here...
 
-  }
+}
+
+void AmazeAutonomy::watchdogTimerOverflow() {
+
+  // print message of watchdog timer overflow
+  std::cout << std::endl << BOLD(RED("Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
+
+  // Do something here ...
+
 }
 
 void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level) {

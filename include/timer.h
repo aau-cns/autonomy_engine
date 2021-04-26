@@ -20,6 +20,8 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <thread>
+#include <boost/signals2.hpp>
 
 class Timer
 {
@@ -28,10 +30,14 @@ class Timer
 
     /**
      * @brief Timer constructur
-     * @param reference to io service
      * @param reference to int (timeout in milliseconds)
      */
-    Timer(boost::asio::io_service &io, int &ms);
+    Timer(int &ms);
+
+    /**
+     * @brief Timer destructor
+     */
+    ~Timer();
 
     /**
      * @brief Set timeout
@@ -48,18 +54,32 @@ class Timer
     /**
      * @brief Start or restart timer, this function call will deleate any pending asynch wait
      */
-    void restartTimer();
+    void resetTimer();
+
+    /// Signal handler
+    boost::signals2::signal<void()> sh_;
 
   private:
 
+    /**
+     * @brief Timeout handler function
+     */
+    void timeoutHandler(const boost::system::error_code& error);
+
+    /// Thread to run io service
+    std::thread th_;
+
+    /// Boost io service
+    boost::asio::io_service io_;
+
     /// Deadline_timer
-    boost::asio::deadline_timer timer_;
+    std::shared_ptr<boost::asio::deadline_timer> timer_;
 
     /// Timeout in milliseconds
-    int timeout_;
+    int timeout_ = 0;
 
-    /// Timeout handler function
-    void timeoutHandler();
+    /// timer init flag
+    bool init_ = false;
 
 };
 
