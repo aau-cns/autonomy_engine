@@ -25,6 +25,16 @@
 #include "utilities.h"
 
 /**
+ * @brief Entities
+ */
+enum Entity {PX4_GPS, PX4_IMU, PX4_MAG, PX4_BAR, MISSION_CAM, REALSENSE, LSM9DS1, LRF, RTK_GPS_1, RTK_GPS_2};
+
+/**
+ * @brief Actions to be performed when a entity failure is identified
+ */
+enum Action {CONTINUE, HOLD, MANUAL};
+
+/**
  * @brief Struct for autonomy options.
  *
  * This struct contains information mainly got from the
@@ -36,32 +46,22 @@ struct autonomyOptions {
   /// Timeout in milliseconds for watchdog heartbeat
   const int timeout;
 
-  /// IMU topic
-  const std::string imu_topic;
+  /// Watchdog startup time in seconds needed to check entities
+  const int watchdog_startup_time;
 
-  /// Window of time in seconds for sensor readings during pre-flight checks
-  const double sensor_readings_window;
+  /// Mission map <Mission ID Mission description>
+  const std::map<int, std::string> missions;
 
-  /// pitch-roll angle threshold in degree
-  const double angle_threshold;
-
-  /// Rotation matrix that rotates vector in the platform frame (P_x) to vector
-  /// in the IMU frame (I_x = R_IP * P_x)
-  const std::vector<double> R_IP;
-
-  /// Mission map <Mission ID <Mission description, Mission filepath>>
-  const std::map<int, std::pair<std::string, std::string>> missions;
+  /// Entities actions map <Mission ID <Entity, Action>>
+  const std::map<int, std::pair<Entity, Action>> entity_action;
 
   /// Print function
   void printAutonomyOptions() {
 
     std::cout << std::endl << BOLD(YELLOW("---------- LOADED PARAMETERS ----------")) << std::endl << std::endl;
-    std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: ")) << timeout << "ms" << std::endl;
-    std::cout << BOLD(YELLOW(" - IMU topic: ")) << imu_topic << std::endl;
-    std::cout << BOLD(YELLOW(" - Sensor reading time window during pre-flight checks: ")) << sensor_readings_window << "s" << std::endl;
-    std::cout << BOLD(YELLOW(" - Pitch-Roll angle threshold: ")) << angle_threshold << "deg" << std::endl;
-    std::cout << BOLD(YELLOW(" - IMU-Platform Rotation R_IP: ")) << R_IP << std::endl;
-    std::cout << BOLD(YELLOW(" - Number of missions: ")) << missions.size() << std::endl;
+    std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: " + std::to_string(timeout) + " ms")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Watchdog startup time: " + std::to_string(watchdog_startup_time) + " s")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Number of missions: " + std::to_string(missions.size()) + "")) << std::endl;
     std::cout << std::endl << BOLD(YELLOW("---------------------------------------")) << std::endl;
   }
 

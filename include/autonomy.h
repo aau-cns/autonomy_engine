@@ -18,9 +18,9 @@
 #define AMAZEAUTONOMY_H
 
 #include <ros/ros.h>
-#include <ros_watchdog/wderror.h>
-#include <ros_watchdog/wdstart.h>
-#include <autonomy_msgs/SystemStatus.h>
+#include <watchdog_msgs/Start.h>
+#include <watchdog_msgs/StatusStamped.h>
+#include <watchdog_msgs/StatusChangesArrayStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
 #include <amaze_autonomy/autonomyConfig.h>
@@ -31,8 +31,6 @@
 
 #include "autonomy_options.h"
 #include "timer.h"
-#include "sensors.h"
-#include "mathematics.h"
 
 class AmazeAutonomy {
 
@@ -45,10 +43,9 @@ class AmazeAutonomy {
     AmazeAutonomy(ros::NodeHandle &nh);
 
     /**
-     * @brief Function that will use the buffered IMU data to check the "flatness" of the platform.
-     * @return Return true if the platform is "flat" and if there are no errors otherwise return false
+     * @brief Watchdog start service call
      */
-    [[nodiscard]] bool checkFlatness();
+    void startWatchdog();
 
     /**
      * @brief Function that defines the interface with the user.
@@ -64,14 +61,14 @@ class AmazeAutonomy {
     [[nodiscard]] bool parseRosParams();
 
     /**
-     * @brief Watchdog service callback
-     */
-    bool watchdogCallback(ros_watchdog::wderror::Request& request, ros_watchdog::wderror::Response& response);
-
-    /**
      * @brief Watchdog (system status) heartbeat callback
      */
-    void watchdogHeartBeatCallback(const autonomy_msgs::SystemStatusConstPtr& meas);
+    void watchdogHeartBeatCallback(const watchdog_msgs::StatusStampedConstPtr& msg);
+
+    /**
+     * @brief Watchdog system status changes callback
+     */
+    void watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStamped& msg);
 
     /**
      * @brief Callback method called when a watchdog timer overflow occurs
@@ -82,11 +79,6 @@ class AmazeAutonomy {
      * @brief Configuration callback for dynamic reconfigure
      */
     void configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level);
-
-    /**
-     * @brief IMU callback
-     */
-    void imuCallback(const sensor_msgs::Imu::ConstPtr& msg);
 
     /**
      * @brief Run preflight checks
@@ -105,19 +97,16 @@ class AmazeAutonomy {
 
     /// Subscribers
     ros::Subscriber sub_watchdog_heartbeat_;
-    ros::Subscriber sub_imu_;
+    ros::Subscriber sub_watchdog_status_;
 
     /// Publishers
 
-
-    /// Safety service server
-    ros::ServiceServer safety_srv;
+    /// Watchdog service
+    ros::ServiceClient service_client_;
+    watchdog_msgs::Start service_;
 
     /// Timeout timer
     std::shared_ptr<Timer> timer_;
-
-    /// IMU measurement buffer
-    std::vector<imuData> imu_data_buffer_;
 
     /// Selected mission ID
     size_t mission_id_ = 0;

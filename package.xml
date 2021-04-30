@@ -18,7 +18,7 @@
   <depend>dynamic_reconfigure</depend>
 
   <!-- Use build_depend for packages you need at compile time: -->
-  <build_depend>autonomy_msgs</build_depend>
+  <build_depend>watchdog_msgs</build_depend>
   <build_depend>ros_watchdog</build_depend>
   <build_depend>message_generation</build_depend>
   <build_depend>message_generation</build_depend>

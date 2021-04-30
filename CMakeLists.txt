@@ -31,7 +31,7 @@ message(STATUS "CMAKE_CXX_FLAGES: ${CMAKE_CXX_FLAGS}")
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   ros_watchdog
-  autonomy_msgs
+  watchdog_msgs
   std_msgs
   message_generation
   dynamic_reconfigure

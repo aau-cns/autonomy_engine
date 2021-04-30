@@ -33,18 +33,15 @@ int main(int argc, char* argv[])
   ros::AsyncSpinner spinner(0);
   spinner.start();
 
-  // Instantiate boost io service
-  //boost::asio::io_service io;
-
   try {
 
     // Instanciate AMAZE autonomy
     AmazeAutonomy autonomy(nh);
 
-    // Run boost io service
-    //io.run();
+    // Service call to start watchdog
+    autonomy.startWatchdog();
 
-    //Start Interface with user
+    // Start user interface
     autonomy.userInterface();
 
   } catch (const std::exception&) {
