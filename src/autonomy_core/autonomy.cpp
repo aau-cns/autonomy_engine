@@ -14,14 +14,14 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include "autonomy.h"
-#include "colors.h"
+#include "autonomy_core/autonomy.h"
+#include "utils/colors.h"
 
 AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2)) {
 
-  // Parse options
-  if(!parseRosParams()) {
+  // Parse parameters and options
+  if(!parseParams()) {
       throw std::exception();
   }
 
@@ -45,38 +45,78 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   timer_->sh_.connect(boost::bind(&AmazeAutonomy::watchdogTimerOverflowHandler, this));
 }
 
-bool AmazeAutonomy::parseRosParams() {
+bool AmazeAutonomy::parseParams() {
 
-  // Define auxilliary variables and default values
-  int watchdog_timeout_ms = 100;
-  int watchdog_startup_time_s = 5;
-  int n_missions = 0;
+  // Define auxilliary variables
+  int watchdog_startup_time_s, n_missions, watchdog_timeout_ms;
   std::string description;
   std::map<int, std::string> missions;
-  std::vector<std::string> critical_entities;
-  std::map<int, std::pair<Entity, Action>> entity_action;
+  XmlRpc::XmlRpcValue entities_actions;
+  //std::map<int, std::pair<Entity, Action>> entities_actions_maps;
 
-  // Get watchdog timer timeout
-  nh_.param<int>("watchdog_timeout_ms", watchdog_timeout_ms, watchdog_timeout_ms);
+  // Get watchdog rate
+  if(!nh_.getParam("watchdog_rate", watchdog_timeout_ms)) {
+     std::cout << std::endl << BOLD(RED("Watchdog heartbeat rate not defined")) << std::endl;
+  }
+
+  // Set watchdog timer timeout to be 125% of 1/watchdog_rate
+  watchdog_timeout_ms = 1250/watchdog_timeout_ms;
 
   // Get watchdog startup time
-  nh_.param<int>("watchdog_startup_time_s", watchdog_startup_time_s, watchdog_startup_time_s);
+  nh_.param<int>("watchdog_startup_time_s", watchdog_startup_time_s, 5);
 
   // Get missions information
-  nh_.param<int>("missions/number", n_missions, n_missions);
+  nh_.param<int>("missions/number", n_missions, 0);
+
+  // Check whether missions are defined and parse them
   if (n_missions == 0) {
+
     std::cout << std::endl << BOLD(RED("No missions defined")) << std::endl;
     return false;
   } else {
+
     for (int i = 1; i <= n_missions; ++i) {
-      if(!nh_.getParam("missions/mission_" + std::to_string(i) + "/description", description) && !nh_.getParam("missions/mission_" + std::to_string(i) + "/critical_entities", critical_entities)) {
-        std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " is not correctly defined")) << std::endl;
+
+      if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/description", description)) {
+        std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " description missing")) << std::endl;
+        return false;
+      }
+
+      missions.insert({i, description});
+
+      if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/entities_actions", entities_actions)) {
+        std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list missing")) << std::endl;
+        return false;
+      }
+
+      if (entities_actions.getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
+        for (int i = 0; i < entities_actions.size(); ++i) {
+          if (entities_actions[i].getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
+
+            //std::pair entity_action = getEntityActionPair(entities_actions[i][0], entities_actions[i][1]);
+
+
+
+          } else {
+            std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list is not correct")) << std::endl;
+            return false;
+          }
+        }
+
+      } else {
+        std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list is not correct")) << std::endl;
         return false;
       }
 
       // switch to check entities and set it
-      // entity_action.insert({i, std::make_pair(critical_entities)});
+//      switch(it0->second.first) {
+//      case POSE:
+//        do_pose_propagate_update(std::static_pointer_cast<ov_core::PoseData>(it0->second.second));
+//        break;
 
+
+      // entity_action.insert({i, std::make_pair(critical_entities)});
+      // after initialization in opts_ i have to code the logic, for any given message check what changed and perform an action based on the chenges
       missions.insert({i, description});
     }
   }
@@ -87,6 +127,14 @@ bool AmazeAutonomy::parseRosParams() {
   // Success
   return true;
 }
+
+//std::pair<Entity, Action> AmazeAutonomy::getEntityActionPair(const std::string entity, const std::string action) {
+
+//  // Define Entity-Action pair
+//  std::pair<Entity, Action> entity_action;
+
+//  // Switch case IM HERE!
+//}
 
 void AmazeAutonomy::startWatchdog() {
 
@@ -101,15 +149,7 @@ void AmazeAutonomy::startWatchdog() {
     if(service_.response.successful) {
 
       std::cout << std::endl << BOLD(GREEN("--------- WATCHDOG IS RUNNING ---------")) << std::endl << std::endl;
-
-//      // Initialize entities
-//      for (const auto &it : service_.response.entities) {
-//        entities_.emplace_back(std::make_pair(it.name, it.id));
-//        std::cout << std::endl << BOLD(GREEN(" - Entity: " + it.name + " | ID: " + std::to_string(it.id))) << std::endl;
-//      }
-
-      // System status --> nominal
-
+      std::cout << BOLD(GREEN(" System status is [NOMINAL] ")) << std::endl;
       std::cout << std::endl << BOLD(GREEN("---------------------------------------")) << std::endl;
 
     } else {
@@ -129,7 +169,7 @@ void AmazeAutonomy::startWatchdog() {
     std::cout << BOLD(RED(" Please perform a system hard restart  ")) << std::endl;
     std::cout << BOLD(RED(" If you get the same problem after the ")) << std::endl;
     std::cout << BOLD(RED(" hard restart, shutdown the system and ")) << std::endl;
-    std::cout << BOLD(RED(" abort the mission. ")) << std::endl;
+    std::cout << BOLD(RED(" abort the mission. ")) << std::endl << std::endl;
     std::cout << BOLD(RED("---------------------------------------")) << std::endl;
     throw std::exception();
   }
@@ -144,8 +184,7 @@ void AmazeAutonomy::watchdogHeartBeatCallback(const watchdog_msgs::StatusStamped
 void AmazeAutonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStamped& msg) {
 
   // Parse the message
-  msg.data.changes.end();
-
+  // msg.data.changes.end();
   // changes is the changes wrt the last change
 
 }

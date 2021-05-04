@@ -28,9 +28,11 @@
 #include <boost/bind/bind.hpp>
 #include <iostream>
 #include <string>
+#include <xmlrpcpp/XmlRpcValue.h>
 
 #include "autonomy_options.h"
-#include "timer.h"
+#include "timer/timer.h"
+#include "state_machine/state.h"
 
 class AmazeAutonomy {
 
@@ -55,10 +57,10 @@ class AmazeAutonomy {
   private:
 
     /**
-     * @brief Load paramters from the ros node handler
+     * @brief Load and parse paramters and options
      * @return boolean true in case of success, false in case of failure
      */
-    [[nodiscard]] bool parseRosParams();
+    [[nodiscard]] bool parseParams();
 
     /**
      * @brief Watchdog (system status) heartbeat callback
@@ -85,6 +87,13 @@ class AmazeAutonomy {
      */
     [[nodiscard]] bool preFlightChecks();
 
+//    /**
+//     * @brief Get Entity-Action pair
+//     * @param entity as std::string
+//     * @param action as std::string
+//     */
+//    [[nodiscard]] std::pair<Entity, Action> getEntityActionPair(const std::string entity, const std::string action);
+
     /// Nodehandler
     ros::NodeHandle nh_;
 
@@ -110,6 +119,9 @@ class AmazeAutonomy {
 
     /// Selected mission ID
     size_t mission_id_ = 0;
+
+    /// State
+    State state_();
 
 };
 

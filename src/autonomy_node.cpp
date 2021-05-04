@@ -14,7 +14,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include "autonomy.h"
+#include "autonomy_core/autonomy.h"
 #include <ros/ros.h>
 
 int main(int argc, char* argv[])
@@ -37,6 +37,10 @@ int main(int argc, char* argv[])
 
     // Instanciate AMAZE autonomy
     AmazeAutonomy autonomy(nh);
+
+    std::cout << std::endl << BOLD(GREEN("Press Enter to start the Autonomy")) << std::endl;
+    std::cout << std::endl << BOLD(GREEN(">>> "));
+    std::cin.ignore();
 
     // Service call to start watchdog
     autonomy.startWatchdog();

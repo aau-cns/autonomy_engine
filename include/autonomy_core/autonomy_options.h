@@ -21,18 +21,9 @@
 #include <vector>
 #include <map>
 
-#include "colors.h"
-#include "utilities.h"
-
-/**
- * @brief Entities
- */
-enum Entity {PX4_GPS, PX4_IMU, PX4_MAG, PX4_BAR, MISSION_CAM, REALSENSE, LSM9DS1, LRF, RTK_GPS_1, RTK_GPS_2};
-
-/**
- * @brief Actions to be performed when a entity failure is identified
- */
-enum Action {CONTINUE, HOLD, MANUAL};
+#include "utils/colors.h"
+#include "utils/utilities.h"
+#include "autonomy_core/entity_event.h"
 
 /**
  * @brief Struct for autonomy options.
@@ -52,8 +43,8 @@ struct autonomyOptions {
   /// Mission map <Mission ID Mission description>
   const std::map<int, std::string> missions;
 
-  /// Entities actions map <Mission ID <Entity, Action>>
-  const std::map<int, std::pair<Entity, Action>> entity_action;
+//  /// Entities actions map <Mission ID <Entity, Action>>
+//  const std::map<int, std::pair<Entity, Action>> entities_actions;
 
   /// Print function
   void printAutonomyOptions() {

@@ -33,7 +33,6 @@ find_package(catkin REQUIRED COMPONENTS
   ros_watchdog
   watchdog_msgs
   std_msgs
-  message_generation
   dynamic_reconfigure
 )
 
@@ -152,7 +151,7 @@ list(
 
 ## List custom libraries inside lib folder
 list(
-  APPEND custom_libraries_sources src/timer.cpp
+  APPEND custom_libraries_sources src/timer/timer.cpp src/autonomy_core/autonomy.cpp src/autonomy_core/entity_event.cpp src/state_machine/state.cpp  src/state_machine/abstract_state.cpp  src/state_machine/states/hold.cpp src/state_machine/states/manual.cpp src/state_machine/states/nominal.cpp src/state_machine/states/undefined.cpp
 )
 
 ## Declare a C++ library
@@ -166,7 +165,7 @@ add_library(custom_libraries SHARED ${custom_libraries_sources})
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(autonomy src/autonomy_node.cpp src/autonomy.cpp)
+add_executable(autonomy src/autonomy_node.cpp src/autonomy_core/autonomy.cpp)
 add_dependencies(autonomy ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(autonomy ${thirdparty_libraries} custom_libraries)
 set_property(TARGET autonomy PROPERTY COMPILE_DEFINITIONS POSE)

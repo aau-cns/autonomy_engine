@@ -14,8 +14,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include "timer.h"
-#include "colors.h"
+#include "timer/timer.h"
+#include "utils/colors.h"
 
 Timer::Timer(const int &ms) {
 
