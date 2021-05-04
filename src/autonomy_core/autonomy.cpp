@@ -51,8 +51,11 @@ bool AmazeAutonomy::parseParams() {
   int watchdog_startup_time_s, n_missions, watchdog_timeout_ms;
   std::string description;
   std::map<int, std::string> missions;
+  Entity entity;
+  NextState action;
   XmlRpc::XmlRpcValue entities_actions;
-  //std::map<int, std::pair<Entity, Action>> entities_actions_maps;
+  std::pair<int, std::pair<Entity, NextState>> mission_entity_action;
+  std::vector<std::pair<int, std::pair<Entity, NextState>>> entity_action_vector;
 
   // Get watchdog rate
   if(!nh_.getParam("watchdog_rate", watchdog_timeout_ms)) {
@@ -70,71 +73,122 @@ bool AmazeAutonomy::parseParams() {
 
   // Check whether missions are defined and parse them
   if (n_missions == 0) {
-
     std::cout << std::endl << BOLD(RED("No missions defined")) << std::endl;
     return false;
   } else {
 
+    // Loop through missions
     for (int i = 1; i <= n_missions; ++i) {
 
+      // get mission description
       if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/description", description)) {
         std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " description missing")) << std::endl;
         return false;
       }
 
+      // Build Mission map <i, description>
       missions.insert({i, description});
 
+      // get entities and actions
       if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/entities_actions", entities_actions)) {
         std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list missing")) << std::endl;
         return false;
       }
 
+      // Check type to be array
       if (entities_actions.getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
-        for (int i = 0; i < entities_actions.size(); ++i) {
-          if (entities_actions[i].getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
 
-            //std::pair entity_action = getEntityActionPair(entities_actions[i][0], entities_actions[i][1]);
+        // Loop through entities and actions
+        for (int j = 0; j < entities_actions.size(); ++j) {
 
+          // Check type to be array
+          if (entities_actions[j].getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
 
+            // Get entity and action
+            if (getEntityAction(entities_actions[j], entity, action)) {
+              std::pair entity_action = std::make_pair(entity, action);
+
+              // Build Entity Action vector
+              mission_entity_action = std::make_pair(i,entity_action);
+              entity_action_vector.emplace_back(mission_entity_action);
+
+            } else {
+              std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list wrongly defined")) << std::endl;
+              return false;
+            }
 
           } else {
-            std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list is not correct")) << std::endl;
+            std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list wrongly defined")) << std::endl;
             return false;
           }
         }
-
       } else {
-        std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list is not correct")) << std::endl;
+        std::cout << std::endl << BOLD(RED("Mission number " + std::to_string(i) + " entities_actions list wrongly defined")) << std::endl;
         return false;
       }
-
-      // switch to check entities and set it
-//      switch(it0->second.first) {
-//      case POSE:
-//        do_pose_propagate_update(std::static_pointer_cast<ov_core::PoseData>(it0->second.second));
-//        break;
-
-
-      // entity_action.insert({i, std::make_pair(critical_entities)});
-      // after initialization in opts_ i have to code the logic, for any given message check what changed and perform an action based on the chenges
-      missions.insert({i, description});
     }
   }
 
   // Make options
-  opts_ = std::make_shared<autonomyOptions>(autonomyOptions({watchdog_timeout_ms, watchdog_startup_time_s, missions}));
+  opts_ = std::make_shared<autonomyOptions>(autonomyOptions({watchdog_timeout_ms, watchdog_startup_time_s, missions, entity_action_vector}));
 
   // Success
   return true;
 }
 
-//std::pair<Entity, Action> AmazeAutonomy::getEntityActionPair(const std::string entity, const std::string action) {
+bool AmazeAutonomy::getEntityAction(const XmlRpc::XmlRpcValue& entity_action, Entity& entity, NextState& action) {
 
-//  // Define Entity-Action pair
-//  std::pair<Entity, Action> entity_action;
+  // Check type
+  if (entity_action.getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
 
-//  // Switch case IM HERE!
-//}
+    // Check type and get entity
+    if (entity_action[0].getType() == XmlRpc::XmlRpcValue::TypeString) {
+      if (std::string(entity_action[0]).compare("px4_gps") == 0) {
+        entity = Entity::PX4_GPS;
+      } else if (std::string(entity_action[0]).compare("px4_bar") == 0) {
+        entity = Entity::PX4_BAR;
+      } else if (std::string(entity_action[0]).compare("px4_mag") == 0) {
+        entity = Entity::PX4_MAG;
+      } else if (std::string(entity_action[0]).compare("mission_cam") == 0) {
+        entity = Entity::MISSION_CAM;
+      } else if (std::string(entity_action[0]).compare("realsense") == 0) {
+        entity = Entity::REALSENSE;
+      } else if (std::string(entity_action[0]).compare("lsm9ds1") == 0) {
+        entity = Entity::LSM9DS1;
+      } else if (std::string(entity_action[0]).compare("lrf") == 0) {
+        entity = Entity::LRF;
+      } else if (std::string(entity_action[0]).compare("rtk_gps_1") == 0) {
+        entity = Entity::RTK_GPS_1;
+      } else if (std::string(entity_action[0]).compare("rtk_gps_2") == 0) {
+        entity = Entity::RTK_GPS_2;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+    // Check type and get action
+    if (entity_action[1].getType() == XmlRpc::XmlRpcValue::TypeString) {
+      if (std::string(entity_action[1]).compare("continue") == 0) {
+        action = NextState::NOMINAL;
+      } else if (std::string(entity_action[1]).compare("hold") == 0) {
+        action = NextState::HOLD;
+      } else if (std::string(entity_action[1]).compare("manual") == 0) {
+        action = NextState::MANUAL;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+
+    return true;
+
+  } else {
+    return false;
+  }
+}
 
 void AmazeAutonomy::startWatchdog() {
 

@@ -30,7 +30,7 @@
 #include <string>
 #include <xmlrpcpp/XmlRpcValue.h>
 
-#include "autonomy_options.h"
+#include "autonomy_core/autonomy_options.h"
 #include "timer/timer.h"
 #include "state_machine/state.h"
 
@@ -84,15 +84,18 @@ class AmazeAutonomy {
 
     /**
      * @brief Run preflight checks
+     * @return boolean
      */
     [[nodiscard]] bool preFlightChecks();
 
-//    /**
-//     * @brief Get Entity-Action pair
-//     * @param entity as std::string
-//     * @param action as std::string
-//     */
-//    [[nodiscard]] std::pair<Entity, Action> getEntityActionPair(const std::string entity, const std::string action);
+    /**
+     * @brief Get Entity-Action from XmlRpc::XmlRpcValue
+     * @param reference to XmlRpc::XmlRpcValue
+     * @param reference to Entity
+     * @param reference to NextState (Action)
+     * @return boolean
+     */
+    [[nodiscard]] bool getEntityAction(const XmlRpc::XmlRpcValue& entity_action, Entity& entity, NextState& action);
 
     /// Nodehandler
     ros::NodeHandle nh_;
