@@ -38,6 +38,12 @@ public:
   virtual void stateTransition(State* state, EntityEvent& event) = 0;
 
   /**
+   * @brief Trigger a state transition from undefined state to nominal state
+   * @param Pointer to State
+   */
+  virtual void nominal(State* state) = 0;
+
+  /**
    * @brief Action to be performed when exiting a state
    * @param Pointer to State
    * @param Event that triggered the exit from the state
@@ -59,6 +65,14 @@ protected:
    * @param Reference to AbstractState
    */
   void setState(State* state, AbstractState& abstract_state);
+
+  /**
+   * @brief Set action to be performed
+   * @param Pointer to State
+   * @param const reference to Action
+   * @param const reference to EntityEvent
+   */
+  void setAction(State* state, const Action& action_id, const EntityEvent& event);
 
   /**
    * @brief Get entity and subtype strings

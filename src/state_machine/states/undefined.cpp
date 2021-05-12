@@ -30,7 +30,7 @@ void Undefined::onExit(State*, EntityEvent&) {}
 
 void Undefined::onEntry(State*, EntityEvent&) {}
 
-void Undefined::nominal(State *state) {
+void Undefined::nominal(State* state) {
 
   // Change state to Nominal
   setState(state, Nominal::Instance());

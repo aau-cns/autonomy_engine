@@ -38,15 +38,13 @@ int main(int argc, char* argv[])
     // Instanciate AMAZE autonomy
     AmazeAutonomy autonomy(nh);
 
-    std::cout << std::endl << BOLD(GREEN("Press Enter to start the Autonomy")) << std::endl;
-    std::cout << std::endl << BOLD(GREEN(">>> "));
+    std::cout << std::endl << BOLD(GREEN(" >>> Press Enter to start the AMAZE Autonomy"));
     std::cin.ignore();
-
-    // Service call to start watchdog
-    autonomy.startWatchdog();
 
     // Start user interface
     autonomy.userInterface();
+
+    // NEXT STEP: Communicate mission to mission sequencer (autonomy?)
 
   } catch (const std::exception&) {
     std::cout << std::endl;

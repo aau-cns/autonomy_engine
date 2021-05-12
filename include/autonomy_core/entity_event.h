@@ -14,25 +14,26 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef FAILURE_H
-#define FAILURE_H
+#ifndef ENTITY_EVENT_H
+#define ENTITY_EVENT_H
 
 /**
  * @brief Entity
  */
-enum Entity {PX4_GPS, PX4_IMU, PX4_MAG, PX4_BAR, MISSION_CAM, REALSENSE, LSM9DS1, LRF, RTK_GPS_1, RTK_GPS_2};
+enum Entity {UNKNOWN, PX4_GPS, PX4_IMU, PX4_MAG, PX4_BAR, MISSION_CAM, REALSENSE, LSM9DS1, LRF, RTK_GPS_1, RTK_GPS_2};
 
 /**
  * @brief Type of entity event.
  *         - Failure in case of entity failure
  *         - Fix in case a past failure gets fixed
+ *         - Other
  */
-enum Type {FAILURE, FIX};
+enum Type {FAILURE, FIX, OTHER};
 
 /**
  * @brief Type of failure/fix
  */
-enum subType {TOPIC, NODE, DRIVER};
+enum subType {GLOBAL, TOPIC, NODE, DRIVER};
 
 /**
  * @brief next state to be set when there is an entity event
@@ -40,7 +41,12 @@ enum subType {TOPIC, NODE, DRIVER};
 enum NextState {NOMINAL, HOLD, MANUAL};
 
 /**
- * @brief Class that define a failure by means of Entity, Type and NextState
+ * @brief Action to be performed to react to an entity event
+ */
+enum Action {NOTHING, RESTART_NODE, RESTART_DRIVER, KILL_NODE};
+
+/**
+ * @brief Class that define a failure by means of Entity, Type, subType and NextState
  */
 class EntityEvent {
 
@@ -82,13 +88,13 @@ public:
   const bool& is_init() const;
 
   /**
-   * @brief Set Entity and type that caused the failre and next state
+   * @brief Set Entity and type that caused the event and next state
    * @param entity
    * @param type
    * @param subtype
    * @param nextstate
    */
-  void setFailure(const Entity& entity, const Type& type, const subType& subtype, const NextState& next_state);
+  void setEvent(const Entity& entity, const Type& type, const subType& subtype, const NextState& next_state);
 
   /**
    * @brief Comparison operator overloading
@@ -131,4 +137,4 @@ private:
 
 };
 
-#endif  // FAILURE_H
+#endif  // ENTITY_EVENT_H

@@ -38,7 +38,7 @@ const bool& EntityEvent::is_init() const {
   return init_;
 }
 
-void EntityEvent::setFailure(const Entity& entity, const Type& type, const subType& subtype, const NextState& next_state) {
+void EntityEvent::setEvent(const Entity& entity, const Type& type, const subType& subtype, const NextState& next_state) {
   entity_ = entity;
   type_ = type;
   sub_type_ = subtype;

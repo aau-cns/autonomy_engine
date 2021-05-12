@@ -30,7 +30,7 @@ void Manual::stateTransition(State*, EntityEvent&) {}
 
 void Manual::onExit(State*, EntityEvent&) {}
 
-void Manual::onEntry(State*, EntityEvent&) {
+void Manual::onEntry(State* state, EntityEvent& event) {
 
   // Print info
   std::cout << std::endl << BOLD(RED("---------------------------------------")) << std::endl << std::endl;
@@ -38,4 +38,9 @@ void Manual::onEntry(State*, EntityEvent&) {
   std::cout << BOLD(RED(" >>> THE  PLATFORM AND LAND SAFELY <<< ")) << std::endl;
   std::cout << BOLD(RED("---------------------------------------")) << std::endl;
 
+  // Set no action
+  setAction(state, Action::NOTHING, event);
+
 }
+
+void Manual::nominal(State*) {}

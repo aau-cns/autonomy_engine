@@ -52,6 +52,13 @@ public:
    */
   void onEntry(State* state, EntityEvent& event) override;
 
+  /**
+   * @brief Trigger a state transition from undefined state to nominal state
+   * @param Pointer to State
+   */
+  void nominal(State* state) override;
+
+
 private:
 
   /**

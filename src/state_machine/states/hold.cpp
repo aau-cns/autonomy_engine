@@ -39,7 +39,7 @@ void Hold::stateTransition(State* state, EntityEvent& event) {
     if (event.getType() == Type::FAILURE) {
       // In case of a failure the HOLD state must be kept untill all pending failures that
       // require the HOLD state get solved. Thus the next state is set to HOLD
-      event.setFailure(event.getEntity(), event.getType(), event.getSubType(), NextState::HOLD);
+      event.setEvent(event.getEntity(), event.getType(), event.getSubType(), NextState::HOLD);
       setState(state, Hold::Instance());
     } else if (event.getType() == Type::FIX) {
       // The fixed failure has already been removed from the pending failures
@@ -48,7 +48,7 @@ void Hold::stateTransition(State* state, EntityEvent& event) {
       if (it != state->getPendingFailures().end()) {
         // In case of a failure the HOLD state must be kept untill all pending failures that
         // require the HOLD state get solved. Thus the next state is set to HOLD
-        event.setFailure(event.getEntity(), event.getType(), event.getSubType(), NextState::HOLD);
+        event.setEvent(event.getEntity(), event.getType(), event.getSubType(), NextState::HOLD);
         setState(state, Hold::Instance());
       } else {
         setState(state, Nominal::Instance());
@@ -106,16 +106,34 @@ void Hold::onExit(State*, EntityEvent& event) {
     }
     std::cout << BOLD(GREEN("---------------------------------------")) << std::endl;
     break;
+  default:
+    break;
   }
 }
 
-void Hold::onEntry(State*, EntityEvent&) {
+void Hold::onEntry(State* state, EntityEvent& event) {
 
   // print info
   std::cout << std::endl << BOLD(YELLOW("---------------------------------------")) << std::endl << std::endl;
   std::cout << BOLD(YELLOW(" >>> System state: HOLD <<< ")) << std::endl;
   std::cout << BOLD(YELLOW("---------------------------------------")) << std::endl;
 
-  // Take an ection to react to the failure
+  // Take an ection to react to event that triggered the failure
+  switch (event.getSubType()) {
+  case subType::NODE:
+    setAction(state, Action::RESTART_NODE, event);
+    break;
+  case subType::TOPIC:
+    setAction(state, Action::RESTART_NODE, event);
+    break;
+  case subType::DRIVER:
+    setAction(state, Action::RESTART_DRIVER, event);
+    break;
+  default:
+    break;
+  }
+
 }
+
+void Hold::nominal(State*) {}
 

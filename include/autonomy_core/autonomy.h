@@ -21,6 +21,7 @@
 #include <watchdog_msgs/Start.h>
 #include <watchdog_msgs/StatusStamped.h>
 #include <watchdog_msgs/StatusChangesArrayStamped.h>
+#include <watchdog_msgs/ActionStamped.h>
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
 #include <amaze_autonomy/autonomyConfig.h>
@@ -45,16 +46,16 @@ class AmazeAutonomy {
     AmazeAutonomy(ros::NodeHandle &nh);
 
     /**
-     * @brief Watchdog start service call
-     */
-    void startWatchdog();
-
-    /**
      * @brief Function that defines the interface with the user.
      */
     void userInterface();
 
   private:
+
+    /**
+     * @brief Watchdog start service call
+     */
+    void startWatchdog();
 
     /**
      * @brief Load and parse paramters and options
@@ -89,13 +90,58 @@ class AmazeAutonomy {
     [[nodiscard]] bool preFlightChecks();
 
     /**
-     * @brief Get Entity-Action from XmlRpc::XmlRpcValue
-     * @param reference to XmlRpc::XmlRpcValue
+     * @brief Get Entity, Type and subType from watchdog_msgs::Status
+     * @param const reference to watchdog_msgs::Status
      * @param reference to Entity
-     * @param reference to NextState (Action)
+     * @param reference to Type
+     * @param reference to subType
      * @return boolean
      */
-    [[nodiscard]] bool getEntityAction(const XmlRpc::XmlRpcValue& entity_action, Entity& entity, NextState& action);
+    [[nodiscard]] bool getEntityTypeSubTypeFromMsg(const watchdog_msgs::Status& msg, Entity& entity, Type& type, subType& subtype);
+
+    /**
+     * @brief Set watchdog_msgs::Status from Entity, Type and subType
+     * @param const reference to Entity
+     * @param const reference to Type
+     * @param const reference to subType
+     * @param reference to watchdog_msgs::Status
+     * @return boolean
+     */
+    [[nodiscard]] bool setStatusMsgFromEntityTypeSubType(const Entity& entity, const Type& type, const subType& subtype, watchdog_msgs::Status& msg);
+
+    /**
+     * @brief Get Entity from string
+     * @param const string
+     * @param reference to Entity
+     * @return boolean
+     */
+    [[nodiscard]] bool getEntityFromString(const std::string entity_str, Entity& entity);
+
+    /**
+     * @brief Get Action (NextState) from string
+     * @param const string
+     * @param reference to Action
+     * @return boolean
+     */
+    [[nodiscard]] bool getNextStateFromString(const std::string action_str,  NextState& action);
+
+    /**
+     * @brief Get string from Entity
+     * @param const reference to Entity
+     * @param string
+     * @return boolean
+     */
+    [[nodiscard]] bool getEntityString(const Entity& entity, std::string entity_str);
+
+    /**
+     * @brief Get Action from string
+     * @param const reference to EntityEvent
+     * @param const reference to Action
+     * @param reference to watchdog_msgs::Action
+     * @return boolean
+     */
+    [[nodiscard]] bool setActionMsg(const Action& action, const EntityEvent entityevent, watchdog_msgs::Action& msg);
+
 
     /// Nodehandler
     ros::NodeHandle nh_;
@@ -112,10 +158,13 @@ class AmazeAutonomy {
     ros::Subscriber sub_watchdog_status_;
 
     /// Publishers
+    ros::Publisher pub_watchdog_action;
 
     /// Watchdog service
-    ros::ServiceClient service_client_;
-    watchdog_msgs::Start service_;
+    ros::ServiceClient watchdog_start_service_client_;
+
+    /// Takeoff service
+    ros::ServiceClient takeoff_service_client_;
 
     /// Timeout timer
     std::shared_ptr<Timer> timer_;
@@ -124,7 +173,7 @@ class AmazeAutonomy {
     size_t mission_id_ = 0;
 
     /// State
-    State state_();
+    State state_;
 
 };
 

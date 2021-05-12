@@ -42,10 +42,9 @@ public:
   void stateTransition(EntityEvent& event);
 
   /**
-   * @brief Get current state
-   * @return const pointer to current state
+   * @brief Trigger a state transition from undefined state to nominal state
    */
-  const AbstractState* getCurrentState() const;
+  void nominal();
 
   /**
    * @brief Get pending failures
@@ -55,6 +54,12 @@ public:
 
   /**
    * @brief Get actual (last registered) event
+   * @return const reference to std::pair<Action, EntityEvent>
+   */
+  const std::pair<Action, EntityEvent>& getAction() const;
+
+  /**
+   * @brief Get actual action to be performed
    * @return const reference to EntityEvent
    */
   const EntityEvent& getEntityEvent() const;
@@ -72,6 +77,13 @@ private:
    */
   void setState(AbstractState& abstract_state);
 
+  /**
+   * @brief Set action to be performed
+   * @param const reference to Action
+   * @param const reference to EntityEvent
+   */
+  void setAction(const Action& action, const EntityEvent& event);
+
 private:
 
   // Pointer to AbstractState
@@ -82,6 +94,9 @@ private:
 
   // History of failures
   std::vector<EntityEvent> pending_failures_;
+
+  // Action to be performed <action ID, EntityEvent>
+  std::pair<Action, EntityEvent> action_;
 
 };
 

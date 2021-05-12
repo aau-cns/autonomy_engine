@@ -28,6 +28,10 @@ State::State() {
   abstract_state_ = &Undefined::Instance();
 }
 
+void State::nominal() {
+  abstract_state_->nominal(this);
+}
+
 void State::stateTransition(EntityEvent& event) {
 
   // Register new event
@@ -58,8 +62,9 @@ void State::setState(AbstractState& abstract_state) {
   abstract_state_->onEntry(this, event_);
 }
 
-const AbstractState* State::getCurrentState() const {
-  return abstract_state_;
+void State::setAction(const Action& action, const EntityEvent& event) {
+  action_.first = action;
+  action_.second = event;
 }
 
 const EntityEvent& State::getEntityEvent() const {
@@ -68,4 +73,8 @@ const EntityEvent& State::getEntityEvent() const {
 
 const std::vector<EntityEvent>& State::getPendingFailures() const {
   return pending_failures_;
+}
+
+const std::pair<Action, EntityEvent>& State::getAction() const {
+  return action_;
 }

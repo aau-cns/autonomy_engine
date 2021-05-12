@@ -19,6 +19,7 @@
 
 #include <iterator>
 #include <iostream>
+#include <vector>
 
 /**
  * @brief Function to print a vector
@@ -36,5 +37,6 @@ std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
   }
   return out;
 }
+
 
 #endif  // UTILITIES_H

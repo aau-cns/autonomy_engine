@@ -26,11 +26,10 @@
 #include "autonomy_core/entity_event.h"
 
 /**
- * @brief Struct for autonomy options.
+ * @brief Immutable Struct for autonomy options.
  *
  * This struct contains information mainly got from the
  * parameter server that are used by the autonomy.
- * Matricies are defined as vectors in Row-Major order
  */
 struct autonomyOptions {
 
@@ -41,10 +40,10 @@ struct autonomyOptions {
   const int watchdog_startup_time;
 
   /// Mission map <Mission ID, Mission description>
-  const std::map<int, std::string> missions;
+  const std::map<size_t, std::string> missions;
 
   /// Entity Action map <Mission ID <Entity, Action>>
-  const std::vector<std::pair<int, std::pair<Entity, NextState>>> entity_action_vector;
+  const std::vector<std::pair<size_t, std::pair<Entity, NextState>>> entity_action_vector;
 
   /// Print function
   void printAutonomyOptions() {
@@ -53,64 +52,6 @@ struct autonomyOptions {
     std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: " + std::to_string(timeout) + " ms")) << std::endl;
     std::cout << BOLD(YELLOW(" - Watchdog startup time: " + std::to_string(watchdog_startup_time) + " s")) << std::endl;
     std::cout << BOLD(YELLOW(" - Number of missions: " + std::to_string(missions.size()) + "")) << std::endl;
-
-//    std::cout << << std::endl << BOLD(YELLOW(" - Loaded missions: ")) << std::endl;
-//    for (const auto &it : missions) {
-//      std::cout << BOLD(YELLOW("   - Mission ID: " + std::to_string(it.first) + " | Mission Description: " + it.second + "")) << std::endl;
-//    }
-
-//    std::cout << BOLD(YELLOW(" - Entity-Action Transtion Table: ")) << std::endl;
-//    for (const auto &it : entity_action_vector) {
-
-//      std::string entity, action;
-
-//      switch (it.second.first) {
-//      case Entity::PX4_GPS:
-//        entity = "PX4 GPS";
-//        break;
-//      case Entity::PX4_BAR:
-//        entity = "PX4 BAROMETER";
-//        break;
-//      case Entity::PX4_MAG:
-//        entity = "PX4 MAGNETOMETER";
-//        break;
-//      case Entity::MISSION_CAM:
-//        entity = "MISSION CAMERA";
-//        break;
-//      case Entity::REALSENSE:
-//        entity = "REALSENSE";
-//        break;
-//      case Entity::LSM9DS1:
-//        entity = "LSM9DS1 IMU";
-//        break;
-//      case Entity::LRF:
-//        entity = "LASER RANGE FINDER";
-//        break;
-//      case Entity::RTK_GPS_1:
-//        entity = "RTK GPS 1";
-//        break;
-//      case Entity::RTK_GPS_2:
-//        entity = "RTK GPS 2";
-//        break;
-//      default:
-//        break;
-//      }
-
-//      switch (it.second.second) {
-//      case NextState::NOMINAL:
-//        action = "CONTINUE";
-//        break;
-//      case NextState::HOLD:
-//        action = "HOLD";
-//        break;
-//      case NextState::MANUAL:
-//        action = "MANUAL";
-//        break;
-//      }
-
-//      std::cout << BOLD(YELLOW("   - Mission ID: " + std::to_string(it.first) + " | " + entity + " => " + action + "")) << std::endl;
-//    }
-
     std::cout << std::endl << BOLD(YELLOW("---------------------------------------")) << std::endl;
   }
 

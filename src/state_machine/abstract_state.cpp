@@ -24,17 +24,24 @@ AbstractState::~AbstractState() {}
 
 void AbstractState::stateTransition(State*, EntityEvent&) {}
 
+void AbstractState::nominal(State*) {}
+
 void AbstractState::setState(State* state, AbstractState& abstract_state) {
   state->setState(abstract_state);
 }
 
-
+void AbstractState::setAction(State* state, const Action& action, const EntityEvent& event) {
+  state->setAction(action, event);
+}
 
 void AbstractState::getEntityString(EntityEvent& event, std::string& entity, std::string& subtype) {
 
   // Check if there is a valid event
   if(event.is_init()) {
     switch (event.getEntity()) {
+    case Entity::UNKNOWN:
+      entity = "UNKNOWN";
+      break;
     case Entity::PX4_GPS:
       entity = "PX4 GPS";
       break;
@@ -76,6 +83,8 @@ void AbstractState::getEntityString(EntityEvent& event, std::string& entity, std
       break;
     case subType::DRIVER:
       subtype = "DRIVER";
+      break;
+    default:
       break;
     }
 }

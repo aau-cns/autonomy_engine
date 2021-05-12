@@ -80,14 +80,21 @@ void Nominal::onExit(State*, EntityEvent& event) {
     std::cout << BOLD(GREEN(" FIX >>> Next state: NOMINAL")) << std::endl;
     std::cout << BOLD(GREEN("---------------------------------------")) << std::endl;
     break;
+  default:
+    break;
   }
 
 }
 
-void Nominal::onEntry(State*, EntityEvent&) {
+void Nominal::onEntry(State* state, EntityEvent& event) {
 
   // print info
-  std::cout << std::endl << BOLD(GREEN("---------------------------------------")) << std::endl << std::endl;
+  std::cout << std::endl << BOLD(GREEN("---------------------------------------")) << std::endl;
   std::cout << BOLD(GREEN(" >>> System state: NOMINAL <<< ")) << std::endl;
   std::cout << BOLD(GREEN("---------------------------------------")) << std::endl;
+
+  // Set no action
+  setAction(state, Action::NOTHING, event);
 }
+
+void Nominal::nominal(State*) {}
