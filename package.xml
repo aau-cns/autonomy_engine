@@ -20,6 +20,7 @@
   <!-- Use build_depend for packages you need at compile time: -->
   <build_depend>watchdog_msgs</build_depend>
   <build_depend>ros_watchdog</build_depend>
+  <build_depend>amaze_mission_sequencer</build_depend>
 
   <!-- Use build_export_depend for packages you need in order to build against this package: -->
 

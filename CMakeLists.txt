@@ -32,6 +32,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   ros_watchdog
   watchdog_msgs
+  amaze_mission_sequencer
   std_msgs
   dynamic_reconfigure
 )
