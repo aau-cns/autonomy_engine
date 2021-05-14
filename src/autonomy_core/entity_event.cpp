@@ -18,6 +18,9 @@
 
 EntityEvent::EntityEvent() {}
 
+EntityEvent::EntityEvent(const Entity& entity, const Type& type, const subType& subtype, const AutonomyState& next_state) :
+  init_(true), entity_(entity), type_(type), sub_type_(subtype), next_state_(next_state) {}
+
 const Entity& EntityEvent::getEntity() const {
   return entity_;
 }
@@ -30,7 +33,7 @@ const subType& EntityEvent::getSubType() const {
   return sub_type_;
 }
 
-const NextState& EntityEvent::getNextState() const {
+const AutonomyState& EntityEvent::getNextState() const {
   return next_state_;
 }
 
@@ -38,7 +41,7 @@ const bool& EntityEvent::is_init() const {
   return init_;
 }
 
-void EntityEvent::setEvent(const Entity& entity, const Type& type, const subType& subtype, const NextState& next_state) {
+void EntityEvent::setEvent(const Entity& entity, const Type& type, const subType& subtype, const AutonomyState& next_state) {
   entity_ = entity;
   type_ = type;
   sub_type_ = subtype;

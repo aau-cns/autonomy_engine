@@ -22,8 +22,12 @@
 #include <watchdog_msgs/StatusStamped.h>
 #include <watchdog_msgs/StatusChangesArrayStamped.h>
 #include <watchdog_msgs/ActionStamped.h>
+#include <amaze_mission_sequencer/request.h>
+#include <amaze_mission_sequencer/response.h>
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
+#include <std_srvs/SetBool.h>
+#include <std_msgs/Bool.h>
 #include <amaze_autonomy/autonomyConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <boost/bind/bind.hpp>
@@ -46,9 +50,9 @@ class AmazeAutonomy {
     AmazeAutonomy(ros::NodeHandle &nh);
 
     /**
-     * @brief Function that defines the interface with the user.
+     * @brief Function that starts the autonomy and the interface with the user.
      */
-    void userInterface();
+    void startAutonomy();
 
   private:
 
@@ -56,6 +60,40 @@ class AmazeAutonomy {
      * @brief Watchdog start service call
      */
     void startWatchdog();
+
+    /**
+     * @brief Selection of the mission form the user
+     */
+    void missionSelection();
+
+    /**
+     * @brief Run preflight checks
+     */
+    void preFlightChecks();
+
+    /**
+     * @brief Send mission request to mission sequencer
+     * @param const reference to int request
+     */
+    void missionSequencerRequest(const int& request);
+
+    /**
+     * @brief Send action to watchdog
+     * @param const reference to std::pair<Action, EntityEvent>
+     */
+    void watchdogActionRequest(const std::pair<Action, EntityEvent>& action);
+
+    /**
+     * @brief Start/stop data recording service call
+     * @param const boolean, true if data recording should be started, false if data recording should be stopped
+     */
+    void DataRecording(const bool& start_stop);
+
+    /**
+     * @brief Run takeoff checks
+     * @return boolean true in case of success, false in case of failure
+     */
+    [[nodiscard]] bool takeoffChecks();
 
     /**
      * @brief Load and parse paramters and options
@@ -71,7 +109,12 @@ class AmazeAutonomy {
     /**
      * @brief Watchdog system status changes callback
      */
-    void watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStamped& msg);
+    void watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStampedConstPtr& msg);
+
+    /**
+     * @brief Landing detection callback
+     */
+    void landingDetectionCallback(const std_msgs::BoolConstPtr& msg);
 
     /**
      * @brief Callback method called when a watchdog timer overflow occurs
@@ -82,12 +125,6 @@ class AmazeAutonomy {
      * @brief Configuration callback for dynamic reconfigure
      */
     void configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level);
-
-    /**
-     * @brief Run preflight checks
-     * @return boolean
-     */
-    [[nodiscard]] bool preFlightChecks();
 
     /**
      * @brief Get Entity, Type and subType from watchdog_msgs::Status
@@ -118,12 +155,12 @@ class AmazeAutonomy {
     [[nodiscard]] bool getEntityFromString(const std::string entity_str, Entity& entity);
 
     /**
-     * @brief Get Action (NextState) from string
+     * @brief Get next state (AutonomyState) from string
      * @param const string
      * @param reference to Action
      * @return boolean
      */
-    [[nodiscard]] bool getNextStateFromString(const std::string action_str,  NextState& action);
+    [[nodiscard]] bool getNextStateFromString(const std::string action_str,  AutonomyState& action);
 
     /**
      * @brief Get string from Entity
@@ -156,15 +193,16 @@ class AmazeAutonomy {
     /// Subscribers
     ros::Subscriber sub_watchdog_heartbeat_;
     ros::Subscriber sub_watchdog_status_;
+    ros::Subscriber sub_landing_detection_;
 
     /// Publishers
-    ros::Publisher pub_watchdog_action;
+    ros::Publisher pub_watchdog_action_;
+    ros::Publisher pub_mission_sequencer_request_;
 
-    /// Watchdog service
+    /// Service clients
     ros::ServiceClient watchdog_start_service_client_;
-
-    /// Takeoff service
     ros::ServiceClient takeoff_service_client_;
+    ros::ServiceClient data_recording_service_client_;
 
     /// Timeout timer
     std::shared_ptr<Timer> timer_;
@@ -174,6 +212,9 @@ class AmazeAutonomy {
 
     /// State
     State state_;
+
+    /// boolean to check if we are holding
+    bool holding_ = false;
 
 };
 

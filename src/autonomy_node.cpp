@@ -41,18 +41,20 @@ int main(int argc, char* argv[])
     std::cout << std::endl << BOLD(GREEN(" >>> Press Enter to start the AMAZE Autonomy"));
     std::cin.ignore();
 
-    // Start user interface
-    autonomy.userInterface();
+    // Start the autonomy
+    autonomy.startAutonomy();
 
-    // NEXT STEP: Communicate mission to mission sequencer (autonomy?)
+    // Wait for the node to be killed
+    ros::waitForShutdown();
 
   } catch (const std::exception&) {
+
+    // Stop the spinner
+    spinner.stop();
+
     std::cout << std::endl;
     ROS_ERROR("Failed to run AMAZE Autonomy");
   }
-
-  // Wait for the node to be killed
-  ros::waitForShutdown();
 
   return EXIT_SUCCESS;
 }

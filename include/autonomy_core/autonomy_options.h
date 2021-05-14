@@ -33,6 +33,9 @@
  */
 struct autonomyOptions {
 
+  /// Topic and service Names
+  const std::string watchdog_start_service_name, watchdog_heartbeat_topic,  watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, data_recrding_service_name, takeoff_service_name, landing_detection_topic;
+
   /// Timeout in milliseconds for watchdog heartbeat
   const int timeout;
 
@@ -43,16 +46,26 @@ struct autonomyOptions {
   const std::map<size_t, std::string> missions;
 
   /// Entity Action map <Mission ID <Entity, Action>>
-  const std::vector<std::pair<size_t, std::pair<Entity, NextState>>> entity_action_vector;
+  const std::vector<std::pair<size_t, std::pair<Entity, AutonomyState>>> entity_action_vector;
 
   /// Print function
   void printAutonomyOptions() {
 
-    std::cout << std::endl << BOLD(YELLOW("---------- LOADED PARAMETERS ----------")) << std::endl << std::endl;
+    std::cout << std::endl << BOLD(YELLOW("--------------- LOADED PARAMETERS ---------------")) << std::endl << std::endl;
+    std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_heartbeat_topic + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_status_topic + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_action_topic + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Subscribed to: " + mission_sequencer_request_topic + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Subscribed to: " + mission_sequencer_responce_topic + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Subscribed to: " + landing_detection_topic + "")) << std::endl << std::endl;
+
+    std::cout << BOLD(YELLOW(" - Service availeble at: " + watchdog_start_service_name + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Service availeble at: " + data_recrding_service_name + "")) << std::endl << std::endl;
+
     std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: " + std::to_string(timeout) + " ms")) << std::endl;
     std::cout << BOLD(YELLOW(" - Watchdog startup time: " + std::to_string(watchdog_startup_time) + " s")) << std::endl;
     std::cout << BOLD(YELLOW(" - Number of missions: " + std::to_string(missions.size()) + "")) << std::endl;
-    std::cout << std::endl << BOLD(YELLOW("---------------------------------------")) << std::endl;
+    std::cout << std::endl << BOLD(YELLOW("-------------------------------------------------")) << std::endl;
   }
 
 };

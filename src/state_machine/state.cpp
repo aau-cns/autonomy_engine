@@ -32,7 +32,7 @@ void State::nominal() {
   abstract_state_->nominal(this);
 }
 
-void State::stateTransition(EntityEvent& event) {
+bool State::stateTransition(EntityEvent& event) {
 
   // Register new event
   event_ = event;
@@ -41,13 +41,32 @@ void State::stateTransition(EntityEvent& event) {
   // otherwise remove fixed failure from pending failures
   if (event.getType() == Type::FAILURE) {
     pending_failures_.emplace_back(event);
-  } else if (pending_failures_.size() > 0 && event.getType() == Type::FIX) {
-    // remove fixed failure from pending failures
-    pending_failures_.erase(std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&event](EntityEvent const& failure){ return failure == event;}), pending_failures_.end());
+
+  } else if (pending_failures_.size() > 0 && event.getType() == Type::FIX) {  
+
+    // Define temporary event replacing FIX type with FAILURE type
+    EntityEvent e(event.getEntity(), Type::FAILURE, event.getSubType(), event.getNextState());
+
+    // remove fixed failure from pending failures by shift
+    // It does not change the size and return iterator to the new last element
+    // which position is < then the end of the vector
+    const auto &it = std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&e](EntityEvent const& failure){return failure == e;});
+
+    if (it != pending_failures_.end()) {
+      // erase "removed" elements
+      pending_failures_.erase(it, pending_failures_.end());
+    } else {
+      // handle case of a FIX without the respective FAILURE
+      return false;
+    }
+  } else {
+    return false;
   }
 
   // State transition
-  abstract_state_->stateTransition(this, event);
+  abstract_state_->stateTransition(this, event_);
+
+  return true;
 }
 
 void State::setState(AbstractState& abstract_state) {
@@ -57,6 +76,7 @@ void State::setState(AbstractState& abstract_state) {
 
   // Change state
   abstract_state_ = &abstract_state;
+  state_ = event_.getNextState();
 
   // Perform action when entering new state
   abstract_state_->onEntry(this, event_);
@@ -77,4 +97,8 @@ const std::vector<EntityEvent>& State::getPendingFailures() const {
 
 const std::pair<Action, EntityEvent>& State::getAction() const {
   return action_;
+}
+
+const AutonomyState& State::getState() const {
+  return state_;
 }

@@ -38,7 +38,7 @@ enum subType {GLOBAL, TOPIC, NODE, DRIVER};
 /**
  * @brief next state to be set when there is an entity event
  */
-enum NextState {NOMINAL, HOLD, MANUAL};
+enum AutonomyState {NOMINAL, HOLD, MANUAL};
 
 /**
  * @brief Action to be performed to react to an entity event
@@ -46,7 +46,7 @@ enum NextState {NOMINAL, HOLD, MANUAL};
 enum Action {NOTHING, RESTART_NODE, RESTART_DRIVER, KILL_NODE};
 
 /**
- * @brief Class that define a failure by means of Entity, Type, subType and NextState
+ * @brief Class that define a failure by means of Entity, Type, subType and AutonomyState
  */
 class EntityEvent {
 
@@ -56,6 +56,12 @@ public:
    * @brief EntityEvent default constructor
    */
   EntityEvent();
+
+  /**
+   * @brief EntityEvent default constructor
+   */
+  EntityEvent(const Entity& entity, const Type& type, const subType& subtype, const AutonomyState& next_state);
+
 
   /**
    * @brief Get entity that caused the event
@@ -77,9 +83,9 @@ public:
 
   /**
    * @brief Get next state
-   * @return Const reference to NextState
+   * @return Const reference to AutonomyState
    */
-  const NextState& getNextState() const;
+  const AutonomyState& getNextState() const;
 
   /**
    * @brief Get has_failed boolean
@@ -92,9 +98,9 @@ public:
    * @param entity
    * @param type
    * @param subtype
-   * @param nextstate
+   * @param AutonomyState
    */
-  void setEvent(const Entity& entity, const Type& type, const subType& subtype, const NextState& next_state);
+  void setEvent(const Entity& entity, const Type& type, const subType& subtype, const AutonomyState& next_state);
 
   /**
    * @brief Comparison operator overloading
@@ -133,7 +139,7 @@ private:
   /**
    * @brief Next state to be triggerd by the event
    */
-  NextState next_state_;
+  AutonomyState next_state_;
 
 };
 

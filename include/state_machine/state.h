@@ -38,8 +38,9 @@ public:
   /**
    * @brief Trigger a state transition
    * @param reference to entity event
+   * @return boolean
    */
-  void stateTransition(EntityEvent& event);
+  bool stateTransition(EntityEvent& event);
 
   /**
    * @brief Trigger a state transition from undefined state to nominal state
@@ -53,16 +54,22 @@ public:
   const std::vector<EntityEvent>& getPendingFailures() const;
 
   /**
-   * @brief Get actual (last registered) event
+   * @brief Get actual action to be performed
    * @return const reference to std::pair<Action, EntityEvent>
    */
   const std::pair<Action, EntityEvent>& getAction() const;
 
   /**
-   * @brief Get actual action to be performed
+   * @brief Get actual (last registered) event
    * @return const reference to EntityEvent
    */
   const EntityEvent& getEntityEvent() const;
+
+  /**
+   * @brief Get actual state
+   * @return const reference to AutonomyState
+   */
+  const AutonomyState& getState() const;
 
 private:
 
@@ -91,6 +98,9 @@ private:
 
   // Actual (last registered) event
   EntityEvent event_;
+
+  // Actual state
+  AutonomyState state_;
 
   // History of failures
   std::vector<EntityEvent> pending_failures_;

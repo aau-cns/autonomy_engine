@@ -33,10 +33,10 @@ void Manual::onExit(State*, EntityEvent&) {}
 void Manual::onEntry(State* state, EntityEvent& event) {
 
   // Print info
-  std::cout << std::endl << BOLD(RED("---------------------------------------")) << std::endl << std::endl;
+  std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
   std::cout << BOLD(RED(" >>> PLEASE TAKE MANUAL CONTROL OF <<< ")) << std::endl;
-  std::cout << BOLD(RED(" >>> THE  PLATFORM AND LAND SAFELY <<< ")) << std::endl;
-  std::cout << BOLD(RED("---------------------------------------")) << std::endl;
+  std::cout << BOLD(RED(" >>> THE PLATFORM AND LAND SAFELY  <<< ")) << std::endl;
+  std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl;
 
   // Set no action
   setAction(state, Action::NOTHING, event);

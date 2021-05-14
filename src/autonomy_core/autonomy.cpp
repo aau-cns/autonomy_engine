@@ -32,10 +32,19 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   reconfigure_srv_.setCallback(reconfigure_cb_);
 
   // Advertise watchdog service
-  watchdog_start_service_client_ = nh_.serviceClient<watchdog_msgs::Start>("/watchdog/service/start");
+  watchdog_start_service_client_ = nh_.serviceClient<watchdog_msgs::Start>(opts_->watchdog_start_service_name);
 
   // Advertise takeoff service
-  takeoff_service_client_ = nh_.serviceClient<std_srvs::Trigger>("/toland/service/takeoff");
+  takeoff_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->takeoff_service_name);
+
+  // Advertise data recording service
+  data_recording_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->data_recrding_service_name);
+
+  // Advertise watchdog action topic
+  pub_watchdog_action_ = nh.advertise<watchdog_msgs::ActionStamped>(opts_->watchdog_action_topic, 10);
+
+  // Advertise mission sequencer request topic
+  pub_mission_sequencer_request_ = nh.advertise<amaze_mission_sequencer::request>(opts_->mission_sequencer_request_topic, 10);
 
   // Instanciate timeout timer and connect signal
   timer_ = std::make_shared<Timer>(opts_->timeout);
@@ -45,28 +54,78 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
 bool AmazeAutonomy::parseParams() {
 
   // Define auxilliary variables
-  int watchdog_startup_time_s, n_missions, watchdog_timeout_ms, watchdog_heartbeat_timeot_percentage;
-  std::string description;
+  std::string watchdog_start_service_name, watchdog_heartbeat_topic, watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, data_recrding_service_name, takeoff_service_name, landing_detection_topic, description;
+  double watchdog_rate, watchdog_heartbeat_timeout_multiplier;
+  int watchdog_startup_time_s, n_missions, watchdog_timeout_ms;
   std::map<size_t, std::string> missions;
   Entity entity;
-  NextState action;
+  AutonomyState state;
   XmlRpc::XmlRpcValue entities_actions;
-  std::vector<std::pair<size_t, std::pair<Entity, NextState>>> entity_action_vector;
+  std::vector<std::pair<size_t, std::pair<Entity, AutonomyState>>> entity_state_vector;
+
+  // Get topics and service names
+  if(!nh_.getParam("watchdog_start_service_name", watchdog_start_service_name)) {
+    std::cout << std::endl << BOLD(RED(" >>> [watchdog_start_service_name] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("watchdog_heartbeat_topic", watchdog_heartbeat_topic)) {
+    std::cout << std::endl << BOLD(RED(" >>> [watchdog_heartbeat_topic] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("watchdog_status_topic", watchdog_status_topic)) {
+    std::cout << std::endl << BOLD(RED(" >>> [watchdog_status_topic] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("watchdog_action_topic", watchdog_action_topic)) {
+    std::cout << std::endl << BOLD(RED(" >>> [watchdog_action_topic] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("mission_sequencer_request_topic", mission_sequencer_request_topic)) {
+    std::cout << std::endl << BOLD(RED(" >>> [mission_sequencer_request_topic] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("mission_sequencer_responce_topic", mission_sequencer_responce_topic)) {
+    std::cout << std::endl << BOLD(RED(" >>> [mission_sequencer_responce_topic] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("data_recrding_service_name", data_recrding_service_name)) {
+    std::cout << std::endl << BOLD(RED(" >>> [data_recrding_service_name] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("takeoff_service_name", takeoff_service_name)) {
+    std::cout << std::endl << BOLD(RED(" >>> [takeoff_service_name] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("landing_detection_topic", landing_detection_topic)) {
+    std::cout << std::endl << BOLD(RED(" >>> [landing_detection_topic] parameter not defined")) << std::endl;
+    return false;
+  }
 
   // Get watchdog rate
-  if(!nh_.getParam("watchdog_rate", watchdog_timeout_ms)) {
-     std::cout << std::endl << BOLD(RED(" >>> Watchdog heartbeat rate not defined")) << std::endl;
+  if(!nh_.getParam("watchdog_rate_Hz", watchdog_rate)) {
+     std::cout << std::endl << BOLD(RED(" >>> [watchdog_rate_Hz] parameter not defined. Please set it lower than 5Hz")) << std::endl;
+     return false;
   }
 
   // Set watchdog timer timeout to be a given percentage of 1/watchdog_rate
-  nh_.param<int>("watchdog_heartbeat_timeot_percentage", watchdog_heartbeat_timeot_percentage, 200);
-  watchdog_timeout_ms = 10*watchdog_heartbeat_timeot_percentage/watchdog_timeout_ms;
+  if(!nh_.getParam("watchdog_heartbeat_timeout_multiplier", watchdog_heartbeat_timeout_multiplier)) {
+    std::cout << std::endl << BOLD(RED(" >>> [watchdog_heartbeat_timeot_multiplier] paramter not defined. This set the heartbeat timer timeout to be a scaled version of the period of the watchdog rate. Please set it higher than 1")) << std::endl;
+    return false;
+  } else {
+    watchdog_timeout_ms = static_cast<int>(std::ceil((1000*watchdog_heartbeat_timeout_multiplier)/watchdog_rate));
+  }
 
   // Get watchdog startup time
-  nh_.param<int>("watchdog_startup_time_s", watchdog_startup_time_s, 20);
+  if(!nh_.getParam("watchdog_startup_time_s", watchdog_startup_time_s)) {
+    std::cout << std::endl << BOLD(RED(" >>> [watchdog_startup_time_s] paramter not defined. Please set it higher than 10")) << std::endl;
+    return false;
+  }
 
   // Get missions information
-  nh_.param<int>("missions/number", n_missions, 0);
+  if(!nh_.getParam("missions/number", n_missions)) {
+    std::cout << std::endl << BOLD(RED(" >>> [missions/number] paramter not defined. Please set it on mission config file")) << std::endl;
+    return false;
+  }
 
   // Check whether missions are defined and parse them
   if (n_missions == 0) {
@@ -84,6 +143,7 @@ bool AmazeAutonomy::parseParams() {
       }
 
       // Build Mission map <i, description>
+      std::cout << i << std::endl;
       missions.insert({size_t(i), description});
 
       // get entities and actions
@@ -111,14 +171,14 @@ bool AmazeAutonomy::parseParams() {
 
             // Check type to be string and get action
             if (entities_actions[j][1].getType() == XmlRpc::XmlRpcValue::TypeString) {
-              if (!getNextStateFromString(std::string(entities_actions[j][1]), action)) {
+              if (!getNextStateFromString(std::string(entities_actions[j][1]), state)) {
                 std::cout << std::endl << BOLD(RED(" >>> Mission number " + std::to_string(i) + " wrong action definition in entities_actions list")) << std::endl;
                 return false;
               }
             }
 
             // Build Entity Action vector
-            entity_action_vector.emplace_back(std::make_pair(size_t(i), std::make_pair(entity, action)));
+            entity_state_vector.emplace_back(std::make_pair(size_t(i), std::make_pair(entity, state)));
 
           } else {
             std::cout << std::endl << BOLD(RED(" >>> Mission number " + std::to_string(i) + " entities_actions list wrongly defined")) << std::endl;
@@ -133,7 +193,7 @@ bool AmazeAutonomy::parseParams() {
   }
 
   // Make options
-  opts_ = std::make_shared<autonomyOptions>(autonomyOptions({watchdog_timeout_ms, watchdog_startup_time_s, missions, entity_action_vector}));
+  opts_ = std::make_shared<autonomyOptions>(autonomyOptions({watchdog_start_service_name, watchdog_heartbeat_topic, watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, data_recrding_service_name, takeoff_service_name, landing_detection_topic, watchdog_timeout_ms, watchdog_startup_time_s, missions, entity_state_vector}));
 
   // Success
   return true;
@@ -209,14 +269,14 @@ bool AmazeAutonomy::getEntityFromString(const std::string entity_str, Entity& en
   return true;
 }
 
-bool AmazeAutonomy::getNextStateFromString(const std::string action_str,  NextState& action) {
+bool AmazeAutonomy::getNextStateFromString(const std::string action_str,  AutonomyState& state) {
 
   if (action_str.compare("continue") == 0) {
-    action = NextState::NOMINAL;
+    state = AutonomyState::NOMINAL;
   } else if (action_str.compare("hold") == 0) {
-    action = NextState::HOLD;
+    state = AutonomyState::HOLD;
   } else if (action_str.compare("manual") == 0) {
-    action = NextState::MANUAL;
+    state = AutonomyState::MANUAL;
   } else {
     return false;
   }
@@ -332,6 +392,99 @@ bool AmazeAutonomy::setActionMsg(const Action& action, const EntityEvent entitye
   return true;
 }
 
+void AmazeAutonomy::watchdogHeartBeatCallback(const watchdog_msgs::StatusStampedConstPtr&) {
+
+  // Restart timeout timer
+  timer_->resetTimer();
+}
+
+void AmazeAutonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStampedConstPtr& msg) {
+
+  // Loop through all the chenges with respect to last iteration
+  for (const auto &it : msg->data.changes) {
+
+    // Define EntityEvent
+    Entity entity;
+    Type type;
+    subType subtype;
+    AutonomyState nextstate;
+    EntityEvent event;
+
+    // Parse information of status changes
+    if (getEntityTypeSubTypeFromMsg(it, entity, type, subtype)) {
+
+      if (type != Type::OTHER) {
+
+        // Search on entity_action_vector the next state for the given status change
+        auto it = find_if(opts_->entity_action_vector.begin(), opts_->entity_action_vector.end(), [this, &entity](const std::pair<size_t, std::pair<Entity, AutonomyState>>& entity_nextstate){ return entity_nextstate.first == mission_id_ && entity_nextstate.second.first == entity;});
+
+        // Check if a correspondence has been found
+        if (it != opts_->entity_action_vector.end()) {
+
+          // Set event
+          nextstate = it->second.second;
+          event.setEvent(entity, type, subtype, nextstate);
+
+          // Call state transition
+          // It return false if the required transition is not handled (e.g., FIX without a previous FAILURE)
+          if (state_.stateTransition(event)) {
+
+            // Get actual state and send request to mission sequencer
+            if (!holding_ && state_.getState() == AutonomyState::HOLD) {
+              missionSequencerRequest(amaze_mission_sequencer::request::HOLD);
+              holding_ = true;
+            } else if (holding_ && state_.getState() == AutonomyState::NOMINAL) {
+              missionSequencerRequest(amaze_mission_sequencer::request::RESUME);
+              holding_ = false;
+            } else if (state_.getState() == AutonomyState::MANUAL) {
+              missionSequencerRequest(amaze_mission_sequencer::request::ABORT);
+            }
+
+            // Get action <Action, EntityEvent> to be performed from the state machine
+            auto action = state_.getAction();
+
+            // Check wether an action has to be performed and perform it
+            if (action.first != Action::NOTHING) {
+              watchdogActionRequest(action);
+            }
+          } else {
+            std::cout << std::endl << BOLD(RED(" >>> Wrong state transition required.")) << std::endl;
+          }
+        } else {
+          std::cout << std::endl << BOLD(RED(" >>> No Entity-Action defined on current mission for the current status changes.")) << std::endl;
+        }
+      } else {
+        if (it.status == watchdog_msgs::Status::DEFECT) {
+          std::cout << std::endl << BOLD(YELLOW(" >>> Defect detected. No action needed.")) << std::endl;
+        }
+      }
+    } else {
+      std::cout << std::endl << BOLD(RED(" >>> Wrong message received from watchdog.")) << std::endl;
+    }
+  }
+}
+
+void AmazeAutonomy::watchdogTimerOverflowHandler() {
+
+  // print message of watchdog timer overflow
+  std::cout << std::endl << BOLD(RED(" >>> Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
+}
+
+void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig&, uint32_t) {
+}
+
+void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) {
+
+  if (msg) {
+    std::cout << std::endl << BOLD(GREEN(" >>> Flat land detected.")) << std::endl;
+  } else {
+    std::cout << std::endl << BOLD(YELLOW(" >>> Non flat land detected.")) << std::endl;
+  }
+
+  // Stop data recording after landing
+  DataRecording(false);
+}
+
 void AmazeAutonomy::startWatchdog() {
 
   // Define service request
@@ -339,7 +492,7 @@ void AmazeAutonomy::startWatchdog() {
   watchdog_start.request.header.stamp = ros::Time::now();
   watchdog_start.request.startup_time = opts_->watchdog_startup_time;
 
-  std::cout << std::endl << BOLD(GREEN(" >>> Starting Watchdog...")) << std::endl << std::endl;
+  std::cout << std::endl << BOLD(GREEN(" >>> Starting Watchdog... Please wait")) << std::endl;
 
   // Call service request
   if (watchdog_start_service_client_.call(watchdog_start)) {
@@ -349,14 +502,14 @@ void AmazeAutonomy::startWatchdog() {
 
       std::cout << std::endl << BOLD(GREEN(" >>> Watchdog is running")) << std::endl << std::endl;
 
-      // Setting state to nominal
-      state_.nominal();
-
       // Subscriber to watchdog (system status) heartbeat
       sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
 
       // Subscribe to watchdog status changes
       sub_watchdog_status_ = nh_.subscribe("/watchdog/log", 1, &AmazeAutonomy::watchdogStatusCallback, this);
+
+      // Setting state to nominal
+      state_.nominal();
     }
   } else {
     watchdog_start.response.successful = false;
@@ -364,12 +517,12 @@ void AmazeAutonomy::startWatchdog() {
 
   if (!watchdog_start.response.successful) {
 
-    std::cout << std::endl << BOLD(RED("------ FAILED TO START WATCHDOG -------")) << std::endl << std::endl;
+    std::cout << std::endl << BOLD(RED("----------- FAILED TO START WATCHDOG ------------")) << std::endl << std::endl;
     std::cout << BOLD(RED(" Please perform a system hard restart  ")) << std::endl;
     std::cout << BOLD(RED(" If you get the same problem after the ")) << std::endl;
     std::cout << BOLD(RED(" hard restart, shutdown the system and ")) << std::endl;
     std::cout << BOLD(RED(" abort the mission. ")) << std::endl << std::endl;
-    std::cout << BOLD(RED("---------------------------------------")) << std::endl;
+    std::cout << BOLD(RED("-------------------------------------------------")) << std::endl;
 
     // Define variables for debug
     Entity entity;
@@ -390,89 +543,10 @@ void AmazeAutonomy::startWatchdog() {
 
     throw std::exception();
   }
+
 }
 
-void AmazeAutonomy::watchdogHeartBeatCallback(const watchdog_msgs::StatusStampedConstPtr&) {
-
-  // Restart timeout timer
-  timer_->resetTimer();
-}
-
-void AmazeAutonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStamped& msg) {
-
-  // Loop through all the chenges with respect to last iteration
-  for (const auto &it : msg.data.changes) {
-
-    // Define EntityEvent
-    Entity entity;
-    Type type;
-    subType subtype;
-    NextState nextstate;
-    EntityEvent event;
-
-    // Parse information of status changes
-    if (getEntityTypeSubTypeFromMsg(it, entity, type, subtype)) {
-
-      if (type != Type::OTHER) {
-
-        // Search on entity_action_vector the next state for the given status change
-        auto it = find_if(opts_->entity_action_vector.begin(), opts_->entity_action_vector.end(), [this, &entity](const std::pair<size_t, std::pair<Entity, NextState>>& entity_nextstate){ return entity_nextstate.first == mission_id_ && entity_nextstate.second.first == entity;});
-
-        // Check if a correspondence has been found
-        if (it != opts_->entity_action_vector.end()) {
-
-          // Set event
-          nextstate = it->second.second;
-          event.setEvent(entity, type, subtype, nextstate);
-
-          // Call state transition
-          state_.stateTransition(event);
-
-          // Get action <Action, EntityEvent> to be performed from the state machine
-          auto action = state_.getAction();
-
-          // Define action and action message
-          watchdog_msgs::ActionStamped action_msg;
-
-          // Fill action message
-          action_msg.header.stamp = ros::Time::now();
-
-          // Get Action, Entity, Type and Status from <Action, EntityEvent>
-          // and convert them into an action message
-          if (setActionMsg(action.first, action.second, action_msg.action)) {
-
-            // Publish action message
-            std::cout << std::endl << BOLD(YELLOW(" >>> Publishing action message [NOT IMPLEMENTED YET].")) << std::endl;
-
-          } else {
-            std::cout << std::endl << BOLD(RED(" >>> Error on generating action message.")) << std::endl;
-          }
-
-        } else {
-          std::cout << std::endl << BOLD(RED(" >>> No Entity-Action defined on current mission for the current status changes.")) << std::endl;
-        }
-      } else {
-        if (it.type == watchdog_msgs::Status::DEFECT) {
-          std::cout << std::endl << BOLD(YELLOW(" >>> Defect detected. No action needed.")) << std::endl;
-        }
-      }
-    } else {
-      std::cout << std::endl << BOLD(RED(" >>> Wrong message received from watchdog.")) << std::endl;
-      std::cout << BOLD(YELLOW(" >>> [DEBUG] " + it.entity + "")) << std::endl;
-    }
-  }
-}
-
-void AmazeAutonomy::watchdogTimerOverflowHandler() {
-
-  // print message of watchdog timer overflow
-  std::cout << std::endl << BOLD(RED(" >>> Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
-}
-
-void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig&, uint32_t) {
-}
-
-void AmazeAutonomy::userInterface() {
+void AmazeAutonomy::missionSelection() {
 
   // Print missions
   std::cout << std::endl << BOLD(GREEN(" >>> Please select one of the following mission by inserting the mission ID")) << std::endl << std::endl;
@@ -488,26 +562,25 @@ void AmazeAutonomy::userInterface() {
   if (mission_id_ == 0 || mission_id_ > opts_->missions.size()) {
     std::cout << std::endl << BOLD(RED(" >>> Wrong mission ID chosen")) << std::endl;
     throw std::exception();
-  } else {
-    std::cout << std::endl << BOLD(GREEN("      - Selected mission with ID: ")) << mission_id_ << std::endl;
   }
 
-  // Start watchdog
-  startWatchdog();
+  std::cout << std::endl << BOLD(GREEN("      - Selected mission with ID: ")) << mission_id_ << std::endl;
+}
 
-  // Run preflight checks and check result
-  std::cout << std::endl << BOLD(GREEN(" >>> Starting Pre-Flight Checks ...")) << std::endl;
-  if (!AmazeAutonomy::preFlightChecks()) {
-    std::cout << std::endl << BOLD(RED(" >>> Pre-Flight checks failure")) << std::endl;
+void AmazeAutonomy::preFlightChecks() {
+
+  std::cout << std::endl << BOLD(GREEN(" >>> Starting Pre-Flight Checks... Please wait")) << std::endl;
+
+  // if (!check1() && !check2() && ...) {
+  if (!takeoffChecks()) {
     throw std::exception();
   }
 
-  std::cout << std::endl << BOLD(GREEN(" >>> Pre-Flight checks successed")) << std::endl << std::endl;
-  std::cout << std::endl << BOLD(GREEN(" >>> Sending mission information to Mission Sequencer")) << std::endl << std::endl;
+  std::cout << std::endl << BOLD(GREEN(" >>> Pre-Flight checks successed")) << std::endl;
 
 }
 
-bool AmazeAutonomy::preFlightChecks() {
+bool AmazeAutonomy::takeoffChecks() {
 
   // Define takeoff request
   std_srvs::Trigger takeoff;
@@ -530,4 +603,99 @@ bool AmazeAutonomy::preFlightChecks() {
   }
 
   return true;
+}
+
+void AmazeAutonomy::DataRecording(const bool& start_stop) {
+
+  // Define data recording
+  std_srvs::SetBool data_rec;
+
+  // Set data recording start request
+  data_rec.request.data = start_stop;
+
+  // service call to check if we are ready to takeoff
+  if (data_recording_service_client_.call(data_rec)) {
+
+    // Check responce
+    if (data_rec.response.success) {
+      if (data_rec.request.data) {
+        std::cout << std::endl << BOLD(GREEN(" >>> Data recorded started succesfully")) << std::endl;
+      } else {
+        std::cout << std::endl << BOLD(GREEN(" >>> Data recorded stopped succesfully")) << std::endl;
+      }
+    }
+  } else {
+    if (data_rec.request.data) {
+      std::cout << std::endl << BOLD(RED(" >>> Data recorded start failure")) << std::endl;
+    } else {
+      std::cout << std::endl << BOLD(RED(" >>> Data recorded stop failure")) << std::endl;
+    }
+    throw std::exception();
+  }
+}
+
+void AmazeAutonomy::missionSequencerRequest(const int& request) {
+
+  // Define request message to mission sequencer
+  amaze_mission_sequencer::request mission_start;
+
+  // Set mission id and request
+  mission_start.header.stamp = ros::Time::now();
+  mission_start.id = uint8_t(mission_id_);
+  mission_start.request = uint8_t(request);
+
+  // publish mission start request
+  pub_mission_sequencer_request_.publish(mission_start);
+
+  // Subscribe to landing detection
+  sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &AmazeAutonomy::landingDetectionCallback, this);
+}
+
+void AmazeAutonomy::watchdogActionRequest(const std::pair<Action, EntityEvent>& action) {
+
+  // Define action and action message
+  watchdog_msgs::ActionStamped action_msg;
+
+  // Fill action message
+  action_msg.header.stamp = ros::Time::now();
+
+  // Get Action, Entity, Type and Status from <Action, EntityEvent>
+  // and convert them into an action message
+  if (setActionMsg(action.first, action.second, action_msg.action)) {
+
+    // Publish action message
+    std::cout << std::endl << BOLD(YELLOW(" >>> Publishing action message.")) << std::endl;
+    pub_watchdog_action_.publish(action_msg);
+
+  } else {
+    std::cout << std::endl << BOLD(RED(" >>> Error on generating action message.")) << std::endl;
+  }
+}
+
+void AmazeAutonomy::startAutonomy() {
+
+  // Mission selection
+  missionSelection();
+
+  // Start watchdog
+  //startWatchdog();
+
+  // Subscriber to watchdog (system status) heartbeat
+  sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
+
+  // Subscribe to watchdog status changes
+  sub_watchdog_status_ = nh_.subscribe("/watchdog/log", 1, &AmazeAutonomy::watchdogStatusCallback, this);
+
+  // Setting state to nominal
+  state_.nominal();
+
+  // Run pre flight checks
+  //preFlightChecks();
+
+  // Start data recording
+  //DataRecording(true);
+
+  // Start mission
+  missionSequencerRequest(amaze_mission_sequencer::request::START);
+
 }
