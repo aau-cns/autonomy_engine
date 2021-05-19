@@ -143,7 +143,6 @@ bool AmazeAutonomy::parseParams() {
       }
 
       // Build Mission map <i, description>
-      std::cout << i << std::endl;
       missions.insert({size_t(i), description});
 
       // get entities and actions
