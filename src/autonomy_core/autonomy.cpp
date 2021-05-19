@@ -481,8 +481,31 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
     std::cout << std::endl << BOLD(YELLOW(" >>> Non flat land detected.")) << std::endl;
   }
 
-  // Stop data recording after landing
-  DataRecording(false);
+  // Stop data recording after landing in case mission has been succesfully completed
+  if (last_waypoint_reached_) {
+    DataRecording(false);
+  } else {
+    // [TODO]
+    std::cout << std::endl << BOLD(YELLOW(" >>> Unexpected land detected. What should we do?")) << std::endl;
+  }
+
+
+
+}
+
+void AmazeAutonomy::missionSequencerResponceCallback(const amaze_mission_sequencer::responseConstPtr& msg) {
+
+  // Check if mission sequencer request has been accepted or if mission has ended
+  if (msg->response) {
+    std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " accepted from Mission Sequencer")) << std::endl;
+  } else {
+    std::cout << std::endl << BOLD(RED(" >>> Mission ID: " + std::to_string(msg->id) + "  rejected from Mission Sequencer")) << std::endl;
+  }
+
+  if (msg->completed) {
+    std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " succesfully reached last waypoint")) << std::endl;
+    last_waypoint_reached_ = true;
+  }
 }
 
 void AmazeAutonomy::startWatchdog() {
@@ -647,6 +670,9 @@ void AmazeAutonomy::missionSequencerRequest(const int& request) {
   // publish mission start request
   pub_mission_sequencer_request_.publish(mission_start);
 
+  // Subscribe to mission sequencer responce
+  sub_mission_sequencer_responce_ = nh_.subscribe(opts_->mission_sequencer_responce_topic, 1, &AmazeAutonomy::missionSequencerResponceCallback, this);
+
   // Subscribe to landing detection
   sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &AmazeAutonomy::landingDetectionCallback, this);
 }
@@ -678,7 +704,7 @@ void AmazeAutonomy::startAutonomy() {
   missionSelection();
 
   // Start watchdog
-  //startWatchdog();
+  startWatchdog();
 
   // Subscriber to watchdog (system status) heartbeat
   sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
@@ -690,10 +716,10 @@ void AmazeAutonomy::startAutonomy() {
   state_.nominal();
 
   // Run pre flight checks
-  //preFlightChecks();
+  preFlightChecks();
 
   // Start data recording
-  //DataRecording(true);
+  DataRecording(true);
 
   // Start mission
   missionSequencerRequest(amaze_mission_sequencer::request::START);

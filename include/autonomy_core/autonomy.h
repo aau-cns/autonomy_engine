@@ -117,6 +117,11 @@ class AmazeAutonomy {
     void landingDetectionCallback(const std_msgs::BoolConstPtr& msg);
 
     /**
+     * @brief Mission sequencer responce callback
+     */
+    void missionSequencerResponceCallback(const amaze_mission_sequencer::responseConstPtr& msg);
+
+    /**
      * @brief Callback method called when a watchdog timer overflow occurs
      */
     void watchdogTimerOverflowHandler();
@@ -194,6 +199,7 @@ class AmazeAutonomy {
     ros::Subscriber sub_watchdog_heartbeat_;
     ros::Subscriber sub_watchdog_status_;
     ros::Subscriber sub_landing_detection_;
+    ros::Subscriber sub_mission_sequencer_responce_;
 
     /// Publishers
     ros::Publisher pub_watchdog_action_;
@@ -215,6 +221,9 @@ class AmazeAutonomy {
 
     /// boolean to check if we are holding
     bool holding_ = false;
+
+    /// Bboolean to check if last waypoint got reached
+    bool last_waypoint_reached_ = false;
 
 };
 
