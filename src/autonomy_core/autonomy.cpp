@@ -239,25 +239,27 @@ bool AmazeAutonomy::getEntityTypeSubTypeFromMsg(const watchdog_msgs::Status& msg
 
 bool AmazeAutonomy::getEntityFromString(const std::string entity_str, Entity& entity) {
 
-  if (entity_str.compare("px4_imu") == 0) {
+  // Check if it is either 0 or 1, this means that either the string
+  // match or there is a char more that could be \n
+  if ((entity_str.compare("px4_imu") >> 1) == 0) {
     entity = Entity::PX4_IMU;
-  } else if (entity_str.compare("px4_gps") == 0) {
+  } else if ((entity_str.compare("px4_gps") >> 1) == 0) {
     entity = Entity::PX4_GPS;
-  } else if (entity_str.compare("px4_bar") == 0) {
+  } else if ((entity_str.compare("px4_bar") >> 1) == 0) {
     entity = Entity::PX4_BAR;
-  } else if (entity_str.compare("px4_mag") == 0) {
+  } else if ((entity_str.compare("px4_mag") >> 1) == 0) {
     entity = Entity::PX4_MAG;
-  } else if (entity_str.compare("mission_cam") == 0) {
+  } else if ((entity_str.compare("mission_cam") >> 1) == 0) {
     entity = Entity::MISSION_CAM;
-  } else if (entity_str.compare("realsense") == 0) {
+  } else if ((entity_str.compare("realsense") >> 1) == 0) {
     entity = Entity::REALSENSE;
-  } else if (entity_str.compare("lsm9ds1") == 0) {
+  } else if ((entity_str.compare("lsm9ds1") >> 1) == 0) {
     entity = Entity::LSM9DS1;
-  } else if (entity_str.compare("lrf") == 0) {
+  } else if ((entity_str.compare("lrf") >> 1) == 0) {
     entity = Entity::LRF;
-  } else if (entity_str.compare("rtk_gps_1") == 0) {
+  } else if ((entity_str.compare("rtk_gps_1") >> 1) == 0) {
     entity = Entity::RTK_GPS_1;
-  } else if (entity_str.compare("rtk_gps_2") == 0) {
+  } else if ((entity_str.compare("rtk_gps_2") >> 1) == 0) {
     entity = Entity::RTK_GPS_2;
   } else if (entity_str.compare("") == 0) {
     entity = Entity::UNKNOWN;
@@ -437,6 +439,7 @@ void AmazeAutonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArr
               holding_ = false;
             } else if (state_.getState() == AutonomyState::MANUAL) {
               missionSequencerRequest(amaze_mission_sequencer::request::ABORT);
+              throw std::exception();
             }
 
             // Get action <Action, EntityEvent> to be performed from the state machine
@@ -718,7 +721,7 @@ void AmazeAutonomy::startAutonomy() {
   preFlightChecks();
 
   // Start data recording
-  DataRecording(true);
+  // DataRecording(true);
 
   // Start mission
   missionSequencerRequest(amaze_mission_sequencer::request::START);
