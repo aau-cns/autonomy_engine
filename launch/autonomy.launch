@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+    <!-- arguments-->
+    <arg name="config_filepath"     			default="/home/alfornasier/Catkin_ws/catkin_ws_amaze_autonomy/mission_config.yaml" />
+    <arg name="watchdog_start_service_name"     	default="/watchdog/service/start" />
+    <arg name="watchdog_heartbeat_topic"     		default="/watchdog/status" />
+    <arg name="watchdog_status_topic"     		default="/watchdog/log" />
+    <arg name="watchdog_action_topic"     		default="/watchdog/action" />
+    <arg name="mission_sequencer_request_topic"		default="/missionsequencer/request" />
+    <arg name="mission_sequencer_responce_topic"	default="/missionsequencer/responce" />
+    <arg name="data_recrding_service_name"		default="/datarecording/record" />
+    <arg name="takeoff_service_name"			default="/toland/service/takeoff" />
+    <arg name="landing_detection_topic"			default="/toland/is_landed" />
+    <arg name="watchdog_rate_Hz"			default="1.0" />
+    <arg name="watchdog_startup_time_s"			default="15" />
+    <arg name="watchdog_heartbeat_timeout_multiplier"	default="2.0" />
+
+
+
+    <!-- autonomy node -->
+    <node name="autonomy" pkg="amaze_autonomy" type="autonomy" output="screen" clear_params="true" required="true">
+
+        <!-- topics and services -->
+        <param name="watchdog_start_service_name"       type="string"   value="$(arg watchdog_start_service_name)" />
+        <param name="watchdog_heartbeat_topic"          type="string"   value="$(arg watchdog_heartbeat_topic)" />
+        <param name="watchdog_status_topic"             type="string"   value="$(arg watchdog_status_topic)" />
+        <param name="watchdog_action_topic"             type="string"   value="$(arg watchdog_action_topic)" />
+        <param name="mission_sequencer_request_topic"   type="string"   value="$(arg mission_sequencer_request_topic)" />
+        <param name="mission_sequencer_responce_topic"  type="string"   value="$(arg mission_sequencer_responce_topic)" />
+        <param name="data_recrding_service_name"        type="string"   value="$(arg data_recrding_service_name)" />
+        <param name="takeoff_service_name"              type="string"   value="$(arg takeoff_service_name)" />
+        <param name="landing_detection_topic"           type="string"   value="$(arg landing_detection_topic)" />
+
+        <!-- load parameters from file -->
+        <rosparam command="load"    file="$(arg config_filepath)" />
+
+        <!-- other parameters -->
+        <param name="watchdog_rate_Hz"                          type="double"   value = "$(arg watchdog_rate_Hz)" />
+        <param name="watchdog_startup_time_s"                   type="int"      value = "$(arg watchdog_startup_time_s)" />
+        <param name="watchdog_heartbeat_timeout_multiplier"     type="double"   value = "$(arg watchdog_heartbeat_timeout_multiplier)" />
+
+    </node>
+
+</launch>
