@@ -450,14 +450,14 @@ void AmazeAutonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArr
               watchdogActionRequest(action);
             }
           } else {
-            std::cout << std::endl << BOLD(RED(" >>> Wrong state transition required.")) << std::endl;
+            // std::cout << std::endl << BOLD(RED(" >>> Wrong state transition required.")) << std::endl;
           }
         } else {
           std::cout << std::endl << BOLD(RED(" >>> No Entity-Action defined on current mission for the current status changes.")) << std::endl;
         }
       } else {
         if (it.status == watchdog_msgs::Status::DEFECT) {
-          std::cout << std::endl << BOLD(YELLOW(" >>> Defect detected. No action needed.")) << std::endl;
+          // std::cout << std::endl << BOLD(YELLOW(" >>> Defect detected. No action needed.")) << std::endl;
         }
       }
     } else {

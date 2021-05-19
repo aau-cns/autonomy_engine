@@ -56,10 +56,10 @@ bool State::stateTransition(EntityEvent& event) {
       // erase "removed" elements
       pending_failures_.erase(it, pending_failures_.end());
     } else {
-      // handle case of a FIX without the respective FAILURE
       return false;
     }
   } else {
+    // handle case of a FIX without the respective FAILURE
     return false;
   }
 
