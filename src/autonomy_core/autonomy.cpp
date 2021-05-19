@@ -46,6 +46,9 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   // Advertise mission sequencer request topic
   pub_mission_sequencer_request_ = nh.advertise<amaze_mission_sequencer::request>(opts_->mission_sequencer_request_topic, 10);
 
+  // Subscribe to mission sequencer responce
+  sub_mission_sequencer_responce_ = nh_.subscribe(opts_->mission_sequencer_responce_topic, 1, &AmazeAutonomy::missionSequencerResponceCallback, this);
+
   // Instanciate timeout timer and connect signal
   timer_ = std::make_shared<Timer>(opts_->timeout);
   timer_->sh_.connect(boost::bind(&AmazeAutonomy::watchdogTimerOverflowHandler, this));
@@ -500,11 +503,14 @@ void AmazeAutonomy::missionSequencerResponceCallback(const amaze_mission_sequenc
   // Check if mission sequencer request has been accepted or if mission has ended
   if (msg->response) {
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " accepted from Mission Sequencer")) << std::endl;
-  } else {
-    std::cout << std::endl << BOLD(RED(" >>> Mission ID: " + std::to_string(msg->id) + "  rejected from Mission Sequencer")) << std::endl;
   }
 
-  if (msg->completed) {
+  if (!msg->completed && msg->response) {
+    std::cout << std::endl << BOLD(RED(" >>> Mission ID: " + std::to_string(msg->id) + "  rejected from Mission Sequencer")) << std::endl;
+    last_waypoint_reached_ = true;
+  }
+
+  if (msg->completed && !msg->response) {
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " succesfully reached last waypoint")) << std::endl;
     last_waypoint_reached_ = true;
   }
@@ -671,9 +677,6 @@ void AmazeAutonomy::missionSequencerRequest(const int& request) {
 
   // publish mission start request
   pub_mission_sequencer_request_.publish(mission_start);
-
-  // Subscribe to mission sequencer responce
-  sub_mission_sequencer_responce_ = nh_.subscribe(opts_->mission_sequencer_responce_topic, 1, &AmazeAutonomy::missionSequencerResponceCallback, this);
 
   // Subscribe to landing detection
   sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &AmazeAutonomy::landingDetectionCallback, this);
