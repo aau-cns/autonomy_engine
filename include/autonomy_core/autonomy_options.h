@@ -54,10 +54,10 @@ struct autonomyOptions {
     std::cout << std::endl << BOLD(YELLOW("--------------- LOADED PARAMETERS ---------------")) << std::endl << std::endl;
     std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_heartbeat_topic + "")) << std::endl;
     std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_status_topic + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_action_topic + "")) << std::endl;
     std::cout << BOLD(YELLOW(" - Subscribed to: " + mission_sequencer_request_topic + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Subscribed to: " + mission_sequencer_responce_topic + "")) << std::endl;
     std::cout << BOLD(YELLOW(" - Subscribed to: " + landing_detection_topic + "")) << std::endl << std::endl;
+    std::cout << BOLD(YELLOW(" - Publishing on: " + mission_sequencer_responce_topic + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Publishing on: " + watchdog_action_topic + "")) << std::endl;
 
     std::cout << BOLD(YELLOW(" - Service availeble at: " + watchdog_start_service_name + "")) << std::endl;
     std::cout << BOLD(YELLOW(" - Service availeble at: " + data_recrding_service_name + "")) << std::endl << std::endl;

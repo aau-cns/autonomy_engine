@@ -503,11 +503,14 @@ void AmazeAutonomy::missionSequencerResponceCallback(const amaze_mission_sequenc
   // Check if mission sequencer request has been accepted or if mission has ended
   if (msg->response) {
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " accepted from Mission Sequencer")) << std::endl;
-  } else {
-    std::cout << std::endl << BOLD(RED(" >>> Mission ID: " + std::to_string(msg->id) + "  rejected from Mission Sequencer")) << std::endl;
   }
 
-  if (msg->completed) {
+  if (!msg->completed && msg->response) {
+    std::cout << std::endl << BOLD(RED(" >>> Mission ID: " + std::to_string(msg->id) + "  rejected from Mission Sequencer")) << std::endl;
+    last_waypoint_reached_ = true;
+  }
+
+  if (msg->completed && !msg->response) {
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " succesfully reached last waypoint")) << std::endl;
     last_waypoint_reached_ = true;
   }
