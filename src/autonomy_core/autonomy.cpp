@@ -491,7 +491,14 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(mission_id_) + " succesfully completed.")) << std::endl;
     DataRecording(false);
   } else {
-    std::cout << std::endl << BOLD(YELLOW(" >>> Unexpected land detected.")) << std::endl;
+    // TODO: Set state to Manual
+    //DataRecording(false);
+    std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
+    std::cout << std::endl << BOLD(RED(" >>> UNEXPECTED LAND DETECTED <<<")) << std::endl;
+    std::cout << BOLD(RED(" >>> PLEASE TAKE MANUAL CONTROL OF <<< ")) << std::endl;
+    std::cout << BOLD(RED(" >>> THE PLATFORM AND LAND SAFELY  <<< ")) << std::endl;
+    std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl;
+    throw std::exception();
   }
 }
 
