@@ -494,7 +494,7 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
     // TODO: Set state to Manual
     //DataRecording(false);
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
-    std::cout << std::endl << BOLD(RED(" >>> UNEXPECTED LAND DETECTED <<<")) << std::endl;
+    std::cout << BOLD(RED(" >>> UNEXPECTED LAND DETECTED <<<")) << std::endl;
     std::cout << BOLD(RED(" >>> PLEASE TAKE MANUAL CONTROL OF <<< ")) << std::endl;
     std::cout << BOLD(RED(" >>> THE PLATFORM AND LAND SAFELY  <<< ")) << std::endl;
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl;
@@ -537,7 +537,7 @@ void AmazeAutonomy::startWatchdog() {
     // Check responce
     if(watchdog_start.response.successful) {
 
-      std::cout << std::endl << BOLD(GREEN(" >>> Watchdog is running")) << std::endl << std::endl;
+      std::cout << std::endl << BOLD(GREEN(" >>> Watchdog is running")) << std::endl;
 
       // Subscriber to watchdog (system status) heartbeat
       sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
@@ -609,7 +609,7 @@ void AmazeAutonomy::preFlightChecks() {
   std::cout << std::endl << BOLD(GREEN(" >>> Starting Pre-Flight Checks... Please wait")) << std::endl;
 
   // if (!check1() && !check2() && ...) {
-  if (!takeoffChecks()) {
+  if (!takeoffChecks() && !vioChecks()) {
     throw std::exception();
   }
 
@@ -628,7 +628,7 @@ bool AmazeAutonomy::takeoffChecks() {
     // Check responce
     if(takeoff.response.success) {
       std::cout << std::endl << BOLD(GREEN(" >>> Vehicle flat on the ground")) << std::endl;
-      std::cout << std::endl << BOLD(GREEN(" >>> Takeoff checks successed")) << std::endl << std::endl;
+      std::cout << std::endl << BOLD(GREEN(" >>> Takeoff checks successed")) << std::endl;
     }
   } else {
     takeoff.response.success = false;
@@ -638,6 +638,15 @@ bool AmazeAutonomy::takeoffChecks() {
     std::cout << std::endl << BOLD(RED(" >>> Takeoff checks failed")) << std::endl << std::endl;
     return false;
   }
+
+  return true;
+}
+
+bool AmazeAutonomy::vioChecks() {
+
+  std::cout << std::endl << BOLD(YELLOW(" >>> Initialize Visual-Inertial estimator")) << std::endl;
+
+  sleep(5);
 
   return true;
 }

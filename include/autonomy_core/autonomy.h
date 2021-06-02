@@ -96,6 +96,12 @@ class AmazeAutonomy {
     [[nodiscard]] bool takeoffChecks();
 
     /**
+     * @brief Run vio checks
+     * @return boolean true in case of success, false in case of failure
+     */
+    [[nodiscard]] bool vioChecks();
+
+    /**
      * @brief Load and parse paramters and options
      * @return boolean true in case of success, false in case of failure
      */
