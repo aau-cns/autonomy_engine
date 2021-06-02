@@ -500,11 +500,12 @@ void AmazeAutonomy::missionSequencerResponceCallback(const amaze_mission_sequenc
   // Check if mission sequencer request has been accepted or if mission has ended
   if (msg->response) {
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " accepted from Mission Sequencer")) << std::endl;
+
     // Subscribe to landing detection
     sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &AmazeAutonomy::landingDetectionCallback, this);
   }
 
-  if (!msg->completed && msg->response) {
+  if (!msg->completed && !msg->response) {
     std::cout << std::endl << BOLD(RED(" >>> Mission ID: " + std::to_string(msg->id) + "  rejected from Mission Sequencer")) << std::endl;
   }
 
