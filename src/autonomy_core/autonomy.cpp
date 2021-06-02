@@ -608,8 +608,8 @@ void AmazeAutonomy::preFlightChecks() {
 
   std::cout << std::endl << BOLD(GREEN(" >>> Starting Pre-Flight Checks... Please wait")) << std::endl;
 
-  // if (!check1() && !check2() && ...) {
-  if (!takeoffChecks() && !vioChecks()) {
+  // if (!(check1() || check2() || ...)) {
+  if (!(takeoffChecks() || !vioChecks())) {
     throw std::exception();
   }
 
