@@ -720,7 +720,7 @@ void AmazeAutonomy::startAutonomy() {
   preFlightChecks();
 
   // Start data recording
-  DataRecording(true);
+  // DataRecording(true);
 
   // Start mission
   missionSequencerRequest(amaze_mission_sequencer::request::START);
