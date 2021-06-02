@@ -191,6 +191,11 @@ class AmazeAutonomy {
     [[nodiscard]] bool setActionMsg(const Action& action, const EntityEvent entityevent, watchdog_msgs::Action& msg);
 
 
+    /**
+     * @brief Callback to handle failure
+     */
+    void handleFailure();
+
     /// Nodehandler
     ros::NodeHandle nh_;
 

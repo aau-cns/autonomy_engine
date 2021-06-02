@@ -72,6 +72,7 @@ void Timer::timeoutHandler(const boost::system::error_code& error) {
 
   // Skip errors raised by resetting timer, if timeout then raise an exception
   if(error != boost::asio::error::operation_aborted) {
-    throw std::exception();
+    // TODO: Think how to handle timeout overflow
+    //throw std::exception();
   }
 }

@@ -22,7 +22,7 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
 
   // Parse parameters and options
   if(!parseParams()) {
-      throw std::exception();
+      handleFailure();
   }
 
   // Print option
@@ -442,7 +442,7 @@ void AmazeAutonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArr
               holding_ = false;
             } else if (state_.getState() == AutonomyState::MANUAL) {
               missionSequencerRequest(amaze_mission_sequencer::request::ABORT);
-              throw std::exception();
+              handleFailure();
             }
 
             // Get action <Action, EntityEvent> to be performed from the state machine
@@ -498,7 +498,7 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
     std::cout << BOLD(RED(" >>> PLEASE TAKE MANUAL CONTROL OF <<< ")) << std::endl;
     std::cout << BOLD(RED(" >>> THE PLATFORM AND LAND SAFELY  <<< ")) << std::endl;
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl;
-    throw std::exception();
+    handleFailure();
   }
 }
 
@@ -578,7 +578,7 @@ void AmazeAutonomy::startWatchdog() {
       std::cout << std::endl << BOLD(RED(" >>> Unable to get debug information from watchdog")) << std::endl;
     }
 
-    throw std::exception();
+    handleFailure();
   }
 
 }
@@ -598,7 +598,7 @@ void AmazeAutonomy::missionSelection() {
   // Check validity of mission id
   if (mission_id_ == 0 || mission_id_ > opts_->missions.size()) {
     std::cout << std::endl << BOLD(RED(" >>> Wrong mission ID chosen")) << std::endl;
-    throw std::exception();
+    handleFailure();
   }
 
   std::cout << std::endl << BOLD(GREEN("      - Selected mission with ID: ")) << mission_id_ << std::endl;
@@ -610,7 +610,7 @@ void AmazeAutonomy::preFlightChecks() {
 
   // if (!(check1() || check2() || ...)) {
   if (!(takeoffChecks() || !vioChecks())) {
-    throw std::exception();
+    handleFailure();
   }
 
   std::cout << std::endl << BOLD(GREEN(" >>> Pre-Flight checks successed")) << std::endl;
@@ -645,8 +645,8 @@ bool AmazeAutonomy::takeoffChecks() {
 bool AmazeAutonomy::vioChecks() {
 
   std::cout << std::endl << BOLD(YELLOW(" >>> Initialize Visual-Inertial estimator")) << std::endl;
-
-  sleep(5);
+  std::cout << std::endl << BOLD(YELLOW(" >>> Press Enter to start the AMAZE Autonomy"));
+  std::cin.ignore();
 
   return true;
 }
@@ -676,7 +676,7 @@ void AmazeAutonomy::DataRecording(const bool& start_stop) {
     } else {
       std::cout << std::endl << BOLD(RED(" >>> Data recorded stop failure")) << std::endl;
     }
-    throw std::exception();
+    handleFailure();
   }
 }
 
@@ -742,4 +742,13 @@ void AmazeAutonomy::startAutonomy() {
   // Start mission
   missionSequencerRequest(amaze_mission_sequencer::request::START);
 
+}
+
+void AmazeAutonomy::handleFailure() {
+
+  // Stop data recording
+  // DataRecording(true);
+
+  // Throw exception
+  throw std::exception();
 }
