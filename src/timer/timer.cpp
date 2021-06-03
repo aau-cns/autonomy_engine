@@ -16,6 +16,7 @@
 
 #include "timer/timer.h"
 #include "utils/colors.h"
+#include "utils/except.h"
 
 Timer::Timer(const int &ms) {
 
@@ -59,7 +60,7 @@ void Timer::resetTimer() {
     th_ = std::thread([this](){
       try {
         io_.run();
-      } catch (const std::exception&) {
+      } catch (const TimerOverflowException&) {
         sh_();
       }
 
@@ -72,7 +73,6 @@ void Timer::timeoutHandler(const boost::system::error_code& error) {
 
   // Skip errors raised by resetting timer, if timeout then raise an exception
   if(error != boost::asio::error::operation_aborted) {
-    // TODO: Think how to handle timeout overflow
-    //throw std::exception();
+    throw TimerOverflowException();
   }
 }
