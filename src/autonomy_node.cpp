@@ -47,13 +47,14 @@ int main(int argc, char* argv[])
     // Wait for the node to be killed
     ros::waitForShutdown();
 
-  } catch (const std::exception&) {
+  } catch (const ManualException&) {
 
     // Stop the spinner
     spinner.stop();
 
-    std::cout << std::endl;
-    ROS_ERROR("Failed to run AMAZE Autonomy");
+    // Print info
+    std::cout << std::endl << BOLD(RED(" >>> AMAZE autonomy disabled <<<")) << std::endl;
+
   }
 
   return EXIT_SUCCESS;

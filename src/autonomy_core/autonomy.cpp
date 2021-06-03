@@ -473,6 +473,7 @@ void AmazeAutonomy::watchdogTimerOverflowHandler() {
 
   // print message of watchdog timer overflow
   std::cout << std::endl << BOLD(RED(" >>> Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
+  std::cout << std::endl << BOLD(YELLOW(" >>> Mission continue without the support of the AMAZE watchdog")) << std::endl;
 }
 
 void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig&, uint32_t) {
@@ -491,8 +492,6 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(mission_id_) + " succesfully completed.")) << std::endl;
     DataRecording(false);
   } else {
-    // TODO: Set state to Manual
-    //DataRecording(false);
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
     std::cout << BOLD(RED(" >>> UNEXPECTED LAND DETECTED <<<")) << std::endl;
     std::cout << BOLD(RED(" >>> PLEASE TAKE MANUAL CONTROL OF <<< ")) << std::endl;
@@ -608,8 +607,8 @@ void AmazeAutonomy::preFlightChecks() {
 
   std::cout << std::endl << BOLD(GREEN(" >>> Starting Pre-Flight Checks... Please wait")) << std::endl;
 
-  // if (!(check1() || check2() || ...)) {
-  if (!(takeoffChecks() || !vioChecks())) {
+  // if (!(check1() | check2() || ...)) {
+  if (!(takeoffChecks() | !vioChecks())) {
     handleFailure();
   }
 
@@ -747,8 +746,8 @@ void AmazeAutonomy::startAutonomy() {
 void AmazeAutonomy::handleFailure() {
 
   // Stop data recording
-  // DataRecording(true);
+  // DataRecording(false);
 
   // Throw exception
-  throw std::exception();
+  throw ManualException();
 }
