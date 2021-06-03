@@ -38,6 +38,7 @@
 #include "autonomy_core/autonomy_options.h"
 #include "timer/timer.h"
 #include "state_machine/state.h"
+#include "utils/except.h"
 
 class AmazeAutonomy {
 
@@ -194,7 +195,7 @@ class AmazeAutonomy {
     /**
      * @brief Callback to handle failure
      */
-    void handleFailure();
+    [[noreturn]] void handleFailure();
 
     /// Nodehandler
     ros::NodeHandle nh_;
