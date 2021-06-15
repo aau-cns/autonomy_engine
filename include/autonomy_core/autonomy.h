@@ -221,6 +221,7 @@ class AmazeAutonomy {
     ros::ServiceClient watchdog_start_service_client_;
     ros::ServiceClient takeoff_service_client_;
     ros::ServiceClient data_recording_service_client_;
+    ros::ServiceClient estimator_supervisor_service_client_;
 
     /// Timeout timer
     std::shared_ptr<Timer> timer_;

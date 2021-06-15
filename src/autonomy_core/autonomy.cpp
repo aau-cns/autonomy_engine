@@ -16,6 +16,7 @@
 
 #include "autonomy_core/autonomy.h"
 #include "utils/colors.h"
+#include <limits>
 
 AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2)) {
@@ -36,6 +37,9 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
 
   // Advertise takeoff service
   takeoff_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->takeoff_service_name);
+
+  // Advertise estimator supervisor service
+  // estimator_supervisor_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->takeoff_service_name);
 
   // Advertise data recording service
   data_recording_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->data_recrding_service_name);
@@ -490,7 +494,7 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
   // Stop data recording after landing in case mission has been succesfully completed
   if (last_waypoint_reached_) {
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(mission_id_) + " succesfully completed.")) << std::endl;
-    DataRecording(false);
+    //DataRecording(false);
   } else {
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
     std::cout << BOLD(RED(" >>> UNEXPECTED LAND DETECTED <<<")) << std::endl;
@@ -607,8 +611,12 @@ void AmazeAutonomy::preFlightChecks() {
 
   std::cout << std::endl << BOLD(GREEN(" >>> Starting Pre-Flight Checks... Please wait")) << std::endl;
 
+  if (!vioChecks()) {
+    handleFailure();
+  }
+
   // if (!(check1() | check2() || ...)) {
-  if (!(takeoffChecks() | !vioChecks())) {
+  if (!(takeoffChecks())) {
     handleFailure();
   }
 
@@ -644,8 +652,9 @@ bool AmazeAutonomy::takeoffChecks() {
 bool AmazeAutonomy::vioChecks() {
 
   std::cout << std::endl << BOLD(YELLOW(" >>> Initialize Visual-Inertial estimator")) << std::endl;
-  std::cout << std::endl << BOLD(YELLOW(" >>> Press Enter to start the AMAZE Autonomy"));
-  std::cin.ignore();
+  std::cout << std::endl << BOLD(YELLOW(" >>> Press first Space then Enter to start the AMAZE Autonomy"));
+  std::cin.clear();
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
 
   return true;
 }

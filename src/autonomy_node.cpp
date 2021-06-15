@@ -16,6 +16,7 @@
 
 #include "autonomy_core/autonomy.h"
 #include <ros/ros.h>
+#include <limits>
 
 int main(int argc, char* argv[])
 {
@@ -39,7 +40,8 @@ int main(int argc, char* argv[])
     AmazeAutonomy autonomy(nh);
 
     std::cout << std::endl << BOLD(GREEN(" >>> Press Enter to start the AMAZE Autonomy"));
-    std::cin.ignore();
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     // Start the autonomy
     autonomy.startAutonomy();
