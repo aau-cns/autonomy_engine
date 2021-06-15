@@ -39,7 +39,7 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
   takeoff_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->takeoff_service_name);
 
   // Advertise estimator supervisor service
-  // estimator_supervisor_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->takeoff_service_name);
+  estimator_supervisor_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->estimator_supervisor_service_name);
 
   // Advertise data recording service
   data_recording_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->data_recrding_service_name);
@@ -61,7 +61,7 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
 bool AmazeAutonomy::parseParams() {
 
   // Define auxilliary variables
-  std::string watchdog_start_service_name, watchdog_heartbeat_topic, watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, data_recrding_service_name, takeoff_service_name, landing_detection_topic, description;
+  std::string estimator_supervisor_service_name, watchdog_start_service_name, watchdog_heartbeat_topic, watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, data_recrding_service_name, takeoff_service_name, landing_detection_topic, description;
   double watchdog_rate, watchdog_heartbeat_timeout_multiplier;
   int watchdog_startup_time_s, n_missions, watchdog_timeout_ms;
   std::map<size_t, std::string> missions;
@@ -101,6 +101,10 @@ bool AmazeAutonomy::parseParams() {
   }
   if(!nh_.getParam("takeoff_service_name", takeoff_service_name)) {
     std::cout << std::endl << BOLD(RED(" >>> [takeoff_service_name] parameter not defined")) << std::endl;
+    return false;
+  }
+  if(!nh_.getParam("estimator_supervisor_service_name", estimator_supervisor_service_name)) {
+    std::cout << std::endl << BOLD(RED(" >>> [estimator_supervisor_service_name] parameter not defined")) << std::endl;
     return false;
   }
   if(!nh_.getParam("landing_detection_topic", landing_detection_topic)) {
@@ -199,7 +203,7 @@ bool AmazeAutonomy::parseParams() {
   }
 
   // Make options
-  opts_ = std::make_shared<autonomyOptions>(autonomyOptions({watchdog_start_service_name, watchdog_heartbeat_topic, watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, data_recrding_service_name, takeoff_service_name, landing_detection_topic, watchdog_timeout_ms, watchdog_startup_time_s, missions, entity_state_vector}));
+  opts_ = std::make_shared<autonomyOptions>(autonomyOptions({watchdog_start_service_name, watchdog_heartbeat_topic, watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, estimator_supervisor_service_name, data_recrding_service_name, takeoff_service_name, landing_detection_topic, watchdog_timeout_ms, watchdog_startup_time_s, missions, entity_state_vector}));
 
   // Success
   return true;
@@ -446,7 +450,7 @@ void AmazeAutonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArr
               holding_ = false;
             } else if (state_.getState() == AutonomyState::MANUAL) {
               missionSequencerRequest(amaze_mission_sequencer::request::ABORT);
-              handleFailure();
+              handleManual();
             }
 
             // Get action <Action, EntityEvent> to be performed from the state machine
@@ -501,7 +505,7 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
     std::cout << BOLD(RED(" >>> PLEASE TAKE MANUAL CONTROL OF <<< ")) << std::endl;
     std::cout << BOLD(RED(" >>> THE PLATFORM AND LAND SAFELY  <<< ")) << std::endl;
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl;
-    handleFailure();
+    handleManual();
   }
 }
 
@@ -656,6 +660,27 @@ bool AmazeAutonomy::vioChecks() {
   std::cin.clear();
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
 
+  // Define takeoff request
+  std_srvs::Trigger superivsion;
+
+  // service call to check if we are ready to takeoff
+  if (estimator_supervisor_service_client_.call(superivsion)) {
+
+    // Check responce
+    if(superivsion.response.success) {
+      std::cout << std::endl << BOLD(GREEN(" >>> VIO Correctly initilized")) << std::endl;
+
+      // [TODO] Mars init
+    }
+  } else {
+    superivsion.response.success = false;
+  }
+
+  if (!superivsion.response.success) {
+    std::cout << std::endl << BOLD(RED(" >>> VIO not correctly initilized")) << std::endl << std::endl;
+    return false;
+  }
+
   return true;
 }
 
@@ -745,7 +770,7 @@ void AmazeAutonomy::startAutonomy() {
   preFlightChecks();
 
   // Start data recording
-  // DataRecording(true);
+  DataRecording(true);
 
   // Start mission
   missionSequencerRequest(amaze_mission_sequencer::request::START);
@@ -755,7 +780,16 @@ void AmazeAutonomy::startAutonomy() {
 void AmazeAutonomy::handleFailure() {
 
   // Stop data recording
-  // DataRecording(false);
+  DataRecording(false);
+
+  // Throw exception
+  throw FailureException();
+}
+
+void AmazeAutonomy::handleManual() {
+
+  // Stop data recording
+  DataRecording(false);
 
   // Throw exception
   throw ManualException();

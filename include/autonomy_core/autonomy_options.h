@@ -34,7 +34,7 @@
 struct autonomyOptions {
 
   /// Topic and service Names
-  const std::string watchdog_start_service_name, watchdog_heartbeat_topic,  watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, data_recrding_service_name, takeoff_service_name, landing_detection_topic;
+  const std::string watchdog_start_service_name, watchdog_heartbeat_topic,  watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, estimator_supervisor_service_name, data_recrding_service_name, takeoff_service_name, landing_detection_topic;
 
   /// Timeout in milliseconds for watchdog heartbeat
   const int timeout;
@@ -59,8 +59,9 @@ struct autonomyOptions {
     std::cout << BOLD(YELLOW(" - Publishing on: " + mission_sequencer_responce_topic + "")) << std::endl;
     std::cout << BOLD(YELLOW(" - Publishing on: " + watchdog_action_topic + "")) << std::endl;
 
-    std::cout << BOLD(YELLOW(" - Service availeble at: " + watchdog_start_service_name + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Service availeble at: " + data_recrding_service_name + "")) << std::endl << std::endl;
+    std::cout << BOLD(YELLOW(" - Service available at: " + watchdog_start_service_name + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Service available at: " + estimator_supervisor_service_name + "")) << std::endl;
+    std::cout << BOLD(YELLOW(" - Service available at: " + data_recrding_service_name + "")) << std::endl << std::endl;
 
     std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: " + std::to_string(timeout) + " ms")) << std::endl;
     std::cout << BOLD(YELLOW(" - Watchdog startup time: " + std::to_string(watchdog_startup_time) + " s")) << std::endl;

@@ -197,6 +197,11 @@ class AmazeAutonomy {
      */
     [[noreturn]] void handleFailure();
 
+    /**
+     * @brief Callback to handle manual mode
+     */
+    [[noreturn]] void handleManual();
+
     /// Nodehandler
     ros::NodeHandle nh_;
 

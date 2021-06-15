@@ -20,6 +20,13 @@
 #include <iostream>
 #include <exception>
 
+struct FailureException : public std::exception
+{
+  const char* what () const noexcept {
+    return "General failure";
+  }
+};
+
 struct ManualException : public std::exception
 {
   const char* what () const noexcept {

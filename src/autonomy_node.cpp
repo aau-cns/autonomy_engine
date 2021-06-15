@@ -57,6 +57,14 @@ int main(int argc, char* argv[])
     // Print info
     std::cout << std::endl << BOLD(RED(" >>> AMAZE autonomy disabled <<<")) << std::endl;
 
+  } catch (const FailureException&) {
+
+    // Stop the spinner
+    spinner.stop();
+
+    // Print info
+    std::cout << std::endl << BOLD(RED(" >>> AMAZE autonomy failed <<<")) << std::endl;
+
   }
 
   return EXIT_SUCCESS;
