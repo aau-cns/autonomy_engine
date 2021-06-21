@@ -22,6 +22,9 @@ endif()
 ## enforcing cleaner code by adding -Wall and -Werror, the compiler will not ignore warnings anymore
 add_definitions(-Wall -Werror)
 
+# Enable compile optimizations
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+
 ## Display compiler flags
 message(STATUS "CMAKE_CXX_FLAGES: ${CMAKE_CXX_FLAGS}")
 
