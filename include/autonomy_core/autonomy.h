@@ -229,8 +229,11 @@ class AmazeAutonomy {
     /// boolean to check if we are holding
     bool holding_ = false;
 
-    /// Bboolean to check if last waypoint got reached
+    /// Boolean to check if last waypoint got reached
     bool last_waypoint_reached_ = false;
+
+    /// Boolean to check if data is getting recorded
+    bool is_recording_data_ = false;
 
 };
 

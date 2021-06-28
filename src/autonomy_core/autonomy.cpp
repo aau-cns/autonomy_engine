@@ -492,7 +492,11 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
   // Stop data recording after landing in case mission has been succesfully completed
   if (last_waypoint_reached_) {
     std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(mission_id_) + " succesfully completed.")) << std::endl;
-    //DataRecording(false);
+
+    // Stop data recording if data is getting recorded
+    if (is_recording_data_) {
+      DataRecording(false);
+    }
   } else {
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
     std::cout << BOLD(RED(" >>> UNEXPECTED LAND DETECTED <<<")) << std::endl;
@@ -599,7 +603,10 @@ void AmazeAutonomy::missionSelection() {
   // Check validity of mission id
   if (mission_id_ == 0 || mission_id_ > opts_->missions.size()) {
     std::cout << std::endl << BOLD(RED(" >>> Wrong mission ID chosen")) << std::endl;
-    handleFailure();
+
+    // Call recursively mission selection
+    missionSelection();
+    //handleFailure();
   }
 
   std::cout << std::endl << BOLD(GREEN("      - Selected mission with ID: ")) << mission_id_ << std::endl;
@@ -693,9 +700,12 @@ void AmazeAutonomy::DataRecording(const bool& start_stop) {
     if (data_rec.response.success) {
       if (data_rec.request.data) {
         std::cout << std::endl << BOLD(GREEN(" >>> Data recorded started succesfully")) << std::endl;
+        is_recording_data_ = true;
       } else {
         std::cout << std::endl << BOLD(GREEN(" >>> Data recorded stopped succesfully")) << std::endl;
       }
+    } else {
+      std::cout << std::endl << BOLD(RED(" >>> Data recorded service failure")) << std::endl;
     }
   } else {
     if (data_rec.request.data) {
@@ -703,7 +713,7 @@ void AmazeAutonomy::DataRecording(const bool& start_stop) {
     } else {
       std::cout << std::endl << BOLD(RED(" >>> Data recorded stop failure")) << std::endl;
     }
-    handleFailure();
+    //handleFailure();
   }
 }
 
@@ -773,8 +783,10 @@ void AmazeAutonomy::startAutonomy() {
 
 void AmazeAutonomy::handleFailure() {
 
-  // Stop data recording
-  DataRecording(false);
+  // Stop data recording if data is getting recorded
+  if (is_recording_data_) {
+    DataRecording(false);
+  }
 
   // Throw exception
   throw FailureException();
@@ -782,8 +794,10 @@ void AmazeAutonomy::handleFailure() {
 
 void AmazeAutonomy::handleManual() {
 
-  // Stop data recording
-  DataRecording(false);
+  // Stop data recording if data is getting recorded
+  if (is_recording_data_) {
+    DataRecording(false);
+  }
 
   // Throw exception
   throw ManualException();

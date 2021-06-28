@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     spinner.stop();
 
     // Print info
-    std::cout << std::endl << BOLD(RED(" >>> AMAZE autonomy failed <<<")) << std::endl;
+    std::cout << std::endl << BOLD(RED(" >>> An error occured. AMAZE autonomy failed <<<")) << std::endl;
 
   }
 
