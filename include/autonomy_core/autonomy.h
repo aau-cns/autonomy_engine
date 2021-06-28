@@ -28,8 +28,6 @@
 #include <std_srvs/Trigger.h>
 #include <std_srvs/SetBool.h>
 #include <std_msgs/Bool.h>
-#include <amaze_autonomy/autonomyConfig.h>
-#include <dynamic_reconfigure/server.h>
 #include <boost/bind/bind.hpp>
 #include <iostream>
 #include <string>
@@ -134,11 +132,6 @@ class AmazeAutonomy {
     void watchdogTimerOverflowHandler();
 
     /**
-     * @brief Configuration callback for dynamic reconfigure
-     */
-    void configCallback(amaze_autonomy::autonomyConfig& config, uint32_t level);
-
-    /**
      * @brief Get Entity, Type and subType from watchdog_msgs::Status
      * @param const reference to watchdog_msgs::Status
      * @param reference to Entity
@@ -207,10 +200,6 @@ class AmazeAutonomy {
 
     /// Autonomy options
     std::shared_ptr<autonomyOptions> opts_;
-
-    /// Dynamic reconfigure server and callback
-    dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig> reconfigure_srv_;
-    dynamic_reconfigure::Server<amaze_autonomy::autonomyConfig>::CallbackType reconfigure_cb_;
 
     /// Subscribers
     ros::Subscriber sub_watchdog_heartbeat_;

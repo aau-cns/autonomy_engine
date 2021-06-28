@@ -37,7 +37,6 @@ find_package(catkin REQUIRED COMPONENTS
   watchdog_msgs
   amaze_mission_sequencer
   std_msgs
-  dynamic_reconfigure
 )
 
 ## System dependencies are found with CMake's conventions
@@ -115,9 +114,9 @@ message(STATUS "BOOST VERSION: " ${Boost_VERSION})
 ##     and list every .cfg file to be processed
 
 ## Generate dynamic reconfigure parameters in the 'cfg' folder
-generate_dynamic_reconfigure_options(
-  cfg/autonomy.cfg
-)
+#generate_dynamic_reconfigure_options(
+#  cfg/autonomy.cfg
+#)
 
 ###################################
 ## catkin specific configuration ##

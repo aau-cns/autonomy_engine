@@ -15,7 +15,6 @@
   <!-- Use depend as a shortcut for packages that are both build and exec dependencies -->
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
-  <depend>dynamic_reconfigure</depend>
 
   <!-- Use build_depend for packages you need at compile time: -->
   <build_depend>watchdog_msgs</build_depend>

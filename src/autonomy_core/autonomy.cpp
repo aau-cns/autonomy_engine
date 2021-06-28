@@ -19,7 +19,7 @@
 #include <limits>
 
 AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
-  nh_(nh), reconfigure_cb_(boost::bind(&AmazeAutonomy::configCallback, this, _1, _2)) {
+  nh_(nh) {
 
   // Parse parameters and options
   if(!parseParams()) {
@@ -28,9 +28,6 @@ AmazeAutonomy::AmazeAutonomy(ros::NodeHandle &nh) :
 
   // Print option
   opts_->printAutonomyOptions();
-
-  // Set dynamic reconfigure callback
-  reconfigure_srv_.setCallback(reconfigure_cb_);
 
   // Advertise watchdog service
   watchdog_start_service_client_ = nh_.serviceClient<watchdog_msgs::Start>(opts_->watchdog_start_service_name);
@@ -482,9 +479,6 @@ void AmazeAutonomy::watchdogTimerOverflowHandler() {
   // print message of watchdog timer overflow
   std::cout << std::endl << BOLD(RED(" >>> Timeout overflow -- no heartbeat from system watchdog")) << std::endl;
   std::cout << std::endl << BOLD(YELLOW(" >>> Mission continue without the support of the AMAZE watchdog")) << std::endl;
-}
-
-void AmazeAutonomy::configCallback(amaze_autonomy::autonomyConfig&, uint32_t) {
 }
 
 void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) {
