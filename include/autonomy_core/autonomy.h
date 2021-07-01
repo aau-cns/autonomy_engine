@@ -107,6 +107,12 @@ class AmazeAutonomy {
     [[nodiscard]] bool parseParams();
 
     /**
+     * @brief Perform service call to initialize estimator
+     * @return boolean
+     */
+    [[nodiscard]] bool initializeStateEstimation();
+
+    /**
      * @brief Watchdog (system status) heartbeat callback
      */
     void watchdogHeartBeatCallback(const watchdog_msgs::StatusStampedConstPtr& msg);
@@ -184,7 +190,6 @@ class AmazeAutonomy {
      */
     [[nodiscard]] bool setActionMsg(const Action& action, const EntityEvent entityevent, watchdog_msgs::Action& msg);
 
-
     /**
      * @brief Callback to handle failure
      */
@@ -216,6 +221,7 @@ class AmazeAutonomy {
     ros::ServiceClient takeoff_service_client_;
     ros::ServiceClient data_recording_service_client_;
     ros::ServiceClient estimator_supervisor_service_client_;
+    ros::ServiceClient estimator_init_service_client_;
 
     /// Timeout timer
     std::shared_ptr<Timer> timer_;

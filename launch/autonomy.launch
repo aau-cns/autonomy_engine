@@ -12,6 +12,8 @@
     <arg name="data_recrding_service_name"		default="/datarecording/record" />
     <arg name="takeoff_service_name"			default="/toland/service/takeoff" />
     <arg name="landing_detection_topic"			default="/toland/is_landed" />
+    <arg name="estimator_supervisor_service_name"       default="/estimator_supervisor/supervise" />
+    <arg name="estimator_init_service_name"             default="/estimator/init" />
     <arg name="watchdog_rate_Hz"			default="1.0" />
     <arg name="watchdog_startup_time_s"			default="15" />
     <arg name="watchdog_heartbeat_timeout_multiplier"	default="2.0" />
@@ -31,6 +33,8 @@
         <param name="data_recrding_service_name"        type="string"   value="$(arg data_recrding_service_name)" />
         <param name="takeoff_service_name"              type="string"   value="$(arg takeoff_service_name)" />
         <param name="landing_detection_topic"           type="string"   value="$(arg landing_detection_topic)" />
+        <param name="estimator_supervisor_service_name" type="string"   value="$(arg estimator_supervisor_service_name)" />
+        <param name="estimator_init_service_name"       type="string"   value="$(arg estimator_init_service_name)" />
 
         <!-- load parameters from file -->
         <rosparam command="load"    file="$(arg config_filepath)" />
