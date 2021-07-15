@@ -227,7 +227,7 @@ class AmazeAutonomy {
     std::shared_ptr<Timer> timer_;
 
     /// Selected mission ID
-    size_t mission_id_ = 0;
+    size_t mission_id_ = -1;
 
     /// State
     State state_;
