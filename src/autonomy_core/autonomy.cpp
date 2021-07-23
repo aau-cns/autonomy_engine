@@ -545,6 +545,9 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
   // Stop data recording after landing in case mission has been succesfully completed
   if (last_waypoint_reached_) {
 
+    // Disarm request
+    missionSequencerRequest(amaze_mission_sequencer::request::DISARM);
+
     // Check if we are performing ultiple touchdown
     // T5 WILDCARD
     // [TODO] implement it more general
