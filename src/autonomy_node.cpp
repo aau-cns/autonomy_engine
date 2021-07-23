@@ -39,7 +39,7 @@ int main(int argc, char* argv[])
     // Instanciate AMAZE autonomy
     AmazeAutonomy autonomy(nh);
 
-    std::cout << std::endl << BOLD(GREEN(" >>> Press Enter to start the AMAZE Autonomy"));
+    std::cout << std::endl << BOLD(GREEN(" >>> Press [ENTER] to start the AMAZE Autonomy"));
     std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 

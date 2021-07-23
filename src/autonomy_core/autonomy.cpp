@@ -804,10 +804,14 @@ bool AmazeAutonomy::takeoffChecks() {
 
 bool AmazeAutonomy::vioChecks() {
 
-  std::cout << std::endl << BOLD(YELLOW(" >>> Initialize Visual-Inertial estimator")) << std::endl;
-  std::cout << std::endl << BOLD(YELLOW(" >>> Press first Space then Enter when done"));
-  std::cin.clear();
-  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
+  // [TODO] make it general
+  if (touchdowns_ == 0) {
+    std::cout << std::endl << BOLD(YELLOW(" >>> Please, Initialize estimator now")) << std::endl;
+    std::cout << std::endl << BOLD(YELLOW(" >>> When done, press first [SPACE] then [ENTER] to start the experiment")) << std::endl;
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+  }
 
   // Define takeoff request
   std_srvs::Trigger superivsion;
@@ -817,7 +821,7 @@ bool AmazeAutonomy::vioChecks() {
 
     // Check responce
     if(superivsion.response.success) {
-      std::cout << std::endl << BOLD(GREEN(" >>> VIO Correctly initilized")) << std::endl;
+      std::cout << BOLD(GREEN(" >>> VIO Correctly initilized")) << std::endl;
     } else {
       superivsion.response.success = false;
     }
@@ -826,7 +830,7 @@ bool AmazeAutonomy::vioChecks() {
   }
 
   if (!superivsion.response.success) {
-    std::cout << std::endl << BOLD(RED(" >>> VIO not correctly initilized")) << std::endl << std::endl;
+    std::cout << BOLD(RED(" >>> VIO not correctly initilized")) << std::endl << std::endl;
     return false;
   }
 
@@ -901,17 +905,17 @@ void AmazeAutonomy::startAutonomy() {
   // Mission selection
   missionSelection();  
 
-  // Start watchdog
-  startWatchdog();
+//  // Start watchdog
+//  startWatchdog();
 
-  // Subscriber to watchdog (system status) heartbeat
-  sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
+//  // Subscriber to watchdog (system status) heartbeat
+//  sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
 
-  // Subscribe to watchdog status changes
-  sub_watchdog_status_ = nh_.subscribe("/watchdog/log", 1, &AmazeAutonomy::watchdogStatusCallback, this);
+//  // Subscribe to watchdog status changes
+//  sub_watchdog_status_ = nh_.subscribe("/watchdog/log", 1, &AmazeAutonomy::watchdogStatusCallback, this);
 
-  // Setting state to nominal
-  state_.nominal();
+//  // Setting state to nominal
+//  state_.nominal();
 
   // Run pre flight checks
   preFlightChecks();
@@ -946,9 +950,6 @@ void AmazeAutonomy::startAutonomy() {
 
       // Run pre flight checks
       preFlightChecks();
-
-      // communicate selected mission to mission sequencer
-      missionSequencerRequest(amaze_mission_sequencer::request::READ);
 
       // Start mission - Arming
       missionSequencerRequest(amaze_mission_sequencer::request::ARM);

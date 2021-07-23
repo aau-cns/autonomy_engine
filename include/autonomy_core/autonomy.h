@@ -33,6 +33,7 @@
 #include <string>
 #include <xmlrpcpp/XmlRpcValue.h>
 #include <chrono>
+#include <limits>
 
 #include "autonomy_core/autonomy_options.h"
 #include "timer/timer.h"
