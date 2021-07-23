@@ -807,7 +807,7 @@ bool AmazeAutonomy::vioChecks() {
   // [TODO] make it general
   if (touchdowns_ == 0) {
     std::cout << std::endl << BOLD(YELLOW(" >>> Please, Initialize estimator now")) << std::endl;
-    std::cout << std::endl << BOLD(YELLOW(" >>> When done, press first [SPACE] then [ENTER] to start the experiment")) << std::endl;
+    std::cout << std::endl << BOLD(YELLOW(" >>> When done, press [ENTER] to start the experiment")) << std::endl;
     std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
