@@ -905,17 +905,17 @@ void AmazeAutonomy::startAutonomy() {
   // Mission selection
   missionSelection();  
 
-//  // Start watchdog
-//  startWatchdog();
+  // Start watchdog
+  startWatchdog();
 
-//  // Subscriber to watchdog (system status) heartbeat
-//  sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
+  // Subscriber to watchdog (system status) heartbeat
+  sub_watchdog_heartbeat_ = nh_.subscribe("/watchdog/status", 1, &AmazeAutonomy::watchdogHeartBeatCallback, this);
 
-//  // Subscribe to watchdog status changes
-//  sub_watchdog_status_ = nh_.subscribe("/watchdog/log", 1, &AmazeAutonomy::watchdogStatusCallback, this);
+  // Subscribe to watchdog status changes
+  sub_watchdog_status_ = nh_.subscribe("/watchdog/log", 1, &AmazeAutonomy::watchdogStatusCallback, this);
 
-//  // Setting state to nominal
-//  state_.nominal();
+  // Setting state to nominal
+  state_.nominal();
 
   // Run pre flight checks
   preFlightChecks();
