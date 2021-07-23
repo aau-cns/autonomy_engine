@@ -807,7 +807,7 @@ bool AmazeAutonomy::vioChecks() {
   // [TODO] make it general
   if (touchdowns_ == 0) {
     std::cout << std::endl << BOLD(YELLOW(" >>> Please, Initialize estimator now")) << std::endl;
-    std::cout << std::endl << BOLD(YELLOW(" >>> When done, press [ENTER] to start the experiment")) << std::endl;
+    std::cout << std::endl << BOLD(YELLOW(" >>> When done, press [ENTER] to start the experiment"));
     std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -821,7 +821,7 @@ bool AmazeAutonomy::vioChecks() {
 
     // Check responce
     if(superivsion.response.success) {
-      std::cout << BOLD(GREEN(" >>> VIO Correctly initilized")) << std::endl;
+      std::cout << std::endl << BOLD(GREEN(" >>> VIO Correctly initilized")) << std::endl;
     } else {
       superivsion.response.success = false;
     }
@@ -830,7 +830,7 @@ bool AmazeAutonomy::vioChecks() {
   }
 
   if (!superivsion.response.success) {
-    std::cout << BOLD(RED(" >>> VIO not correctly initilized")) << std::endl << std::endl;
+    std::cout << std::endl << BOLD(RED(" >>> VIO not correctly initilized")) << std::endl << std::endl;
     return false;
   }
 
