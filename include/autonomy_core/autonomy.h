@@ -32,6 +32,7 @@
 #include <iostream>
 #include <string>
 #include <xmlrpcpp/XmlRpcValue.h>
+#include <chrono>
 
 #include "autonomy_core/autonomy_options.h"
 #include "timer/timer.h"
@@ -163,7 +164,7 @@ class AmazeAutonomy {
      * @param reference to Entity
      * @return boolean
      */
-    [[nodiscard]] bool getEntityFromString(const std::string entity_str, Entity& entity);
+    [[nodiscard]] bool getEntityFromString(const std::string& entity_str, Entity& entity);
 
     /**
      * @brief Get next state (AutonomyState) from string
@@ -171,7 +172,7 @@ class AmazeAutonomy {
      * @param reference to Action
      * @return boolean
      */
-    [[nodiscard]] bool getNextStateFromString(const std::string action_str,  AutonomyState& action);
+    [[nodiscard]] bool getNextStateFromString(const std::string& action_str,  AutonomyState& action);
 
     /**
      * @brief Get string from Entity
@@ -179,7 +180,15 @@ class AmazeAutonomy {
      * @param string
      * @return boolean
      */
-    [[nodiscard]] bool getEntityString(const Entity& entity, std::string entity_str);
+    [[nodiscard]] bool getEntityString(const Entity& entity, std::string& entity_str);
+
+    /**
+     * @brief Get string from request
+     * @param const reference to mission sequencer request
+     * @param string
+     * @return boolean
+     */
+    [[nodiscard]] bool getRequestfromMsg(const amaze_mission_sequencer::request& msg, std::string& request_str);
 
     /**
      * @brief Get Action from string
@@ -240,6 +249,18 @@ class AmazeAutonomy {
 
     /// Boolean to check if data is getting recorded
     bool is_recording_data_ = false;
+
+    /// Boolean to check if the mission has been accepted
+    bool mission_accepted_ = false;
+
+    /// Actual number of touchdowns
+    size_t touchdowns_ = 0;
+
+    /// Number of touchdowns expected
+    size_t n_touchdowns_ = 0;
+
+    /// Boolean to check if we are ready to perform next mission iteration
+    bool ready_to_continue_ = false;
 
 };
 

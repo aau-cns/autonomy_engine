@@ -67,7 +67,7 @@ bool AmazeAutonomy::parseParams() {
   std::map<size_t, std::string> missions;
   Entity entity;
   AutonomyState state;
-  XmlRpc::XmlRpcValue entities_actions;
+  XmlRpc::XmlRpcValue entities_actions, filepaths;
   std::vector<std::pair<size_t, std::pair<Entity, AutonomyState>>> entity_state_vector;
 
   // Get topics and service names
@@ -159,6 +159,22 @@ bool AmazeAutonomy::parseParams() {
 
       // Build Mission map <i, description>
       missions.insert({size_t(i), description});
+
+      // get filepaths
+      if (!nh_.getParam("/autonomy/missions/mission_" + std::to_string(i) + "/filepaths", filepaths)) {
+          std::cout << std::endl << BOLD(RED(" >>> Mission number " + std::to_string(i) + " filepaths missing")) << std::endl;
+          return false;
+      }
+
+      // Check type to be array
+      if (filepaths.getType() ==  XmlRpc::XmlRpcValue::TypeArray)
+      {
+        // In case of t5 save number of filepaths
+        // [TODO] Make it general
+        if (i == 1) {
+          n_touchdowns_ = static_cast<size_t>(filepaths.size()) - 1; // touchdowns = sub missions - 1
+        }
+      }
 
       // get entities and actions
       if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/entities_actions", entities_actions)) {
@@ -252,7 +268,7 @@ bool AmazeAutonomy::getEntityTypeSubTypeFromMsg(const watchdog_msgs::Status& msg
   return true;
 }
 
-bool AmazeAutonomy::getEntityFromString(const std::string entity_str, Entity& entity) {
+bool AmazeAutonomy::getEntityFromString(const std::string& entity_str, Entity& entity) {
 
   // Check if it is either 0 or 1, this means that either the string
   // match or there is a char more that could be \n
@@ -285,7 +301,7 @@ bool AmazeAutonomy::getEntityFromString(const std::string entity_str, Entity& en
   return true;
 }
 
-bool AmazeAutonomy::getNextStateFromString(const std::string action_str,  AutonomyState& state) {
+bool AmazeAutonomy::getNextStateFromString(const std::string& action_str,  AutonomyState& state) {
 
   if (action_str.compare("continue") == 0) {
     state = AutonomyState::NOMINAL;
@@ -300,7 +316,7 @@ bool AmazeAutonomy::getNextStateFromString(const std::string action_str,  Autono
   return true;
 }
 
-bool AmazeAutonomy::getEntityString(const Entity& entity, std::string entity_str) {
+bool AmazeAutonomy::getEntityString(const Entity& entity, std::string& entity_str) {
 
   switch (entity) {
   case Entity::UNKNOWN:
@@ -340,6 +356,36 @@ bool AmazeAutonomy::getEntityString(const Entity& entity, std::string entity_str
 
   return true;
 
+}
+
+bool AmazeAutonomy::getRequestfromMsg(const amaze_mission_sequencer::request& msg, std::string& request_str) {
+
+  // Get request
+  switch(msg.request) {
+  case amaze_mission_sequencer::request::UNDEF:
+    request_str = "UNDEF";
+    break;
+  case amaze_mission_sequencer::request::READ:
+    request_str = "READ";
+    break;
+  case amaze_mission_sequencer::request::ARM:
+    request_str = "ARM";
+    break;
+  case amaze_mission_sequencer::request::HOLD:
+    request_str = "HOLD";
+    break;
+  case amaze_mission_sequencer::request::RESUME:
+    request_str = "RESUME";
+    break;
+  case amaze_mission_sequencer::request::ABORT:
+    request_str = "ABORT";
+    break;
+  default:
+    request_str = "UNDEF";
+    break;
+  }
+
+  return true;
 }
 
 bool AmazeAutonomy::setStatusMsgFromEntityTypeSubType(const Entity& entity, const Type& type, const subType& subtype, watchdog_msgs::Status& msg) {
@@ -498,12 +544,39 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
 
   // Stop data recording after landing in case mission has been succesfully completed
   if (last_waypoint_reached_) {
-    std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(mission_id_) + " succesfully completed.")) << std::endl;
 
-    // Stop data recording if data is getting recorded
-    if (is_recording_data_) {
-      DataRecording(false);
+    // Check if we are performing ultiple touchdown
+    // T5 WILDCARD
+    // [TODO] implement it more general
+    if (mission_id_ == 1) {
+
+      std::cout << std::endl << BOLD(GREEN(" >>> Iteration of mission ID: " + std::to_string(mission_id_) + " succesfully completed.")) << std::endl;
+      std::cout << std::endl << BOLD(GREEN(" >>> Continuing with next iteration of mission ID: " + std::to_string(mission_id_) + " .")) << std::endl;
+
+      // Increment touchdowns counter
+      ++touchdowns_;
+
+      // We sucesfully touchdown
+      // Set ready to perform preflight checks flag
+      // [TODO] Make it more general
+      ready_to_continue_ = true;
+
+      // Stop data recording if we completed the mission
+      if (touchdowns_ == n_touchdowns_) {
+        if (is_recording_data_) {
+          DataRecording(false);
+        }
+      }
+    } else {
+
+      std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(mission_id_) + " succesfully completed.")) << std::endl;
+
+      // Stop data recording if data is getting recorded
+      if (is_recording_data_) {
+        DataRecording(false);
+      }
     }
+
   } else {
     std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
     std::cout << BOLD(RED(" >>> UNEXPECTED LAND DETECTED <<<")) << std::endl;
@@ -516,21 +589,75 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
 
 void AmazeAutonomy::missionSequencerResponceCallback(const amaze_mission_sequencer::responseConstPtr& msg) {
 
+  // Define request
+  std::string req;
+
+  // Get request
+  if (!getRequestfromMsg(msg->request, req)) {
+    handleFailure();
+  }
+
   // Check if mission sequencer request has been accepted or if mission has ended
   if (msg->response) {
-    std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " accepted from Mission Sequencer")) << std::endl;
+    std::cout << std::endl << BOLD(GREEN(" >>> Request [" + req + "] for mission ID: " + std::to_string(msg->request.id) + " accepted from Mission Sequencer")) << std::endl;
 
-    // Subscribe to landing detection
-    sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &AmazeAutonomy::landingDetectionCallback, this);
+    // Set mission to accepted if request is READ
+    if (msg->request.request == amaze_mission_sequencer::request::READ) {
+      mission_accepted_ = true;
+    }
+
+    // Subscribe to landing detection if request is ARM
+    if (msg->request.request == amaze_mission_sequencer::request::ARM) {
+      sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &AmazeAutonomy::landingDetectionCallback, this);
+    }
   }
 
-  if (!msg->completed && !msg->response) {
-    std::cout << std::endl << BOLD(RED(" >>> Mission ID: " + std::to_string(msg->id) + "  rejected from Mission Sequencer")) << std::endl;
+  if (!msg->response && !msg->completed) {
+    std::cout << std::endl << BOLD(RED(" >>> Request [" + req + "] for mission ID: " + std::to_string(msg->request.id) + "  rejected from Mission Sequencer")) << std::endl;
+    handleFailure();
   }
 
-  if (msg->completed && !msg->response) {
-    std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->id) + " succesfully reached last waypoint")) << std::endl;
-    last_waypoint_reached_ = true;
+  if (msg->request.request == amaze_mission_sequencer::request::UNDEF) {
+    if (msg->completed && !msg->response) {
+      std::cout << std::endl << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->request.id) + " succesfully reached last waypoint")) << std::endl;
+      last_waypoint_reached_ = true;
+    }
+  }
+}
+
+void AmazeAutonomy::missionSequencerRequest(const int& request) {
+
+  // Define request message to mission sequencer
+  amaze_mission_sequencer::request req;
+
+  // Set mission id and request
+  req.header.stamp = ros::Time::now();
+  req.id = uint8_t(mission_id_);
+  req.request = uint8_t(request);
+
+  // publish mission start request
+  pub_mission_sequencer_request_.publish(req);
+
+}
+
+void AmazeAutonomy::watchdogActionRequest(const std::pair<Action, EntityEvent>& action) {
+
+  // Define action and action message
+  watchdog_msgs::ActionStamped action_msg;
+
+  // Fill action message
+  action_msg.header.stamp = ros::Time::now();
+
+  // Get Action, Entity, Type and Status from <Action, EntityEvent>
+  // and convert them into an action message
+  if (setActionMsg(action.first, action.second, action_msg.action)) {
+
+    // Publish action message
+    std::cout << std::endl << BOLD(YELLOW(" >>> Publishing action message.")) << std::endl;
+    pub_watchdog_action_.publish(action_msg);
+
+  } else {
+    std::cout << std::endl << BOLD(RED(" >>> Error on generating action message.")) << std::endl;
   }
 }
 
@@ -597,6 +724,9 @@ void AmazeAutonomy::startWatchdog() {
 
 void AmazeAutonomy::missionSelection() {
 
+  // Set accepted mission to false
+  mission_accepted_ = false;
+
   // Print missions
   std::cout << std::endl << BOLD(GREEN(" >>> Please select one of the following mission by inserting the mission ID")) << std::endl << std::endl;
   for (auto &it : opts_->missions) {
@@ -617,6 +747,12 @@ void AmazeAutonomy::missionSelection() {
   }
 
   std::cout << std::endl << BOLD(GREEN("      - Selected mission with ID: ")) << mission_id_ << std::endl;
+
+  // [TODO] Make it more general
+  if (mission_id_ == 1) {
+    std::cout << std::endl << BOLD(GREEN("      - Selected mission with " + std::to_string(n_touchdowns_) + " touchdowns")) << std::endl;
+  }
+
 }
 
 void AmazeAutonomy::preFlightChecks() {
@@ -669,7 +805,7 @@ bool AmazeAutonomy::takeoffChecks() {
 bool AmazeAutonomy::vioChecks() {
 
   std::cout << std::endl << BOLD(YELLOW(" >>> Initialize Visual-Inertial estimator")) << std::endl;
-  std::cout << std::endl << BOLD(YELLOW(" >>> Press first Space then Enter to start the AMAZE Autonomy"));
+  std::cout << std::endl << BOLD(YELLOW(" >>> Press first Space then Enter when done"));
   std::cin.clear();
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
 
@@ -760,46 +896,10 @@ void AmazeAutonomy::DataRecording(const bool& start_stop) {
   }
 }
 
-void AmazeAutonomy::missionSequencerRequest(const int& request) {
-
-  // Define request message to mission sequencer
-  amaze_mission_sequencer::request mission_start;
-
-  // Set mission id and request
-  mission_start.header.stamp = ros::Time::now();
-  mission_start.id = uint8_t(mission_id_);
-  mission_start.request = uint8_t(request);
-
-  // publish mission start request
-  pub_mission_sequencer_request_.publish(mission_start);
-
-}
-
-void AmazeAutonomy::watchdogActionRequest(const std::pair<Action, EntityEvent>& action) {
-
-  // Define action and action message
-  watchdog_msgs::ActionStamped action_msg;
-
-  // Fill action message
-  action_msg.header.stamp = ros::Time::now();
-
-  // Get Action, Entity, Type and Status from <Action, EntityEvent>
-  // and convert them into an action message
-  if (setActionMsg(action.first, action.second, action_msg.action)) {
-
-    // Publish action message
-    std::cout << std::endl << BOLD(YELLOW(" >>> Publishing action message.")) << std::endl;
-    pub_watchdog_action_.publish(action_msg);
-
-  } else {
-    std::cout << std::endl << BOLD(RED(" >>> Error on generating action message.")) << std::endl;
-  }
-}
-
 void AmazeAutonomy::startAutonomy() {
 
   // Mission selection
-  missionSelection();
+  missionSelection();  
 
   // Start watchdog
   startWatchdog();
@@ -819,8 +919,44 @@ void AmazeAutonomy::startAutonomy() {
   // Start data recording
   DataRecording(true);
 
-  // Start mission
-  missionSequencerRequest(amaze_mission_sequencer::request::START);
+  // communicate selected mission to mission sequencer
+  missionSequencerRequest(amaze_mission_sequencer::request::READ);
+
+  // Wait until mission got accepted
+  while (!mission_accepted_) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+
+  // Start mission - Arming
+  missionSequencerRequest(amaze_mission_sequencer::request::ARM);
+
+  // Set ready to continue flag to false
+  ready_to_continue_ = false;
+
+  // Brutal hack for T5 (WILDCARD)
+  // [TODO] implement it more generally with a parameter on mission config
+  if (mission_id_ == 1) {
+
+    while (touchdowns_ <= n_touchdowns_) {
+
+      // Wait until we are ready to continue
+      while (!ready_to_continue_) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      }
+
+      // Run pre flight checks
+      preFlightChecks();
+
+      // communicate selected mission to mission sequencer
+      missionSequencerRequest(amaze_mission_sequencer::request::READ);
+
+      // Start mission - Arming
+      missionSequencerRequest(amaze_mission_sequencer::request::ARM);
+
+      // Set ready to continue flag to false
+      ready_to_continue_ = false;
+    }
+  }
 
 }
 

@@ -18,8 +18,6 @@
     <arg name="watchdog_startup_time_s"			default="15" />
     <arg name="watchdog_heartbeat_timeout_multiplier"	default="2.0" />
 
-
-
     <!-- autonomy node -->
     <node name="autonomy" pkg="amaze_autonomy" type="autonomy" output="screen" clear_params="true" required="true">
 
