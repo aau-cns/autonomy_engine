@@ -380,6 +380,9 @@ bool AmazeAutonomy::getRequestfromMsg(const amaze_mission_sequencer::request& ms
   case amaze_mission_sequencer::request::ABORT:
     request_str = "ABORT";
     break;
+  case amaze_mission_sequencer::request::DISARM:
+    request_str = "DISARM";
+    break;
   default:
     request_str = "UNDEF";
     break;
