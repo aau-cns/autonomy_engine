@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
 
   // Provide a reliable low-latency communication. However, this affect the bandwidth
   // If you encounter bandwith saturation issues comment this line
-  ros::TransportHints().tcpNoDelay();
+  // ros::TransportHints().tcpNoDelay();
 
   ROS_INFO("Starting the AMAZE Autonomy");
 
