@@ -263,6 +263,8 @@ class AmazeAutonomy {
     /// Boolean to check if we are ready to perform next mission iteration
     bool ready_to_continue_ = false;
 
+    /// Boolean to check if we are armed (mission sequencer state)
+    bool armed_ = false;
 };
 
 #endif  // AMAZEAUTONOMY_H

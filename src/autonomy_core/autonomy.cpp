@@ -551,6 +551,11 @@ void AmazeAutonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) 
     // Disarm request
     missionSequencerRequest(amaze_mission_sequencer::request::DISARM);
 
+    // Wait until DISARM request got accepted
+    while (armed_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
     // Check if we are performing ultiple touchdown
     // T5 WILDCARD
     // [TODO] implement it more general
@@ -612,9 +617,15 @@ void AmazeAutonomy::missionSequencerResponceCallback(const amaze_mission_sequenc
       mission_accepted_ = true;
     }
 
-    // Subscribe to landing detection if request is ARM
+    // Subscribe to landing detection and set armed flag if request is ARM
     if (msg->request.request == amaze_mission_sequencer::request::ARM) {
       sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &AmazeAutonomy::landingDetectionCallback, this);
+      armed_ = true;
+    }
+
+    // Set armed flag to false if request is DISARM
+    if (msg->request.request == amaze_mission_sequencer::request::DISARM) {
+      armed_ = false;
     }
   }
 
@@ -836,7 +847,7 @@ bool AmazeAutonomy::vioChecks() {
   }
 
   if (!superivsion.response.success) {
-    std::cout << std::endl << BOLD(RED(" >>> VIO not correctly initilized")) << std::endl << std::endl;
+    std::cout << std::endl << BOLD(RED(" >>> State estimator (VIO) initialization failed")) << std::endl << std::endl;
     return false;
   }
 
@@ -867,7 +878,7 @@ bool AmazeAutonomy::initializeStateEstimation() {
   }
 
   if (!init.response.success) {
-    std::cout << std::endl << BOLD(RED(" >>> State estimator initialization failure")) << std::endl;
+    std::cout << std::endl << BOLD(RED(" >>> State estimator initialization failed")) << std::endl;
     return false;
   }
 
@@ -950,6 +961,7 @@ void AmazeAutonomy::startAutonomy() {
     while (touchdowns_ <= n_touchdowns_) {
 
       // Wait until we are ready to continue
+      // CAN ready_to_continue_ BE SUBSTITUTED BY ARMED?
       while (!ready_to_continue_) {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
       }
