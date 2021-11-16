@@ -13,17 +13,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef NOMINAL_H
-#define NOMINAL_H
+#ifndef FAILURE_H
+#define FAILURE_H
 
 #include "state_machine/state.h"
 
 namespace autonomy {
 
   /**
-   * @brief Land state.
+   * @brief Failure state.
    */
-  class Nominal : public State {
+  class Failure : public State {
 
   public:
 
@@ -44,21 +44,22 @@ namespace autonomy {
      */
     void onEntry(Autonomy& autonomy) override;
 
+
   private:
 
     /**
      * @brief Private constructor and copy-constructor
      */
-    Nominal();
-    Nominal(const Nominal& other);
+    Failure();
+    Failure(const Failure& other);
 
     /**
      * @brief Assognment operator
      */
-    Nominal& operator=(const Nominal& other);
+    Failure& operator=(const Failure& other);
 
-  }; // calss Nominal
+  }; // class Failure
 
 } // namespace autonomy
 
-#endif  // NOMINAL_H
+#endif  // FAILURE_H

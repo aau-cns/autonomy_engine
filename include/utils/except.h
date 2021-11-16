@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 and Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -27,17 +26,17 @@ struct FailureException : public std::exception
   }
 };
 
-struct ManualException : public std::exception
-{
-  const char* what () const noexcept {
-    return "Manual mode enabled";
-  }
-};
-
 struct TimerOverflowException : public std::exception
 {
   const char* what () const noexcept {
     return "Timer overflow";
+  }
+};
+
+struct DataOverflowException : public std::exception
+{
+  const char* what () const noexcept {
+    return "Data overflow";
   }
 };
 

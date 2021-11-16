@@ -15,23 +15,18 @@
 // DEALINGS IN THE SOFTWARE.
 
 #include "state_machine/states/undefined.h"
-#include "state_machine/states/nominal.h"
 
-Undefined::Undefined() {};
+namespace autonomy {
 
-AbstractState& Undefined::Instance() {
-  static Undefined singleton;
-  return singleton;
-}
+  Undefined::Undefined() {};
 
-void Undefined::stateTransition(State*, EntityEvent&) {}
+  State& Undefined::Instance() {
+    static Undefined singleton;
+    return singleton;
+  }
 
-void Undefined::onExit(State*, EntityEvent&) {}
+  void Undefined::onEntry(Autonomy&) {}
 
-void Undefined::onEntry(State*, EntityEvent&) {}
+  void Undefined::onExit(Autonomy&) {}
 
-void Undefined::nominal(State* state) {
-
-  // Change state to Nominal
-  setState(state, Nominal::Instance());
 }

@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -17,60 +16,49 @@
 #ifndef UNDEFINED_H
 #define UNDEFINED_H
 
-#include "state_machine/abstract_state.h"
+#include "state_machine/state.h"
 
-/**
- * @brief Undefined state at initialization
- */
-class Undefined : public AbstractState {
-
-public:
+namespace autonomy {
 
   /**
-   * @brief Instance of State (Singleton)
+   * @brief Undefined state at initialization
    */
-  static AbstractState& Instance();
+  class Undefined : public State {
 
-  /**
-   * @brief Trigger a state transition
-   * @param Pointer to State
-   * @param reference to entity event
-   */
-  void stateTransition(State* state, EntityEvent& event) override;
+  public:
 
-  /**
-   * @brief Action to be performed when exiting a state
-   * @param Pointer to State
-   * @param Event that triggered the exit from the state
-   */
-  void onExit(State* state, EntityEvent& event) override;
+    /**
+     * @brief Instance of State (Singleton)
+     */
+    static State& Instance();
 
-  /**
-   * @brief Action to be performed when entering a state
-   * @param Pointer to State
-   * @param Event that triggered the entry to the state
-   */
-  void onEntry(State* state, EntityEvent& event) override;
+    /**
+     * @brief Action to be performed when exiting a state
+     * @param Reference to Autonomy
+     */
+    void onExit(Autonomy& autonomy) override;
 
-  /**
-   * @brief Trigger a state transition from undefined state to nominal state
-   * @param Pointer to State
-   */
-  void nominal(State* state) override;
+    /**
+     * @brief Action to be performed when entering a state
+     * @param  Reference to Autonomy
+     */
+    void onEntry(Autonomy& autonomy) override;
 
-private:
+  private:
 
-  /**
-   * @brief Private constructor and copy-constructor
-   */
-  Undefined();
-  Undefined(const Undefined& other);
+    /**
+     * @brief Private constructor and copy-constructor
+     */
+    Undefined();
+    Undefined(const Undefined& other);
 
-  /**
-   * @brief Assognment operator
-   */
-  Undefined& operator=(const Undefined& other);
+    /**
+     * @brief Assognment operator
+     */
+    Undefined& operator=(const Undefined& other);
 
-};
+  }; // calss Undefined
+
+} // namepsace autonomy
 
 #endif  // UNDEFINED_H

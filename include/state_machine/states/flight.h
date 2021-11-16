@@ -13,17 +13,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef NOMINAL_H
-#define NOMINAL_H
+#ifndef FLIGHT_H
+#define FLIGHT_H
 
 #include "state_machine/state.h"
 
 namespace autonomy {
 
   /**
-   * @brief Land state.
+   * @brief Flight state
    */
-  class Nominal : public State {
+  class Flight : public State {
 
   public:
 
@@ -49,16 +49,16 @@ namespace autonomy {
     /**
      * @brief Private constructor and copy-constructor
      */
-    Nominal();
-    Nominal(const Nominal& other);
+    Flight();
+    Flight(const Flight& other);
 
     /**
      * @brief Assognment operator
      */
-    Nominal& operator=(const Nominal& other);
+    Flight& operator=(const Flight& other);
 
-  }; // calss Nominal
+  }; // calss Flight
 
-} // namespace autonomy
+} // namepsace autonomy
 
-#endif  // NOMINAL_H
+#endif  // FLIGHT_H

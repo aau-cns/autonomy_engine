@@ -18,10 +18,16 @@
 #include "utils/colors.h"
 #include "utils/except.h"
 
+Timer::Timer() {
+
+  // Make timer
+  timer_ = std::make_unique<boost::asio::deadline_timer>(io_);
+}
+
 Timer::Timer(const int &ms) {
 
   // Make timer
-  timer_ = std::make_shared<boost::asio::deadline_timer>(io_);
+  timer_ = std::make_unique<boost::asio::deadline_timer>(io_);
 
   // Set timeout
   setTimeout(ms);
@@ -41,7 +47,7 @@ void Timer::setTimeout(const int &ms) {
   if (ms > 0) {
     timeout_ = ms;
   } else {
-    std::cout << std::endl << BOLD(YELLOW("Invalid timer timout")) << std::endl;
+    std::cout << BOLD(YELLOW("Invalid timer timout\n")) << std::endl;
   }
 }
 
@@ -55,8 +61,8 @@ void Timer::resetTimer() {
   timer_->expires_from_now(boost::posix_time::millisec(timeout_));
   timer_->async_wait(boost::bind(&Timer::timeoutHandler, this, boost::asio::placeholders::error));
 
-  // if not init run io service in a thread, call signal handler if exception is cought
-  if(!init_) {
+  // if not active run io service in a thread, call signal handler if exception is cought
+  if(!active_) {
     th_ = std::thread([this](){
       try {
         io_.run();
@@ -65,8 +71,18 @@ void Timer::resetTimer() {
       }
 
     });
-    init_ = true;
+    active_ = true;
   }
+}
+
+void Timer::stopTimer() {
+
+  // If not active cancel any pending asynch wait
+  if(active_) {
+    timer_->cancel();
+    active_ = false;
+  }
+
 }
 
 void Timer::timeoutHandler(const boost::system::error_code& error) {

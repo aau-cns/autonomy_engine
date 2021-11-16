@@ -14,7 +14,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include "autonomy_core/entity_event.h"
+#include "autonomy_core/autonomy_defs.h"
 
 EntityEvent::EntityEvent() {}
 

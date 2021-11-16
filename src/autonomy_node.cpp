@@ -24,11 +24,17 @@ int main(int argc, char* argv[])
   ros::init(argc, argv, "amaze_autonomy");
   ros::NodeHandle nh("~");
 
-  // Provide a reliable low-latency communication. However, this affect the bandwidth
-  // If you encounter bandwith saturation issues comment this line
-  // ros::TransportHints().tcpNoDelay();
+  // Load tcpNoDelay option (false by default)
+  bool tcp_no_delay = false;
+  nh.param<bool>("tcp_no_delay", tcp_no_delay, tcp_no_delay);
 
-  ROS_INFO("Starting the AMAZE Autonomy");
+  // Provide a reliable low-latency communication if tcp_no_delay flag is true.
+  // Note that, the tcpNoDelay option this affect negatively the bandwidth
+  if (tcp_no_delay) {
+    ros::TransportHints().tcpNoDelay();
+  }
+
+  ROS_INFO("Starting the AMAZE Autonomy\n");
 
   // Start asynch (multi-threading) spinner
   ros::AsyncSpinner spinner(0);
@@ -37,11 +43,11 @@ int main(int argc, char* argv[])
   try {
 
     // Instanciate AMAZE autonomy
-    AmazeAutonomy autonomy(nh);
+    autonomy::Autonomy autonomy(nh);
 
-    std::cout << std::endl << BOLD(GREEN(" >>> Press [ENTER] to start the AMAZE Autonomy"));
-    std::cin.clear();
+    std::cout << BOLD(GREEN(" >>> Press [ENTER] to start the AMAZE Autonomy"));
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << std::endl;
 
     // Start the autonomy
     autonomy.startAutonomy();
@@ -49,21 +55,13 @@ int main(int argc, char* argv[])
     // Wait for the node to be killed
     ros::waitForShutdown();
 
-  } catch (const ManualException&) {
-
-    // Stop the spinner
-    spinner.stop();
-
-    // Print info
-    std::cout << std::endl << BOLD(RED(" >>> AMAZE autonomy disabled <<<")) << std::endl;
-
   } catch (const FailureException&) {
 
     // Stop the spinner
     spinner.stop();
 
     // Print info
-    std::cout << std::endl << BOLD(RED(" >>> An error occured. AMAZE autonomy failed <<<")) << std::endl;
+    std::cout << BOLD(RED(" >>> An error occured. Shutting down Autonomy <<<\n")) << std::endl;
 
   }
 

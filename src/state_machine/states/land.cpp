@@ -16,32 +16,30 @@
 
 #include <iostream>
 
-#include "state_machine/states/nominal.h"
+#include "state_machine/states/land.h"
 #include "utils/colors.h"
 
 namespace autonomy {
 
-  Nominal::Nominal() {};
+  Land::Land() {};
 
-  State& Nominal::Instance() {
-    static Nominal singleton;
+  State& Land::Instance() {
+    static Land singleton;
     return singleton;
   }
 
-  void Nominal::onEntry(Autonomy&) {
+  void Land::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
+    std::cout << BOLD(YELLOW(" >>> System state: LAND <<< \n"));
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
 
-    // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording) {
-      autonomy.DataRecording(true);
-    }
+    // Send land request to mission sequencer
+    autonomy.land();
 
   }
 
-  void Nominal::onExit(Autonomy&) {}
+  void Land::onExit(Autonomy&) {}
 
 }

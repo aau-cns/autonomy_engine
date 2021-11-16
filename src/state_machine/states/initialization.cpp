@@ -16,32 +16,32 @@
 
 #include <iostream>
 
-#include "state_machine/states/nominal.h"
+#include "state_machine/states/initialization.h"
 #include "utils/colors.h"
 
 namespace autonomy {
 
-  Nominal::Nominal() {};
+  Initialization::Initialization() {};
 
-  State& Nominal::Instance() {
-    static Nominal singleton;
+  State& Initialization::Instance() {
+    static Initialization singleton;
     return singleton;
   }
 
-  void Nominal::onEntry(Autonomy&) {
+  void Initialization::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
+    std::cout << BOLD(YELLOW(" >>> System state: INITIALIZATION <<< \n"));
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
 
-    // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording) {
-      autonomy.DataRecording(true);
+    // Perform initialization of the watchdog
+    if (autonomy.opts_->activate_watchdog) {
+      autonomy.startWatchdog();
     }
 
   }
 
-  void Nominal::onExit(Autonomy&) {}
+  void Initialization::onExit(Autonomy&) {}
 
 }

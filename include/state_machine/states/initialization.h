@@ -13,17 +13,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef NOMINAL_H
-#define NOMINAL_H
+#ifndef INITIALIZATION_H
+#define INITIALIZATION_H
 
 #include "state_machine/state.h"
 
 namespace autonomy {
 
   /**
-   * @brief Land state.
+   * @brief Initialization state.
    */
-  class Nominal : public State {
+  class Initialization : public State {
 
   public:
 
@@ -49,16 +49,16 @@ namespace autonomy {
     /**
      * @brief Private constructor and copy-constructor
      */
-    Nominal();
-    Nominal(const Nominal& other);
+    Initialization();
+    Initialization(const Initialization& other);
 
     /**
      * @brief Assognment operator
      */
-    Nominal& operator=(const Nominal& other);
+    Initialization& operator=(const Initialization& other);
 
-  }; // calss Nominal
+  }; // calss Initialization
 
 } // namespace autonomy
 
-#endif  // NOMINAL_H
+#endif  // INITIALIZATION_H

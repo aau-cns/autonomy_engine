@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -23,53 +22,108 @@
 
 #include "utils/colors.h"
 #include "utils/utilities.h"
-#include "autonomy_core/entity_event.h"
+#include "autonomy_core/autonomy_defs.h"
+#include "autonomy_core/mission.h"
 
-/**
- * @brief Immutable Struct for autonomy options.
- *
- * This struct contains information mainly got from the
- * parameter server that are used by the autonomy.
- */
-struct autonomyOptions {
+namespace autonomy {
 
-  /// Topic and service Names
-  const std::string watchdog_start_service_name, watchdog_heartbeat_topic,  watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, estimator_supervisor_service_name, data_recrding_service_name, takeoff_service_name, landing_detection_topic, estimator_init_service_name;
+  /**
+   * @brief Immutable Struct for autonomy options.
+   *
+   * This struct contains information mainly got from the
+   * parameter server that are used by the autonomy.
+   */
+  struct autonomyOptions {
 
-  /// Timeout in milliseconds for watchdog heartbeat
-  const int timeout;
+    /// Topic Names
+    const std::string watchdog_heartbeat_topic;
+    const std::string watchdog_status_topic;
+    const std::string watchdog_action_topic;
+    const std::string mission_sequencer_request_topic;
+    const std::string mission_sequencer_responce_topic;
+    const std::string landing_detection_topic;
 
-  /// Watchdog startup time in seconds needed to check entities
-  const int watchdog_startup_time;
+    /// service Names
+    const std::string watchdog_start_service_name;
+    const std::string estimator_supervisor_service_name;
+    const std::string data_recrding_service_name;
+    const std::string takeoff_service_name;
+    const std::string estimator_init_service_name;
 
-  /// Mission map <Mission ID, Mission description>
-  const std::map<size_t, std::string> missions;
+    /// Timeout in milliseconds for watchdog heartbeat
+    const int watchdog_timeout;
 
-  /// Entity Action map <Mission ID <Entity, Action>>
-  const std::vector<std::pair<size_t, std::pair<Entity, AutonomyState>>> entity_action_vector;
+    /// Timeout in milliseconds for the maximum flight time
+    const int flight_timeout;
 
-  /// Print function
-  void printAutonomyOptions() {
+    /// Timeout in milliseconds for the maximum time to wait for a sensor fix
+    const int fix_timeout;
 
-    std::cout << std::endl << BOLD(YELLOW("--------------- LOADED PARAMETERS ---------------")) << std::endl << std::endl;
-    std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_heartbeat_topic + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_status_topic + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Subscribed to: " + mission_sequencer_request_topic + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Subscribed to: " + landing_detection_topic + "")) << std::endl << std::endl;
-    std::cout << BOLD(YELLOW(" - Publishing on: " + mission_sequencer_responce_topic + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Publishing on: " + watchdog_action_topic + "")) << std::endl;
+    /// Watchdog startup time in seconds needed to check entities
+    const int watchdog_startup_time;
 
-    std::cout << BOLD(YELLOW(" - Service available at: " + watchdog_start_service_name + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Service available at: " + estimator_supervisor_service_name + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Service available at: " + data_recrding_service_name + "")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Service available at: " + estimator_init_service_name + "")) << std::endl << std::endl;
+    /// Booleans, setup of the autonomy
+    const bool activate_user_interface;
+    const bool activate_watchdog;
+    const bool activate_data_recording;
+    const bool estimator_init_service;
+    const bool perform_takeoff_check;
+    const bool perform_estimator_check;
+    const bool activate_landing_detection;
 
-    std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: " + std::to_string(timeout) + " ms")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Watchdog startup time: " + std::to_string(watchdog_startup_time) + " s")) << std::endl;
-    std::cout << BOLD(YELLOW(" - Number of missions: " + std::to_string(missions.size()) + "")) << std::endl;
-    std::cout << std::endl << BOLD(YELLOW("-------------------------------------------------")) << std::endl;
-  }
+    /// Mission to be loaded in case of no user interface
+    const int mission_id_no_ui;
 
-};
+    /// Print function
+    inline void printAutonomyOptions() {
+
+      std::cout << BOLD(YELLOW("--------------- LOADED PARAMETERS ---------------\n\n"));
+
+      std::cout << BOLD(YELLOW(" - User Interface: " + getStringfromBool(activate_user_interface) + "\n"));
+      std::cout << BOLD(YELLOW(" - Watchdog: " + getStringfromBool(activate_watchdog) + "\n"));
+      std::cout << BOLD(YELLOW(" - Data recording: " + getStringfromBool(activate_data_recording) + "\n"));
+      std::cout << BOLD(YELLOW(" - perform service call to initilize the state estimator: " + getStringfromBool(estimator_init_service) + "\n"));
+      std::cout << BOLD(YELLOW(" - Takeoff checks: " + getStringfromBool(perform_takeoff_check) + "\n"));
+      std::cout << BOLD(YELLOW(" - Estimation quality checks: " + getStringfromBool(perform_estimator_check) + "\n"));
+      std::cout << BOLD(YELLOW(" - landing detection: " + getStringfromBool(activate_landing_detection) + "\n\n"));
+
+      std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_heartbeat_topic + "\n"));
+      std::cout << BOLD(YELLOW(" - Subscribed to: " + watchdog_status_topic + "\n"));
+      std::cout << BOLD(YELLOW(" - Subscribed to: " + mission_sequencer_request_topic + "\n"));
+      std::cout << BOLD(YELLOW(" - Subscribed to: " + landing_detection_topic + "\n\n"));
+
+      std::cout << BOLD(YELLOW(" - Publishing on: " + mission_sequencer_responce_topic + "\n"));
+      std::cout << BOLD(YELLOW(" - Publishing on: " + watchdog_action_topic + "\n\n"));
+
+      std::cout << BOLD(YELLOW(" - Service available at: " + watchdog_start_service_name + "\n"));
+      std::cout << BOLD(YELLOW(" - Service available at: " + estimator_supervisor_service_name + "\n"));
+      std::cout << BOLD(YELLOW(" - Service available at: " + data_recrding_service_name + "\n"));
+      std::cout << BOLD(YELLOW(" - Service available at: " + estimator_init_service_name + "\n\n"));
+
+      std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout: " + std::to_string(watchdog_timeout) + " ms\n"));
+      std::cout << BOLD(YELLOW(" - Watchdog startup time: " + std::to_string(watchdog_startup_time) + " s\n\n"));
+
+      std::cout << BOLD(YELLOW(" - Maximum flight time: " + std::to_string(flight_timeout*1000*60) + " min\n\n"));
+
+      std::cout << BOLD(YELLOW(" - Maximum waiting time for a sensor fix: " + std::to_string(fix_timeout) + " ms\n\n"));
+
+      if (!activate_user_interface) {
+        std::cout << BOLD(YELLOW(" - Loaded mission iwth ID: " + std::to_string(mission_id_no_ui) + "\n\n"));
+      }
+
+      std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+    }
+
+    inline const std::string getStringfromBool(const bool& flag) const {
+      if (flag) {
+        return "Active";
+      } else {
+        return "Inactive";
+      }
+    }
+
+  }; // struct AutonomyOptions
+
+} // namespace autonomy
 
 #endif  // AUTONOMY_OPTIONS_H

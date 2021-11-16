@@ -1,8 +1,8 @@
 ---
 title: AMAZE Autonomy
 author:
-  - Christian Brommer
   - Alessandro Fornasier
+  - Christian Brommer
   - Control of Networked Systems, University of Klagenfurt, Austria
 date: 20.04.2021
 subtitle: Version 1.0

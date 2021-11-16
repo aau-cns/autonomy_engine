@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -29,6 +28,11 @@ class Timer
   public:
 
     /**
+     * @brief Timer default constructur
+     */
+    Timer();
+
+    /**
      * @brief Timer constructur
      * @param reference to int (timeout in milliseconds)
      */
@@ -40,28 +44,34 @@ class Timer
     ~Timer();
 
     /**
-     * @brief Set timeout
-     * @param reference to int milliseconds
-     */
-    void setTimeout(const int &ms);
-
-    /**
      * @brief Get timeout
      * @return timeout
      */
     const int& getTimeout() const;
 
     /**
+     * @brief Set timeout
+     * @param reference to int milliseconds
+     */
+    void setTimeout(const int &ms);
+
+    /**
      * @brief Start or restart timer, this function call will deleate any pending asynch wait
      */
     void resetTimer();
+
+    /**
+     * @brief Stop timer, this function call will deleate any pending asynch wait
+     */
+    void stopTimer();
+
 
     /// Signal handler
     boost::signals2::signal<void()> sh_;
 
   private:
 
-    /**
+     /**
      * @brief Timeout handler function
      */
     void timeoutHandler(const boost::system::error_code& error);
@@ -73,13 +83,13 @@ class Timer
     boost::asio::io_service io_;
 
     /// Deadline_timer
-    std::shared_ptr<boost::asio::deadline_timer> timer_;
+    std::unique_ptr<boost::asio::deadline_timer> timer_;
 
     /// Timeout in milliseconds
     int timeout_ = 0;
 
-    /// timer init flag
-    bool init_ = false;
+    /// timer active flag
+    bool active_ = false;
 
 };
 

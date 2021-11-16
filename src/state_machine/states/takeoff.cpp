@@ -15,33 +15,41 @@
 // DEALINGS IN THE SOFTWARE.
 
 #include <iostream>
+#include <amaze_mission_sequencer/request.h>
+#include <amaze_mission_sequencer/response.h>
 
-#include "state_machine/states/nominal.h"
+#include "state_machine/states/takeoff.h"
 #include "utils/colors.h"
 
 namespace autonomy {
 
-  Nominal::Nominal() {};
+  Takeoff::Takeoff() {};
 
-  State& Nominal::Instance() {
-    static Nominal singleton;
+  State& Takeoff::Instance() {
+    static Takeoff singleton;
     return singleton;
   }
 
-  void Nominal::onEntry(Autonomy&) {
+  void Takeoff::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
+    std::cout << BOLD(YELLOW(" >>> System state: TAKEOFF <<< \n"));
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
 
-    // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording) {
-      autonomy.DataRecording(true);
-    }
+    // Perform preflight checks
+    autonomy.preFlightChecks();
+
+    // Send arm command to mission sequencer
+    autonomy.arm();
 
   }
 
-  void Nominal::onExit(Autonomy&) {}
+  void Takeoff::onExit(Autonomy& autonomy) {
+
+    // Send waypoints
+    autonomy.sendWaypoints();
+
+  }
 
 }

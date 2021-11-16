@@ -16,31 +16,27 @@
 
 #include <iostream>
 
-#include "state_machine/states/manual.h"
+#include "state_machine/states/hover.h"
 #include "utils/colors.h"
 
-Manual::Manual() {};
+namespace autonomy {
 
-AbstractState& Manual::Instance() {
-  static Manual singleton;
-  return singleton;
-}
+  Hover::Hover() {};
 
-void Manual::stateTransition(State*, EntityEvent&) {}
+  State& Hover::Instance() {
+    static Hover singleton;
+    return singleton;
+  }
 
-void Manual::onExit(State*, EntityEvent&) {}
+  void Hover::onEntry(Autonomy&) {
 
-void Manual::onEntry(State* state, EntityEvent& event) {
+    // print info
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
+    std::cout << BOLD(YELLOW(" >>> System state: HOVER <<< \n"));
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
 
-  // Print info
-  std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl << std::endl;
-  std::cout << BOLD(RED(" >>> PLEASE TAKE MANUAL CONTROL OF <<< ")) << std::endl;
-  std::cout << BOLD(RED(" >>> THE PLATFORM AND LAND SAFELY  <<< ")) << std::endl;
-  std::cout << std::endl << BOLD(RED("-------------------------------------------------")) << std::endl;
+  }
 
-  // Set no action
-  setAction(state, Action::NOTHING, event);
+  void Hover::onExit(Autonomy&) {}
 
 }
-
-void Manual::nominal(State*) {}

@@ -16,32 +16,34 @@
 
 #include <iostream>
 
-#include "state_machine/states/nominal.h"
+#include "state_machine/states/failure.h"
 #include "utils/colors.h"
 
 namespace autonomy {
 
-  Nominal::Nominal() {};
+  Failure::Failure() {};
 
-  State& Nominal::Instance() {
-    static Nominal singleton;
+  State& Failure::Instance() {
+    static Failure singleton;
     return singleton;
   }
 
-  void Nominal::onEntry(Autonomy&) {
+  void Failure::onEntry(Autonomy& autonomy) {
 
-    // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    // Print info
+    std::cout << BOLD(RED("-------------------------------------------------\n"));
+    std::cout << BOLD(RED(" >>> System state: FAILURE <<< \n"));
+    std::cout << BOLD(RED("-------------------------------------------------\n")) << std::endl;
 
-    // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording) {
-      autonomy.DataRecording(true);
-    }
+    // Handle failure
+    autonomy.handleFailure();
+
+    // Throw exception
+    throw FailureException();
 
   }
 
-  void Nominal::onExit(Autonomy&) {}
+  void Failure::onExit(Autonomy&) {}
 
-}
+} // namespace autonomy
+

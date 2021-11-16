@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -17,97 +16,36 @@
 #ifndef STATE_H
 #define STATE_H
 
-#include <vector>
+#include "autonomy_core/autonomy.h"
 
-#include "autonomy_core/entity_event.h"
-
-class AbstractState;
-
-/**
- * @brief State class
- */
-class State {
-
-public:
+namespace autonomy {
 
   /**
-   * @brief State constructor
+   * @brief State class
    */
-  State();
+  class State {
 
-  /**
-   * @brief Trigger a state transition
-   * @param reference to entity event
-   * @return boolean
-   */
-  bool stateTransition(EntityEvent& event);
+  public:
 
-  /**
-   * @brief Trigger a state transition from undefined state to nominal state
-   */
-  void nominal();
+    /**
+     * @brief Destructor
+     */
+    virtual ~State();
 
-  /**
-   * @brief Get pending failures
-   * @return const reference to pending failures vector
-   */
-  const std::vector<EntityEvent>& getPendingFailures() const;
+    /**
+     * @brief Action to be performed when exiting a state
+     * @param Reference to Autonomy
+     */
+    virtual void onExit(Autonomy& autonomy) = 0;
 
-  /**
-   * @brief Get actual action to be performed
-   * @return const reference to std::pair<Action, EntityEvent>
-   */
-  const std::pair<Action, EntityEvent>& getAction() const;
+    /**
+     * @brief Action to be performed when entering a state
+     * @param Reference to Autonomy
+     */
+    virtual void onEntry(Autonomy& autonomy) = 0;
 
-  /**
-   * @brief Get actual (last registered) event
-   * @return const reference to EntityEvent
-   */
-  const EntityEvent& getEntityEvent() const;
+  }; // calss State
 
-  /**
-   * @brief Get actual state
-   * @return const reference to AutonomyState
-   */
-  const AutonomyState& getState() const;
-
-private:
-
-  /**
-   * @brief Friend AbstractState (can access private part of State)
-   */
-  friend class AbstractState;
-
-  /**
-   * @brief Set state
-   * @param reference to AbstractState
-   */
-  void setState(AbstractState& abstract_state);
-
-  /**
-   * @brief Set action to be performed
-   * @param const reference to Action
-   * @param const reference to EntityEvent
-   */
-  void setAction(const Action& action, const EntityEvent& event);
-
-private:
-
-  // Pointer to AbstractState
-  AbstractState* abstract_state_;  
-
-  // Actual (last registered) event
-  EntityEvent event_;
-
-  // Actual state
-  AutonomyState state_;
-
-  // History of failures
-  std::vector<EntityEvent> pending_failures_;
-
-  // Action to be performed <action ID, EntityEvent>
-  std::pair<Action, EntityEvent> action_;
-
-};
+} // namespace autonomy
 
 #endif  // STATE_H

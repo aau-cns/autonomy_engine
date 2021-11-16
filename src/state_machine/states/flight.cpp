@@ -16,32 +16,27 @@
 
 #include <iostream>
 
-#include "state_machine/states/nominal.h"
+#include "state_machine/states/flight.h"
 #include "utils/colors.h"
 
 namespace autonomy {
 
-  Nominal::Nominal() {};
+  Flight::Flight() {};
 
-  State& Nominal::Instance() {
-    static Nominal singleton;
+  State& Flight::Instance() {
+    static Flight singleton;
     return singleton;
   }
 
-  void Nominal::onEntry(Autonomy&) {
+  void Flight::onEntry(Autonomy&)  {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
-
-    // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording) {
-      autonomy.DataRecording(true);
-    }
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
+    std::cout << BOLD(YELLOW(" >>> System state: FLIGHT <<< \n"));
+    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
 
   }
 
-  void Nominal::onExit(Autonomy&) {}
+  void Flight::onExit(Autonomy&) {}
 
 }

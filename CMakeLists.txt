@@ -149,12 +149,30 @@ include_directories(
 
 ## List third party libraries used by all binaries
 list(
-  APPEND thirdparty_libraries ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${EIGEN3_LIBRARIES}
+  APPEND thirdparty_libraries
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${EIGEN3_LIBRARIES}
 )
 
 ## List custom libraries inside lib folder
 list(
-  APPEND custom_libraries_sources src/timer/timer.cpp src/autonomy_core/autonomy.cpp src/autonomy_core/entity_event.cpp src/state_machine/state.cpp  src/state_machine/abstract_state.cpp  src/state_machine/states/hold.cpp src/state_machine/states/manual.cpp src/state_machine/states/nominal.cpp src/state_machine/states/undefined.cpp
+  APPEND custom_libraries_sources
+  src/waypoints_parser/waypoints_parser.cpp
+  src/timer/timer.cpp
+  src/autonomy_core/autonomy.cpp
+  src/autonomy_core/mission.cpp
+  src/state_machine/abstract_state.cpp
+  src/state_machine/state.cpp
+  src/state_machine/states/flight.cpp
+  src/state_machine/states/hold.cpp
+  src/state_machine/states/hover.cpp
+  src/state_machine/states/land.cpp
+  src/state_machine/states/initialization.cpp
+  src/state_machine/states/takeoff.cpp
+  src/state_machine/states/failure.cpp
+  src/state_machine/states/nominal.cpp
+  src/state_machine/states/undefined.cpp
 )
 
 ## Declare a C++ library

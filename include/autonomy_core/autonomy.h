@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -14,8 +13,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef AMAZEAUTONOMY_H
-#define AMAZEAUTONOMY_H
+#ifndef AUTONOMY_H
+#define AUTONOMY_H
 
 #include <ros/ros.h>
 #include <watchdog_msgs/Start.h>
@@ -36,11 +35,16 @@
 #include <limits>
 
 #include "autonomy_core/autonomy_options.h"
+#include "autonomy_core/mission.h"
 #include "timer/timer.h"
-#include "state_machine/state.h"
 #include "utils/except.h"
+#include "waypoints_parser/waypoints_parser.h"
 
-class AmazeAutonomy {
+namespace autonomy {
+
+  class State;
+
+  class Autonomy {
 
   public:
 
@@ -48,41 +52,17 @@ class AmazeAutonomy {
      * @brief Autonomy constructor
      * @param Ros NodeHandle
      */
-    AmazeAutonomy(ros::NodeHandle &nh);
+    Autonomy(ros::NodeHandle &nh);
 
     /**
-     * @brief Function that starts the autonomy and the interface with the user.
+     * @brief Start the autonomy.
      */
     void startAutonomy();
-
-  private:
 
     /**
      * @brief Watchdog start service call
      */
     void startWatchdog();
-
-    /**
-     * @brief Selection of the mission form the user
-     */
-    void missionSelection();
-
-    /**
-     * @brief Run preflight checks
-     */
-    void preFlightChecks();
-
-    /**
-     * @brief Send mission request to mission sequencer
-     * @param const reference to int request
-     */
-    void missionSequencerRequest(const int& request);
-
-    /**
-     * @brief Send action to watchdog
-     * @param const reference to std::pair<Action, EntityEvent>
-     */
-    void watchdogActionRequest(const std::pair<Action, EntityEvent>& action);
 
     /**
      * @brief Start/stop data recording service call
@@ -91,16 +71,68 @@ class AmazeAutonomy {
     void DataRecording(const bool& start_stop);
 
     /**
+     * @brief Run preflight checks
+     */
+    void preFlightChecks();
+
+    /**
+     * @brief Send arm request to mission sequencer
+     */
+    void arm();
+
+    /**
+     * @brief Send arm request to mission sequencer
+     */
+    void takeoff();
+
+    /**
+     * @brief Send waypoint to mission sequencer
+     */
+    void sendWaypoints();
+
+    /**
+     * @brief Send hold request to mission sequencer
+     */
+    void hold();
+
+    /**
+     * @brief Send land request to mission sequencer
+     */
+    void land();
+
+    /**
+     * @brief Failure handler, stop any timer, unsubscribe all topic, abort mission and clear pending vectors.
+     */
+    void handleFailure();
+
+    /// Autonomy options
+    std::unique_ptr<autonomyOptions> opts_;
+
+  private:
+
+    /**
+     * @brief Selection of the mission form the user
+     */
+    void missionSelection();
+
+    /**
+     * @brief Send action to watchdog
+     * @param reference to SensorStatus
+     * @param const reference to watchdog_msgs::Status
+     */
+    void watchdogActionRequest(SensorStatus& status, const watchdog_msgs::Status& status_msg);
+
+    /**
      * @brief Run takeoff checks
      * @return boolean true in case of success, false in case of failure
      */
     [[nodiscard]] bool takeoffChecks();
 
     /**
-     * @brief Run vio checks
+     * @brief Run estimator check
      * @return boolean true in case of success, false in case of failure
      */
-    [[nodiscard]] bool vioChecks();
+    [[nodiscard]] bool estimatorCheck();
 
     /**
      * @brief Load and parse paramters and options
@@ -130,6 +162,12 @@ class AmazeAutonomy {
     void landingDetectionCallback(const std_msgs::BoolConstPtr& msg);
 
     /**
+     * @brief Send mission request to mission sequencer
+     * @param const reference to int request
+     */
+    void missionSequencerRequest(const int& request);
+
+    /**
      * @brief Mission sequencer responce callback
      */
     void missionSequencerResponceCallback(const amaze_mission_sequencer::responseConstPtr& msg);
@@ -140,81 +178,48 @@ class AmazeAutonomy {
     void watchdogTimerOverflowHandler();
 
     /**
-     * @brief Get Entity, Type and subType from watchdog_msgs::Status
+     * @brief Callback method called when a flight timer overflow occurs
+     */
+    void flightTimerOverflowHandler();
+
+    /**
+     * @brief Callback method called when a failure timer overflow occurs
+     */
+    void failureTimerOverflowHandler();
+
+    /**
+     * @brief Get SensorStatus from watchdog_msgs::Status, this function will also
+     * increase and decrease the pending_failures_ dependeng on weather we got a
+     * failure or a fix
+     *
      * @param const reference to watchdog_msgs::Status
-     * @param reference to Entity
-     * @param reference to Type
-     * @param reference to subType
+     * @param reference to SensorStatus
      * @return boolean
      */
-    [[nodiscard]] bool getEntityTypeSubTypeFromMsg(const watchdog_msgs::Status& msg, Entity& entity, Type& type, subType& subtype);
+    [[nodiscard]] bool getSensorStatusFromMsg(const watchdog_msgs::Status& msg, SensorStatus& status);
 
     /**
-     * @brief Set watchdog_msgs::Status from Entity, Type and subType
-     * @param const reference to Entity
-     * @param const reference to Type
-     * @param const reference to subType
-     * @param reference to watchdog_msgs::Status
-     * @return boolean
+     * @brief Get string from amaze_mission_sequencer::request
+     * @param const reference to amaze_mission_sequencer::request
+     * @param Reference to std::string
      */
-    [[nodiscard]] bool setStatusMsgFromEntityTypeSubType(const Entity& entity, const Type& type, const subType& subtype, watchdog_msgs::Status& msg);
-
-    /**
-     * @brief Get Entity from string
-     * @param const string
-     * @param reference to Entity
-     * @return boolean
-     */
-    [[nodiscard]] bool getEntityFromString(const std::string& entity_str, Entity& entity);
-
-    /**
-     * @brief Get next state (AutonomyState) from string
-     * @param const string
-     * @param reference to Action
-     * @return boolean
-     */
-    [[nodiscard]] bool getNextStateFromString(const std::string& action_str,  AutonomyState& action);
-
-    /**
-     * @brief Get string from Entity
-     * @param const reference to Entity
-     * @param string
-     * @return boolean
-     */
-    [[nodiscard]] bool getEntityString(const Entity& entity, std::string& entity_str);
-
-    /**
-     * @brief Get string from request
-     * @param const reference to mission sequencer request
-     * @param string
-     * @return boolean
-     */
-    [[nodiscard]] bool getRequestfromMsg(const amaze_mission_sequencer::request& msg, std::string& request_str);
+    void getRequestfromMsg(const amaze_mission_sequencer::request& msg, std::string& request_str);
 
     /**
      * @brief Get Action from string
-     * @param const reference to EntityEvent
      * @param const reference to Action
+     * @param const reference to watchdog_msgs::Status
      * @param reference to watchdog_msgs::Action
-     * @return boolean
      */
-    [[nodiscard]] bool setActionMsg(const Action& action, const EntityEvent entityevent, watchdog_msgs::Action& msg);
+    void setActionMsg(const Action& action, const watchdog_msgs::Status& status_msg, watchdog_msgs::Action& action_msg);
 
     /**
-     * @brief Callback to handle failure
+     * @brief Call/Perform a state transition
      */
-    [[noreturn]] void handleFailure();
-
-    /**
-     * @brief Callback to handle manual mode
-     */
-    [[noreturn]] void handleManual();
+    void stateTransition();
 
     /// Nodehandler
     ros::NodeHandle nh_;
-
-    /// Autonomy options
-    std::shared_ptr<autonomyOptions> opts_;
 
     /// Subscribers
     ros::Subscriber sub_watchdog_heartbeat_;
@@ -233,38 +238,57 @@ class AmazeAutonomy {
     ros::ServiceClient estimator_supervisor_service_client_;
     ros::ServiceClient estimator_init_service_client_;
 
-    /// Timeout timer
-    std::shared_ptr<Timer> timer_;
+    /// Timeout timers
+    std::unique_ptr<Timer> watchdog_timer_;
+    std::unique_ptr<Timer> flight_timer_;
 
-    /// Selected mission ID
-    size_t mission_id_ = -1;
+    /// Loaded missions, mapped by their id
+    std::map<int, Mission> missions_;
 
-    /// State
-    State state_;
+    /// Pending failures (sensor status and relative timers) reported by the watchdog
+    std::vector<std::pair<SensorStatus, std::unique_ptr<Timer>>> pending_failures_;
+
+    /// Waypoint parser
+    std::unique_ptr<WaypointsParser> waypoints_parser_;
+
+    /// Loaded waypoints
+    std::vector<WaypointsParser::Waypoint> waypoints_;
+
+    /// Selected mission ID (>= 1)
+    int mission_id_ = -1;
+
+    /// Pointer to State
+    State* state_;
+
+    /// Next state for a state transition state_ --> next_state_
+    AutonomyState next_state_;
+
+    /// Boolean to check if data is getting recorded
+    bool is_recording_ = false;
+
+    /// Boolean to check if the platform is armed
+    bool armed_ = false;
+
+    /// Boolean to check if we are in flight
+    bool in_flight_ = false;
 
     /// boolean to check if we are holding
     bool holding_ = false;
 
-    /// Boolean to check if last waypoint got reached
-    bool last_waypoint_reached_ = false;
+    /// Boolean to determine weather a mission with multiple touchdown is loaded
+    bool multiple_touchdowns_ = false;
 
-    /// Boolean to check if data is getting recorded
-    bool is_recording_data_ = false;
+    /// filepaths counter, used in case of multiple touchdown to keep track of how many filepaths have been loaded
+    int filepaths_cnt_ = 0;
 
-    /// Boolean to check if the mission has been accepted
-    bool mission_accepted_ = false;
+    /// Boolean to check if succesfully completed a mission
+    bool last_waypoint_reached_= false;
 
-    /// Actual number of touchdowns
-    size_t touchdowns_ = 0;
+    /// Boolean to check if we expect a land
+    bool land_expected_ = false;
 
-    /// Number of touchdowns expected
-    size_t n_touchdowns_ = 0;
+  }; // class Autonomy
 
-    /// Boolean to check if we are ready to perform next mission iteration
-    bool ready_to_continue_ = false;
+} // namespace autonomy
 
-    /// Boolean to check if we are armed (mission sequencer state)
-    bool armed_ = false;
-};
-
-#endif  // AMAZEAUTONOMY_H
+#endif  // AUTONOMY_H

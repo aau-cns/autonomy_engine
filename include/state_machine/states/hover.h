@@ -13,17 +13,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef NOMINAL_H
-#define NOMINAL_H
+#ifndef HOVER_H
+#define HOVER_H
 
 #include "state_machine/state.h"
 
 namespace autonomy {
 
   /**
-   * @brief Land state.
+   * @brief Hover state.
    */
-  class Nominal : public State {
+  class Hover : public State {
 
   public:
 
@@ -49,16 +49,16 @@ namespace autonomy {
     /**
      * @brief Private constructor and copy-constructor
      */
-    Nominal();
-    Nominal(const Nominal& other);
+    Hover();
+    Hover(const Hover& other);
 
     /**
      * @brief Assognment operator
      */
-    Nominal& operator=(const Nominal& other);
+    Hover& operator=(const Hover& other);
 
-  }; // calss Nominal
+  }; // calss Hover
 
 } // namespace autonomy
 
-#endif  // NOMINAL_H
+#endif  // HOVER_H

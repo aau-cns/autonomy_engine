@@ -14,34 +14,22 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include <iostream>
+#include <climits>
 
-#include "state_machine/states/nominal.h"
-#include "utils/colors.h"
+#include "autonomy_core/mission.h"
+#include "utils/except.h"
 
 namespace autonomy {
 
-  Nominal::Nominal() {};
+  Mission::Mission(const int& id, const std::string& description, const std::vector<std::string>& filepaths, const std::map<Entity, AutonomyState>& entity_state_map) :
+    id_(id), description_(description), filepaths_(filepaths), entity_state_map_(entity_state_map) {
 
-  State& Nominal::Instance() {
-    static Nominal singleton;
-    return singleton;
-  }
-
-  void Nominal::onEntry(Autonomy&) {
-
-    // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
-
-    // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording) {
-      autonomy.DataRecording(true);
+    if (filepaths_.size() > INT_MAX) {
+      throw DataOverflowException();
+    } else {
+      // Number of touchdown equal the number of sub-missions - 1
+      number_of_touchdown_ = filepaths_.size() - 1;
     }
-
   }
 
-  void Nominal::onExit(Autonomy&) {}
-
-}
+} // namespace autonomy
