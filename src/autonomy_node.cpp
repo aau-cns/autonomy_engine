@@ -33,7 +33,7 @@ int main(int argc, char* argv[])
     ros::TransportHints().tcpNoDelay();
   }
 
-  ROS_INFO("Starting the CNS-FLIGHT Autonomy\n");
+  ROS_INFO("\nStarting the CNS-FLIGHT Autonomy\n");
 
   // Start asynch (multi-threading) spinner
   ros::AsyncSpinner spinner(0);

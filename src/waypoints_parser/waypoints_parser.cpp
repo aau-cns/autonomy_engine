@@ -58,7 +58,7 @@ namespace autonomy {
       throw std::runtime_error("Error opening file \"" + filename_ + "\". Exit programm.");
     }
 
-    std::cout << "----------------------------------------\nFile: " << filename_ << " successfully open.\n";
+    //std::cout << "----------------------------------------\nFile: " << filename_ << " successfully open.\n";
 
     // Line, header and data
     std::string line;
@@ -116,7 +116,7 @@ namespace autonomy {
     }
 
     file.close();
-    std::cout << "File read successfully.\n----------------------------------------\n" << std::endl;
+    //std::cout << "File read successfully.\n----------------------------------------\n" << std::endl;
   }
 
 } // namespace autonomy

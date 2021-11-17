@@ -117,11 +117,6 @@ namespace autonomy {
     [[nodiscard]] bool initializeStateEstimation();
 
     /**
-     * @brief Watchdog (system status) heartbeat callback
-     */
-    void watchdogHeartBeatCallback(const watchdog_msgs::StatusStampedConstPtr& msg);
-
-    /**
      * @brief Watchdog system status changes callback
      */
     void watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStampedConstPtr& msg);
@@ -142,22 +137,7 @@ namespace autonomy {
      */
     void missionSequencerResponceCallback(const amaze_mission_sequencer::responseConstPtr& msg);
 
-    /**
-     * @brief Callback method called when a watchdog timer overflow occurs
-     */
-    void watchdogTimerOverflowHandler();
-
-    /**
-     * @brief Callback method called when a flight timer overflow occurs
-     */
-    void flightTimerOverflowHandler();
-
-    /**
-     * @brief Callback method called when a failure timer overflow occurs
-     */
-    void failureTimerOverflowHandler();
-
-    /**
+     /**
      * @brief Get SensorStatus from watchdog_msgs::Status, this function will also
      * increase and decrease the pending_failures_ dependeng on weather we got a
      * failure or a fix
@@ -188,6 +168,46 @@ namespace autonomy {
      */
     void stateTransition();
 
+    /**
+     * @brief Manage the completion of a mission or the multiple mission iteration
+     */
+    void missionIterationManager();
+
+    /**
+     * @brief Watchdog (system status) heartbeat callback, reset timer
+     */
+    inline void watchdogHeartBeatCallback(const watchdog_msgs::StatusStampedConstPtr&) {
+      watchdog_timer_->resetTimer();
+    }
+
+    /**
+     * @brief Callback method called when a watchdog timer overflow occurs, print infos and unsubscribe
+     */
+    inline void watchdogTimerOverflowHandler() {
+      std::cout << BOLD(YELLOW(" >>> Timeout overflow -- no heartbeat from system watchdog.\n"));
+      std::cout << BOLD(YELLOW(" >>> Mission continue without the support of the watchdog.\n")) << std::endl;
+      sub_watchdog_heartbeat_.shutdown();
+      sub_watchdog_status_.shutdown();
+    }
+
+    /**
+     * @brief Callback method called when a flight timer overflow occurs, triggers a land
+     */
+    inline void flightTimerOverflowHandler() {
+      std::cout << BOLD(YELLOW(" >>> Timeout overflow -- maximum flight time achieved -- the platform will land.\n")) << std::endl;
+      next_state_ = AutonomyState::LAND;
+      stateTransition();
+    }
+
+    /**
+     * @brief Callback method called when a failure timer overflow occurs, triggers a land
+     */
+    inline void failureTimerOverflowHandler() {
+      std::cout << BOLD(YELLOW(" >>> Timeout overflow -- maximum waiting time for a sensor fix achieved -- the platform will land.\n")) << std::endl;
+      next_state_ = AutonomyState::LAND;
+      stateTransition();
+    }
+
     /// Nodehandler
     ros::NodeHandle nh_;
 
@@ -202,8 +222,8 @@ namespace autonomy {
     ros::Publisher pub_mission_sequencer_request_;
 
     /// Service clients
-    ros::ServiceClient watchdog_start_service_client_;
     ros::ServiceClient takeoff_service_client_;
+    ros::ServiceClient watchdog_start_service_client_;
     ros::ServiceClient data_recording_service_client_;
     ros::ServiceClient estimator_supervisor_service_client_;
     ros::ServiceClient estimator_init_service_client_;

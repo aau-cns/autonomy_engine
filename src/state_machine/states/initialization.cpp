@@ -30,9 +30,9 @@ namespace autonomy {
   void Initialization::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
-    std::cout << BOLD(YELLOW(" >>> System state: INITIALIZATION <<< \n"));
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
+    std::cout << BOLD(GREEN(" >>> System state: INITIALIZATION <<< \n"));
+    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
 
     // Perform initialization of the watchdog
     if (autonomy.opts_->activate_watchdog) {

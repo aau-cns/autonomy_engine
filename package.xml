@@ -1,15 +1,13 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>amaze_autonomy</name>
+  <name>autonomy</name>
   <version>0.0.0</version>
   <description>The amade autonomy package</description>
 
-  <maintainer email="christian.brommer@aau.at">chrbrommer</maintainer>
   <maintainer email="alessandro.fornasier@aau.at">alfornasier</maintainer>
 
   <license>BSD-2 with additional conditions</license>
 
-  <author email="christian.brommer@aau.at">Christian Brommer</author>
   <author email="alessandro.fornasier@aau.at">Christian Brommer</author>
 
   <!-- Use depend as a shortcut for packages that are both build and exec dependencies -->

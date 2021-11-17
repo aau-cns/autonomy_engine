@@ -30,9 +30,9 @@ namespace autonomy {
   void Flight::onEntry(Autonomy&)  {
 
     // print info
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
-    std::cout << BOLD(YELLOW(" >>> System state: FLIGHT <<< \n"));
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
+    std::cout << BOLD(GREEN(" >>> System state: FLIGHT <<< \n"));
+    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
 
   }
 

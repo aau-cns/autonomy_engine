@@ -32,9 +32,9 @@ namespace autonomy {
   void Takeoff::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
-    std::cout << BOLD(YELLOW(" >>> System state: TAKEOFF <<< \n"));
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
+    std::cout << BOLD(GREEN(" >>> System state: TAKEOFF <<< \n"));
+    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
 
     // Perform preflight checks
     autonomy.preFlightChecks();
@@ -64,6 +64,15 @@ namespace autonomy {
       std::cout << BOLD(YELLOW(" >>> the platform is already flying, skipped TAKEOFF request\n")) << std::endl;
     }
 
+    // Wait until the platform is flying
+    while (!autonomy.in_flight_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+
+    // Setting state to FLIGHT
+    autonomy.next_state_ = AutonomyState::FLIGHT;
+    autonomy.stateTransition();
+
   }
 
   void Takeoff::onExit(Autonomy& autonomy) {
@@ -77,25 +86,41 @@ namespace autonomy {
     // Get the data
     autonomy.waypoints_ = autonomy.waypoints_parser_->getData();
 
-    // Print info
-    std::cout << BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl;
+    // Wait until the platform is flying (takeoff completed)
+    while (!autonomy.in_flight_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
 
-    // If we already performed a takeoff
-    if (autonomy.in_flight_) {
+    // Check if we have loaded waypoints, if so send waypoints to mission sequencer, otherwise trigger a land command
+    if (autonomy.waypoints_.size() > 0) {
 
-      // TODO: Send waypoints
-      //    // Define waypoints message to mission sequencer
-      //    amaze_mission_sequencer::waypoints wps;
+      // Print info
+      std::cout << BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl;
 
-      //    // Set mission id and request
-      //    wps.header.stamp = ros::Time::now();
-      //    wps.action = amaze_mission_sequencer::waypoints
+      // If we already performed a takeoff
+      if (autonomy.in_flight_) {
 
-      //    // publish mission start request
-      //    pub_mission_sequencer_waypoints_.publish(wps);
+        // TODO: Send waypoints
+        //    // Define waypoints message to mission sequencer
+        //    amaze_mission_sequencer::waypoints wps;
+
+        //    // Set mission id and request
+        //    wps.header.stamp = ros::Time::now();
+        //    wps.action = amaze_mission_sequencer::waypoints
+
+        //    // publish mission start request
+        //    pub_mission_sequencer_waypoints_.publish(wps);
+
+      } else {
+        std::cout << BOLD(YELLOW(" >>> the platform is not flying, waypoints cannot be sent to mission sequencer\n")) << std::endl;
+      }
 
     } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is not flying, waypoints cannot be sent to mission sequencer\n")) << std::endl;
+
+      // Call state transition to LAND
+      autonomy.next_state_ = AutonomyState::LAND;
+      autonomy.stateTransition();
+
     }
 
   }

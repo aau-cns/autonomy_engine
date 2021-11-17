@@ -30,15 +30,16 @@ namespace autonomy {
   void Land::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
-    std::cout << BOLD(YELLOW(" >>> System state: LAND <<< \n"));
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
+    std::cout << BOLD(GREEN(" >>> System state: LAND <<< \n"));
+    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
 
     // Print info
     std::cout << BOLD(GREEN(" >>> Landing...\n")) << std::endl;
 
     // Request landing to the mission sequencer if flying
     if(autonomy.in_flight_) {
+      autonomy.land_expected_ = true;
       autonomy.missionSequencerRequest(amaze_mission_sequencer::request::LAND);
     } else {
       std::cout << BOLD(YELLOW(" >>> the platform is not flying, skipped LAND request\n")) << std::endl;

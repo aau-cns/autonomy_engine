@@ -24,27 +24,27 @@ namespace autonomy {
   /**
    * @brief Entity
    */
-  enum Entity {PX4_GPS, PX4_IMU, PX4_MAG, PX4_BAR, MISSION_CAM, REALSENSE, LSM9DS1, LRF, RTK_GPS_1, RTK_GPS_2};
+  enum Entity {PX4_GPS = 0, PX4_IMU = 1, PX4_MAG = 2, PX4_BAR = 3, MISSION_CAM = 4, REALSENSE = 5, LSM9DS1 = 6, LRF = 7, RTK_GPS_1 = 8, RTK_GPS_2 = 9};
 
   /**
    * @brief Event regarding an entity.
    */
-  enum Event {ENTITY_FAILURE, ENTITY_FIX, ENTITY_OTHER};
+  enum Event {ENTITY_FAILURE = 0, ENTITY_FIX = 1, ENTITY_OTHER = 2};
 
   /**
    * @brief Type that trigger an event of failure/fix
    */
-  enum Type {GLOBAL, TOPIC, NODE, DRIVER};
+  enum Type {GLOBAL = 0, TOPIC = 1, NODE = 2, DRIVER = 3};
 
   /**
    * @brief Atonomy state
    */
-  enum AutonomyState {UNDEFINED, INITIALIZATION, NOMINAL, HOLD, FAILURE, LAND, HOVER, TAKEOFF, FLIGHT};
+  enum AutonomyState {UNDEFINED = 0, INITIALIZATION = 1, NOMINAL = 2, HOLD = 3, FAILURE = 4, LAND = 5, HOVER = 6, TAKEOFF = 7, FLIGHT = 8};
 
   /**
    * @brief Action to be performed by the watchdog to react to an entity event
    */
-  enum Action {NOTHING, FIX_NODE, FIX_DRIVER};
+  enum Action {NOTHING = 0, FIX_NODE = 1, FIX_DRIVER = 2};
 
   /**
    * @brief Single sensor status
@@ -91,27 +91,25 @@ namespace autonomy {
    */
   [[nodiscard]] inline bool getEntityFromString(const std::string& str, Entity& entity) {
 
-    // Check if it is either 0 or 1, this means that either the string
-    // match or there is a char more that could be \n
-    if ((str.compare("px4_imu") >> 1) == 0) {
+    if (str.compare("px4_imu") == 0) {
       entity = Entity::PX4_IMU;
-    } else if ((str.compare("px4_gps") >> 1) == 0) {
+    } else if (str.compare("px4_gps") == 0) {
       entity = Entity::PX4_GPS;
-    } else if ((str.compare("px4_bar") >> 1) == 0) {
+    } else if (str.compare("px4_bar") == 0) {
       entity = Entity::PX4_BAR;
-    } else if ((str.compare("px4_mag") >> 1) == 0) {
+    } else if (str.compare("px4_mag") == 0) {
       entity = Entity::PX4_MAG;
-    } else if ((str.compare("mission_cam") >> 1) == 0) {
+    } else if (str.compare("mission_cam") == 0) {
       entity = Entity::MISSION_CAM;
-    } else if ((str.compare("realsense") >> 1) == 0) {
+    } else if (str.compare("realsense") == 0) {
       entity = Entity::REALSENSE;
-    } else if ((str.compare("lsm9ds1") >> 1) == 0) {
+    } else if (str.compare("lsm9ds1") == 0) {
       entity = Entity::LSM9DS1;
-    } else if ((str.compare("lrf") >> 1) == 0) {
+    } else if (str.compare("lrf") == 0) {
       entity = Entity::LRF;
-    } else if ((str.compare("rtk_gps_1") >> 1) == 0) {
+    } else if (str.compare("rtk_gps_1") == 0) {
       entity = Entity::RTK_GPS_1;
-    } else if ((str.compare("rtk_gps_2") >> 1) == 0) {
+    } else if (str.compare("rtk_gps_2") == 0) {
       entity = Entity::RTK_GPS_2;
     } else {
       return false;
@@ -191,13 +189,13 @@ namespace autonomy {
    */
   [[nodiscard]] inline bool getAutonomyStateFromString(const std::string& str,  AutonomyState& state) {
 
-    if ((str.compare("continue") >> 1) == 0) {
+    if (str.compare("continue")== 0) {
       state = AutonomyState::FLIGHT;
-    } else if ((str.compare("hold") >> 1) == 0) {
+    } else if (str.compare("hold")== 0) {
       state = AutonomyState::HOLD;
-    } else if ((str.compare("failure") >> 1) == 0) {
+    } else if (str.compare("failure") == 0) {
       state = AutonomyState::FAILURE;
-    } else if ((str.compare("land") >> 1) == 0) {
+    } else if (str.compare("land") == 0) {
       state = AutonomyState::LAND;
     } else {
       return false;

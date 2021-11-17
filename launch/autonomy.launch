@@ -1,46 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
 
-    <!-- arguments-->
-    <arg name="config_filepath"     			default="/home/alfornasier/Catkin_ws/catkin_ws_amaze_autonomy/mission_config.yaml" />
-    <arg name="watchdog_start_service_name"     	default="/watchdog/service/start" />
+    <!-- arguments config -->
+    <arg name="config_filepath"     			default="/home/alfornasier/Catkin_ws/catkin_ws_amadee/src/amadee/amadee_bringup/configs/autonomy/mission_config_dh.yaml" />
+
+    <!-- arguments topics -->
     <arg name="watchdog_heartbeat_topic"     		default="/watchdog/status" />
     <arg name="watchdog_status_topic"     		default="/watchdog/log" />
     <arg name="watchdog_action_topic"     		default="/watchdog/action" />
     <arg name="mission_sequencer_request_topic"		default="/missionsequencer/request" />
     <arg name="mission_sequencer_responce_topic"	default="/missionsequencer/responce" />
+    <arg name="landing_detection_topic"			default="/toland/is_landed" />
+    <arg name="mission_sequencer_waypoints_topic"	default="/missionsequencer/waypoints" />
+
+    <!-- arguments services -->
+    <arg name="watchdog_start_service_name"     	default="/watchdog/service/start" />
     <arg name="data_recrding_service_name"		default="/datarecording/record" />
     <arg name="takeoff_service_name"			default="/toland/service/takeoff" />
-    <arg name="landing_detection_topic"			default="/toland/is_landed" />
     <arg name="estimator_supervisor_service_name"       default="/estimator_supervisor/supervise" />
     <arg name="estimator_init_service_name"             default="/estimator/init" />
+
+    <!-- arguments setup -->
     <arg name="watchdog_rate_Hz"			default="1.0" />
-    <arg name="watchdog_startup_time_s"			default="15" />
+    <arg name="watchdog_startup_time_s"			default="10" />
     <arg name="watchdog_heartbeat_timeout_multiplier"	default="2.0" />
+    <arg name="maximum_flight_time_min"                 default="10" />
+    <arg name="fix_timeout_ms"                          default="1500" />
+    <arg name="mission_id_no_ui"                        default="2" />
+
+    <!-- arguments flags -->
+    <arg name="activate_user_interface"                 default="true" />
+    <arg name="activate_watchdog"                       default="true" />
+    <arg name="activate_data_recording"                 default="false" />
+    <arg name="estimator_init_service"                  default="false" />
+    <arg name="perform_takeoff_check"                   default="false" />
+    <arg name="perform_estimator_check"                 default="false" />
+    <arg name="activate_landing_detection"              default="true" />
 
     <!-- autonomy node -->
-    <node name="autonomy" pkg="amaze_autonomy" type="autonomy" output="screen" clear_params="true" required="true">
+    <node name="autonomy" pkg="autonomy" type="autonomy" output="screen" clear_params="true" required="true">
 
-        <!-- topics and services -->
-        <param name="watchdog_start_service_name"       type="string"   value="$(arg watchdog_start_service_name)" />
+        <!-- topics -->
         <param name="watchdog_heartbeat_topic"          type="string"   value="$(arg watchdog_heartbeat_topic)" />
         <param name="watchdog_status_topic"             type="string"   value="$(arg watchdog_status_topic)" />
         <param name="watchdog_action_topic"             type="string"   value="$(arg watchdog_action_topic)" />
         <param name="mission_sequencer_request_topic"   type="string"   value="$(arg mission_sequencer_request_topic)" />
         <param name="mission_sequencer_responce_topic"  type="string"   value="$(arg mission_sequencer_responce_topic)" />
-        <param name="data_recrding_service_name"        type="string"   value="$(arg data_recrding_service_name)" />
-        <param name="takeoff_service_name"              type="string"   value="$(arg takeoff_service_name)" />
         <param name="landing_detection_topic"           type="string"   value="$(arg landing_detection_topic)" />
+        <param name="mission_sequencer_waypoints_topic" type="string"   value="$(arg mission_sequencer_waypoints_topic)" />
+
+        <!-- services -->
+        <param name="watchdog_start_service_name"       type="string"   value="$(arg watchdog_start_service_name)" />
+        <param name="data_recrding_service_name"        type="string"   value="$(arg data_recrding_service_name)" />
+        <param name="takeoff_service_name"              type="string"   value="$(arg takeoff_service_name)" />     
         <param name="estimator_supervisor_service_name" type="string"   value="$(arg estimator_supervisor_service_name)" />
         <param name="estimator_init_service_name"       type="string"   value="$(arg estimator_init_service_name)" />
 
         <!-- load parameters from file -->
         <rosparam command="load"    file="$(arg config_filepath)" />
 
-        <!-- other parameters -->
+        <!-- setup -->
         <param name="watchdog_rate_Hz"                          type="double"   value = "$(arg watchdog_rate_Hz)" />
         <param name="watchdog_startup_time_s"                   type="int"      value = "$(arg watchdog_startup_time_s)" />
         <param name="watchdog_heartbeat_timeout_multiplier"     type="double"   value = "$(arg watchdog_heartbeat_timeout_multiplier)" />
+        <param name="maximum_flight_time_min"                   type="int"      value = "$(arg maximum_flight_time_min)" />
+        <param name="fix_timeout_ms"                            type="int"      value = "$(arg fix_timeout_ms)" />
+        <param name="mission_id_no_ui"                          type="int"      value = "$(arg mission_id_no_ui)" />
+
+        <!-- flags -->
+        <param name="activate_user_interface"                   type="bool"   value = "$(arg activate_user_interface)" />
+        <param name="activate_watchdog"                         type="bool"   value = "$(arg activate_watchdog)" />
+        <param name="activate_data_recording"                   type="bool"   value = "$(arg activate_data_recording)" />
+        <param name="estimator_init_service"                    type="bool"   value = "$(arg estimator_init_service)" />
+        <param name="perform_takeoff_check"                     type="bool"   value = "$(arg perform_takeoff_check)" />
+        <param name="perform_estimator_check"                   type="bool"   value = "$(arg perform_estimator_check)" />
+        <param name="activate_landing_detection"                type="bool"   value = "$(arg activate_landing_detection)" />
 
     </node>
 
