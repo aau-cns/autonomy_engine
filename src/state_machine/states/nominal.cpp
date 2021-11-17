@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -28,7 +27,7 @@ namespace autonomy {
     return singleton;
   }
 
-  void Nominal::onEntry(Autonomy&) {
+  void Nominal::onEntry(Autonomy& autonomy) {
 
     // print info
     std::cout << BOLD(GREEN("-------------------------------------------------\n"));
@@ -36,7 +35,7 @@ namespace autonomy {
     std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
 
     // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording) {
+    if (autonomy.opts_->activate_data_recording && !autonomy.is_recording_) {
       autonomy.DataRecording(true);
     }
 

@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -35,8 +34,15 @@ namespace autonomy {
     std::cout << BOLD(YELLOW(" >>> System state: HOLD <<< \n"));
     std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
 
-    // Send Hold request to mission sequencer
-    autonomy.hold();
+    // Print info
+    std::cout << BOLD(YELLOW(" >>> Holding...\n")) << std::endl;
+
+    // Request holding to the mission sequencer if not holding
+    if(!autonomy.holding_) {
+      autonomy.missionSequencerRequest(amaze_mission_sequencer::request::HOLD);
+    } else {
+      std::cout << BOLD(YELLOW(" >>> the platform is already holding, skipped HOLD request\n")) << std::endl;
+    }
 
   }
 

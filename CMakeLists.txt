@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 
-project(amaze_autonomy)
-
-#set(CMAKE_BUILD_TYPE Debug)
+project(autonomy)
 
 ## Try to compile with newer versions of C++
 include(CheckCXXCompilerFlag)

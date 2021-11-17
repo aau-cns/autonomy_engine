@@ -59,6 +59,16 @@ namespace autonomy {
      */
     void startAutonomy();
 
+    /// Autonomy options
+    std::unique_ptr<autonomyOptions> opts_;
+
+  private:
+
+    /**
+     * @brief Selection of the mission form the user
+     */
+    void missionSelection();
+
     /**
      * @brief Watchdog start service call
      */
@@ -74,46 +84,6 @@ namespace autonomy {
      * @brief Run preflight checks
      */
     void preFlightChecks();
-
-    /**
-     * @brief Send arm request to mission sequencer
-     */
-    void arm();
-
-    /**
-     * @brief Send arm request to mission sequencer
-     */
-    void takeoff();
-
-    /**
-     * @brief Send waypoint to mission sequencer
-     */
-    void sendWaypoints();
-
-    /**
-     * @brief Send hold request to mission sequencer
-     */
-    void hold();
-
-    /**
-     * @brief Send land request to mission sequencer
-     */
-    void land();
-
-    /**
-     * @brief Failure handler, stop any timer, unsubscribe all topic, abort mission and clear pending vectors.
-     */
-    void handleFailure();
-
-    /// Autonomy options
-    std::unique_ptr<autonomyOptions> opts_;
-
-  private:
-
-    /**
-     * @brief Selection of the mission form the user
-     */
-    void missionSelection();
 
     /**
      * @brief Send action to watchdog
@@ -286,6 +256,17 @@ namespace autonomy {
 
     /// Boolean to check if we expect a land
     bool land_expected_ = false;
+
+    /// Friend classes (able to access private data members)
+    friend class Failure;
+    friend class Flight;
+    friend class Hold;
+    friend class Hover;
+    friend class Initialization;
+    friend class Land;
+    friend class Nominal;
+    friend class Takeoff;
+    friend class Undefined;
 
   }; // class Autonomy
 

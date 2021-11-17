@@ -57,10 +57,6 @@ namespace autonomy {
      */
     Takeoff& operator=(const Takeoff& other);
 
-    /// Boolean to check the sub-states of the takeoff state
-    bool armed_ = false;
-    bool in_flight_ = false;
-
   }; // calss Takeoff
 
 } // namespace autonomy

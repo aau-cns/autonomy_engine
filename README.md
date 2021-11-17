@@ -1,11 +1,10 @@
 ---
-title: AMAZE Autonomy
+title: CNS-FLIGHT Autonomy
 author:
   - Alessandro Fornasier
-  - Christian Brommer
   - Control of Networked Systems, University of Klagenfurt, Austria
-date: 20.04.2021
-subtitle: Version 1.0
+date: 17.11.2021
+subtitle: Version 2.0
 
 documentclass: scrartcl
 highlight: haddock
@@ -15,9 +14,9 @@ toc: true
 ---
 
 
-# AMAZE Autonomy
+# CNS-FLIGHT Autonomy
 
-Maintainer: Alessandro Fornasier @alfornasier; Christian Brommer @chrbrommer
+Maintainer: Alessandro Fornasier @alfornasier
 
 [[_TOC_]]
 

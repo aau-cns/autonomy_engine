@@ -44,6 +44,11 @@ namespace autonomy {
      */
     virtual void onEntry(Autonomy& autonomy) = 0;
 
+  protected:
+
+    /// ROS node handler
+    ros::NodeHandle nh_;
+
   }; // calss State
 
 } // namespace autonomy

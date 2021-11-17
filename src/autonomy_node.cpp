@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -21,7 +20,7 @@
 int main(int argc, char* argv[])
 {
   // Init ros node with private nodehandler
-  ros::init(argc, argv, "amaze_autonomy");
+  ros::init(argc, argv, "cns_flight_autonomy");
   ros::NodeHandle nh("~");
 
   // Load tcpNoDelay option (false by default)
@@ -34,7 +33,7 @@ int main(int argc, char* argv[])
     ros::TransportHints().tcpNoDelay();
   }
 
-  ROS_INFO("Starting the AMAZE Autonomy\n");
+  ROS_INFO("Starting the CNS-FLIGHT Autonomy\n");
 
   // Start asynch (multi-threading) spinner
   ros::AsyncSpinner spinner(0);
@@ -42,10 +41,10 @@ int main(int argc, char* argv[])
 
   try {
 
-    // Instanciate AMAZE autonomy
+    // Instanciate autonomy
     autonomy::Autonomy autonomy(nh);
 
-    std::cout << BOLD(GREEN(" >>> Press [ENTER] to start the AMAZE Autonomy"));
+    std::cout << BOLD(GREEN(" >>> Press [ENTER] to start the CNS-FLIGHT Autonomy"));
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cout << std::endl;
 

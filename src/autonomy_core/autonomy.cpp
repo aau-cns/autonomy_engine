@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -35,7 +34,7 @@ namespace autonomy {
 
     // Parse parameters and options
     if(!parseParams()) {
-        handleFailure();
+        throw FailureException();
     }
 
     // Print option
@@ -73,11 +72,11 @@ namespace autonomy {
     flight_timer_ = std::make_unique<Timer>(opts_->flight_timeout);
     flight_timer_->sh_.connect(boost::bind(&Autonomy::flightTimerOverflowHandler, this));
 
-    // Setting state to UNDEFINED
-    state_ = &Undefined::Instance();
-
     // Instanciate waypoints_parser_ with categories {"x", "y", "z", "yaw", "holdtime"}
     waypoints_parser_ = std::make_unique<WaypointsParser>();
+
+    // Setting state to UNDEFINED
+    state_ = &Undefined::Instance();
 
   }
 
@@ -95,6 +94,7 @@ namespace autonomy {
     std::string takeoff_service_name;
     std::string landing_detection_topic;
     std::string estimator_init_service_name;
+    std::string mission_sequencer_waypoints_topic;
     std::vector<Mission> missions;
     XmlRpc::XmlRpcValue XRV_missions;
     XmlRpc::XmlRpcValue XRV_filepaths;
@@ -173,6 +173,10 @@ namespace autonomy {
     }
     if (!nh_.getParam("mission_sequencer_responce_topic", mission_sequencer_responce_topic)) {
       std::cout << BOLD(RED(" >>> [mission_sequencer_responce_topic] parameter not defined.\n")) << std::endl;
+      return false;
+    }
+    if (!nh_.getParam("mission_sequencer_waypoints_topic", mission_sequencer_waypoints_topic)) {
+      std::cout << BOLD(RED(" >>> [mission_sequencer_waypoints_topic] parameter not defined.\n")) << std::endl;
       return false;
     }
     if (!nh_.getParam("data_recrding_service_name", data_recrding_service_name)) {
@@ -336,7 +340,30 @@ namespace autonomy {
     }
 
     // Make options
-    opts_ = std::make_unique<autonomyOptions>(autonomyOptions({watchdog_heartbeat_topic, watchdog_status_topic, watchdog_action_topic, mission_sequencer_request_topic, mission_sequencer_responce_topic, landing_detection_topic, watchdog_start_service_name, estimator_supervisor_service_name, data_recrding_service_name, takeoff_service_name, estimator_init_service_name, watchdog_timeout_ms, flight_timeout_ms, fix_timeout_ms, watchdog_startup_time_s, activate_user_interface, activate_watchdog, activate_data_recording, estimator_init_service, perform_takeoff_check, perform_estimator_check, activate_landing_detection, mission_id_no_ui}));
+    opts_ = std::make_unique<autonomyOptions>(autonomyOptions({watchdog_heartbeat_topic,
+                                                               watchdog_status_topic,
+                                                               watchdog_action_topic,
+                                                               mission_sequencer_request_topic,
+                                                               mission_sequencer_responce_topic,
+                                                               landing_detection_topic,
+                                                               mission_sequencer_waypoints_topic,
+                                                               watchdog_start_service_name,
+                                                               estimator_supervisor_service_name,
+                                                               data_recrding_service_name,
+                                                               takeoff_service_name,
+                                                               estimator_init_service_name,
+                                                               watchdog_timeout_ms,
+                                                               flight_timeout_ms,
+                                                               fix_timeout_ms,
+                                                               watchdog_startup_time_s,
+                                                               activate_user_interface,
+                                                               activate_watchdog,
+                                                               activate_data_recording,
+                                                               estimator_init_service,
+                                                               perform_takeoff_check,
+                                                               perform_estimator_check,
+                                                               activate_landing_detection,
+                                                               mission_id_no_ui}));
 
     // Success
     return true;
@@ -544,6 +571,33 @@ namespace autonomy {
     }
   }
 
+  void Autonomy::watchdogActionRequest(SensorStatus& status, const watchdog_msgs::Status& status_msg) {
+
+    // Define action and action message
+    watchdog_msgs::ActionStamped action_msg;
+
+    // Fill action message
+    action_msg.header.stamp = ros::Time::now();
+    action_msg.action.entity = status_msg;
+
+    switch (status.action) {
+    case Action::NOTHING:
+      action_msg.action.action = watchdog_msgs::Action::NOTHING;
+      break;
+    case Action::FIX_NODE:
+      action_msg.action.action = watchdog_msgs::Action::FIX_NODE;
+      break;
+    case Action::FIX_DRIVER:
+      action_msg.action.action = watchdog_msgs::Action::FIX_DRIVER;
+      break;
+    }
+
+    // Publish action message
+    std::cout << BOLD(YELLOW(" >>> Action communicated.\n")) << std::endl;
+    pub_watchdog_action_.publish(action_msg);
+
+  }
+
   void Autonomy::watchdogTimerOverflowHandler() {
 
     // print message of watchdog timer overflow
@@ -730,7 +784,8 @@ namespace autonomy {
 
     if (!msg->response && !msg->completed) {
       std::cout << BOLD(RED(" >>> Request [" + req + "] for mission ID: " + std::to_string(msg->request.id) + "  rejected from Mission Sequencer.\n")) << std::endl;
-      handleFailure();
+      next_state_ = AutonomyState::FAILURE;
+      stateTransition();
     }
 
     // Check if the mission is ended (last waypoint reached)
@@ -766,33 +821,6 @@ namespace autonomy {
 
     // publish mission start request
     pub_mission_sequencer_request_.publish(req);
-
-  }
-
-  void Autonomy::watchdogActionRequest(SensorStatus& status, const watchdog_msgs::Status& status_msg) {
-
-    // Define action and action message
-    watchdog_msgs::ActionStamped action_msg;
-
-    // Fill action message
-    action_msg.header.stamp = ros::Time::now();
-    action_msg.action.entity = status_msg;
-
-    switch (status.action) {
-    case Action::NOTHING:
-      action_msg.action.action = watchdog_msgs::Action::NOTHING;
-      break;
-    case Action::FIX_NODE:
-      action_msg.action.action = watchdog_msgs::Action::FIX_NODE;
-      break;
-    case Action::FIX_DRIVER:
-      action_msg.action.action = watchdog_msgs::Action::FIX_DRIVER;
-      break;
-    }
-
-    // Publish action message
-    std::cout << BOLD(YELLOW(" >>> Action communicated.\n")) << std::endl;
-    pub_watchdog_action_.publish(action_msg);
 
   }
 
@@ -1049,81 +1077,6 @@ namespace autonomy {
     }
   }
 
-  void Autonomy::arm() {
-
-    // Print info
-    std::cout << BOLD(GREEN(" >>> Arming...\n")) << std::endl;
-
-    // Request arming, if not already armed
-    if (!armed_) {
-      missionSequencerRequest(amaze_mission_sequencer::request::ARM);
-    } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is already armed, skipped ARM request\n")) << std::endl;
-    }
-  }
-
-  void Autonomy::takeoff() {
-
-    // Print info
-    std::cout << BOLD(GREEN(" >>> Taking off...\n")) << std::endl;
-
-    // Takeoff, if not already in flight and if armed
-    if (!in_flight_ && armed_) {
-      missionSequencerRequest(amaze_mission_sequencer::request::TAKEOFF);
-    } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is already flying, skipped TAKEOFF request\n")) << std::endl;
-    }
-  }
-
-  void Autonomy::sendWaypoints() {
-
-    // Set filename to waypoint parser
-    waypoints_parser_->setFilename(missions_.at(mission_id_).getFilepaths().at(static_cast<size_t>(filepaths_cnt_)));
-
-    // Parse waypoint file
-    waypoints_parser_->readParseCsv();
-
-    // Get the data
-    waypoints_ = waypoints_parser_->getData();
-
-    // Print info
-    std::cout << BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl;
-
-    // If we already performed a takeoff
-    if (in_flight_) {
-      // TODO: Send waypoints
-    } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is not flying, waypoints cannot be sent to mission sequencer\n")) << std::endl;
-    }
-  }
-
-  void Autonomy::hold() {
-
-    // Print info
-    std::cout << BOLD(GREEN(" >>> Holding...\n")) << std::endl;
-
-    // Request holding if not holding
-    if(!holding_) {
-      missionSequencerRequest(amaze_mission_sequencer::request::HOLD);
-    } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is already holding, skipped HOLD request\n")) << std::endl;
-    }
-
-  }
-
-  void Autonomy::land() {
-
-    // Print info
-    std::cout << BOLD(GREEN(" >>> Landing...\n")) << std::endl;
-
-    // Request landing if in_flight_
-    if(in_flight_) {
-      missionSequencerRequest(amaze_mission_sequencer::request::LAND);
-    } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is not flying, skipped LAND request\n")) << std::endl;
-    }
-  }
-
   void Autonomy::startAutonomy() {
 
     // Mission selection
@@ -1190,117 +1143,15 @@ namespace autonomy {
     state_->onEntry(*this);
   }
 
-  void Autonomy::handleFailure() {
-
-    // Stop data recording if data is getting recorded
-    DataRecording(false);
-
-    // Stop any timer
-    watchdog_timer_->stopTimer();
-    flight_timer_->stopTimer();
-    for (const auto& it : pending_failures_) {
-      it.second->stopTimer();
-    }
-
-    // Clear panding failure
-    pending_failures_.clear();
-
-    // Clear waypoints
-    waypoints_.clear();
-
-    // Send abort request to mission sequencer
-    missionSequencerRequest(amaze_mission_sequencer::request::ABORT);
-
-    // Unsubscribe from all the subscribed topics
-    sub_watchdog_heartbeat_.shutdown();
-    sub_watchdog_status_.shutdown();
-    sub_landing_detection_.shutdown();
-    sub_mission_sequencer_responce_.shutdown();
-
-  }
-
 } // namespace autonomy
 
 // TODOS:
-// - stop flight timer when mission done
+// - Implement waypoint sending
 // - Implement the possibility to decide to land or hover when the last waypoint is reached,
 //   moreover implement the hover request onentry on hover state
 
 // NOTES:
 // Do we need to send the first waypoint at the takeoff (to have height reference)?
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//  bool Autonomy::setStatusMsgFromEntityTypeSubType(const Entity& entity, const Type& type, const subType& subtype, watchdog_msgs::Status& msg) {
-
-//    // Set entity
-//    if(!getEntityString(entity, msg.entity)) {
-//      return false;
-//    }
-
-//    // Set status
-//    switch(type) {
-//    case Type::FIX:
-//      msg.type = watchdog_msgs::Status::NOMINAL;
-//      break;
-//    case Type::FAILURE:
-//      msg.type = watchdog_msgs::Status::ERROR;
-//      break;
-//    default:
-//      msg.type = watchdog_msgs::Status::UNDEF;
-//      break;
-//    }
-
-
-//    // Set type
-//    switch (subtype) {
-//    case subType::GLOBAL:
-//      msg.type = watchdog_msgs::Status::GLOBAL;
-//      break;
-//    case subType::TOPIC:
-//      msg.type = watchdog_msgs::Status::TOPIC;
-//      break;
-//    case subType::NODE:
-//      msg.type = watchdog_msgs::Status::NODE;
-//      break;
-//    case subType::DRIVER:
-//      msg.type = watchdog_msgs::Status::DRIVER;
-//      break;
-//    }
-
-//    return true;
-//  }
 
 
 

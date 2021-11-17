@@ -42,6 +42,7 @@ namespace autonomy {
     const std::string mission_sequencer_request_topic;
     const std::string mission_sequencer_responce_topic;
     const std::string landing_detection_topic;
+    const std::string mission_sequencer_waypoints_topic;
 
     /// service Names
     const std::string watchdog_start_service_name;

@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -35,8 +34,15 @@ namespace autonomy {
     std::cout << BOLD(YELLOW(" >>> System state: LAND <<< \n"));
     std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
 
-    // Send land request to mission sequencer
-    autonomy.land();
+    // Print info
+    std::cout << BOLD(GREEN(" >>> Landing...\n")) << std::endl;
+
+    // Request landing to the mission sequencer if flying
+    if(autonomy.in_flight_) {
+      autonomy.missionSequencerRequest(amaze_mission_sequencer::request::LAND);
+    } else {
+      std::cout << BOLD(YELLOW(" >>> the platform is not flying, skipped LAND request\n")) << std::endl;
+    }
 
   }
 

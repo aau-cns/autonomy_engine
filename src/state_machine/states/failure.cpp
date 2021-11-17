@@ -1,8 +1,7 @@
-// Copyright (C) 2021 Christian Brommer and Alessandro Fornasier,
+// Copyright (C) 2021 Alessandro Fornasier,
 // Control of Networked Systems, Universitaet Klagenfurt, Austria
 //
-// You can contact the author at <christian.brommer@ieee.org>
-// and <alessandro.fornasier@ieee.org>
+// You can contact the author at <alessandro.fornasier@ieee.org>
 //
 // All rights reserved.
 //
@@ -35,8 +34,32 @@ namespace autonomy {
     std::cout << BOLD(RED(" >>> System state: FAILURE <<< \n"));
     std::cout << BOLD(RED("-------------------------------------------------\n")) << std::endl;
 
-    // Handle failure
-    autonomy.handleFailure();
+    // Stop data recording if data is getting recorded
+    if (autonomy.opts_->activate_data_recording && autonomy.is_recording_) {
+      autonomy.DataRecording(false);
+    }
+
+    // Stop any timer
+    autonomy.watchdog_timer_->stopTimer();
+    autonomy.flight_timer_->stopTimer();
+    for (const auto& it : autonomy.pending_failures_) {
+      it.second->stopTimer();
+    }
+
+    // Clear panding failure
+    autonomy.pending_failures_.clear();
+
+    // Clear waypoints
+    autonomy.waypoints_.clear();
+
+    // Send abort request to mission sequencer
+    autonomy.missionSequencerRequest(amaze_mission_sequencer::request::ABORT);
+
+    // Unsubscribe from all the subscribed topics
+    autonomy.sub_watchdog_heartbeat_.shutdown();
+    autonomy.sub_watchdog_status_.shutdown();
+    autonomy.sub_landing_detection_.shutdown();
+    autonomy.sub_mission_sequencer_responce_.shutdown();
 
     // Throw exception
     throw FailureException();
