@@ -13,17 +13,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef HOVER_H
-#define HOVER_H
+#ifndef TERMINATIONN_H
+#define TERMINATIONN_H
 
 #include "state_machine/state.h"
 
 namespace autonomy {
 
   /**
-   * @brief Hover state.
+   * @brief Land state.
    */
-  class Hover : public State {
+  class Termination : public State {
 
   public:
 
@@ -44,21 +44,28 @@ namespace autonomy {
      */
     void onEntry(Autonomy& autonomy) override;
 
+    /**
+     * @brief Return a String relative to the state
+     */
+    const std::string getStringFromState() override {
+      return "termination";
+    }
+
   private:
 
     /**
      * @brief Private constructor and copy-constructor
      */
-    Hover();
-    Hover(const Hover& other);
+    Termination();
+    Termination(const Termination& other);
 
     /**
      * @brief Assognment operator
      */
-    Hover& operator=(const Hover& other);
+    Termination& operator=(const Termination& other);
 
-  }; // calss Hover
+  }; // calss Termination
 
 } // namespace autonomy
 
-#endif  // HOVER_H
+#endif  // TERMINATIONN_H

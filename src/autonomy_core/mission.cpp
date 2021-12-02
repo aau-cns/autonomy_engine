@@ -20,7 +20,7 @@
 
 namespace autonomy {
 
-  Mission::Mission(const int& id, const std::string& description, const std::vector<std::string>& filepaths, const std::map<Entity, AutonomyState>& entity_state_map) :
+  Mission::Mission(const int& id, const std::string& description, const std::vector<std::string>& filepaths, const std::map<Entity, std::string>& entity_state_map) :
     id_(id), description_(description), filepaths_(filepaths), entity_state_map_(entity_state_map) {
 
     if (filepaths_.size() > INT_MAX) {

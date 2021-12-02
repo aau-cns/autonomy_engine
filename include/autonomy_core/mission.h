@@ -36,14 +36,14 @@ namespace autonomy {
     /**
      * @brief EntityEvent default constructor
      */
-    Mission(const int& id, const std::string& description, const std::vector<std::string>& filepaths, const std::map<Entity, AutonomyState>& entity_state_map);
+    Mission(const int& id, const std::string& description, const std::vector<std::string>& filepaths, const std::map<Entity, std::string>& entity_state_map);
 
     /**
-     * @brief Get next state for a given entity
+     * @brief Get next state string for a given entity
      * @param const reference to Entity
-     * @return reference to AutonomyState
+     * @return reference to std::string
      */
-    inline const AutonomyState& getNextState(const Entity& entity) const {
+    inline const std::string& getNextState(const Entity& entity) const {
         return entity_state_map_.at(entity);
     }
 
@@ -83,7 +83,7 @@ namespace autonomy {
     std::vector<std::string> filepaths_;
 
     /// Entity - Next state map
-    std::map<Entity, AutonomyState> entity_state_map_;
+    std::map<Entity, std::string> entity_state_map_;
 
     /// Number of touchdown (number of filepaths - 1)
     size_t number_of_touchdown_;

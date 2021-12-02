@@ -16,7 +16,10 @@
 #ifndef STATE_H
 #define STATE_H
 
+#include <iostream>
+
 #include "autonomy_core/autonomy.h"
+#include "utils/colors.h"
 
 namespace autonomy {
 
@@ -44,10 +47,10 @@ namespace autonomy {
      */
     virtual void onEntry(Autonomy& autonomy) = 0;
 
-  protected:
-
-    /// ROS node handler
-    ros::NodeHandle nh_;
+    /**
+     * @brief Return a String relative to the state
+     */
+    virtual const std::string getStringFromState() = 0;
 
   }; // calss State
 

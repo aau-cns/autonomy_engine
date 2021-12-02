@@ -13,35 +13,26 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include "state_machine/states/nominal.h"
+#include "state_machine/states/perform_mission.h"
 
 namespace autonomy {
 
-  Nominal::Nominal() {};
+  PerformMission::PerformMission() {};
 
-  State& Nominal::Instance() {
-    static Nominal singleton;
+  State& PerformMission::Instance() {
+    static PerformMission singleton;
     return singleton;
   }
 
-  void Nominal::onEntry(Autonomy& autonomy) {
+  void PerformMission::onEntry(Autonomy&) {
 
     // print info
     std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
+    std::cout << BOLD(GREEN(" >>> System state: MISSION (PERFORMING) <<< \n"));
     std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
-
-    // Start data recording if enabled
-    if (autonomy.opts_->activate_data_recording && !autonomy.is_recording_) {
-      autonomy.DataRecording(true);
-    }
-
-    // Setting state to PREFLIGHT
-    // This will perform first the preflight checks if they are enabled
-    autonomy.stateTransition("preflight");
 
   }
 
-  void Nominal::onExit(Autonomy&) {}
+  void PerformMission::onExit(Autonomy&) {}
 
 }

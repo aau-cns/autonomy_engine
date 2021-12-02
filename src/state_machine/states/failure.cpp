@@ -13,10 +13,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include <iostream>
-
 #include "state_machine/states/failure.h"
-#include "utils/colors.h"
 
 namespace autonomy {
 
@@ -52,8 +49,10 @@ namespace autonomy {
     // Clear waypoints
     autonomy.waypoints_.clear();
 
-    // Send abort request to mission sequencer
-    autonomy.missionSequencerRequest(amaze_mission_sequencer::request::ABORT);
+    // If flying send an abort request to mission sequencer
+    if (autonomy.in_flight_) {
+      autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::ABORT);
+    }
 
     // Unsubscribe from all the subscribed topics
     autonomy.sub_watchdog_heartbeat_.shutdown();
@@ -61,8 +60,8 @@ namespace autonomy {
     autonomy.sub_landing_detection_.shutdown();
     autonomy.sub_mission_sequencer_responce_.shutdown();
 
-    // Throw exception
-    throw FailureException();
+    // Call state transition to TERMINATION
+    autonomy.stateTransition("termination");
 
   }
 

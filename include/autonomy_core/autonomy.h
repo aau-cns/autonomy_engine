@@ -21,8 +21,9 @@
 #include <watchdog_msgs/StatusStamped.h>
 #include <watchdog_msgs/StatusChangesArrayStamped.h>
 #include <watchdog_msgs/ActionStamped.h>
-#include <amaze_mission_sequencer/request.h>
-#include <amaze_mission_sequencer/response.h>
+#include <mission_sequencer/MissionRequest.h>
+#include <mission_sequencer/MissionResponse.h>
+#include <mission_sequencer/MissionWaypointArray.h>
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
 #include <std_srvs/SetBool.h>
@@ -71,8 +72,9 @@ namespace autonomy {
 
     /**
      * @brief Watchdog start service call
+     * @return Boolean
      */
-    void startWatchdog();
+    [[nodiscard]] bool startWatchdog();
 
     /**
      * @brief Start/stop data recording service call
@@ -82,8 +84,9 @@ namespace autonomy {
 
     /**
      * @brief Run preflight checks
+     * @return Boolean
      */
-    void preFlightChecks();
+    [[nodiscard]] bool preFlightChecks();
 
     /**
      * @brief Send action to watchdog
@@ -135,7 +138,7 @@ namespace autonomy {
     /**
      * @brief Mission sequencer responce callback
      */
-    void missionSequencerResponceCallback(const amaze_mission_sequencer::responseConstPtr& msg);
+    void missionSequencerResponceCallback(const mission_sequencer::MissionResponseConstPtr& msg);
 
      /**
      * @brief Get SensorStatus from watchdog_msgs::Status, this function will also
@@ -144,16 +147,17 @@ namespace autonomy {
      *
      * @param const reference to watchdog_msgs::Status
      * @param reference to SensorStatus
-     * @return boolean
+     * @return Boolean
      */
     [[nodiscard]] bool getSensorStatusFromMsg(const watchdog_msgs::Status& msg, SensorStatus& status);
 
     /**
-     * @brief Get string from amaze_mission_sequencer::request
-     * @param const reference to amaze_mission_sequencer::request
+     * @brief Get string from mission_sequencer::MissionRequest
+     * @param const reference to mission_sequencer::MissionRequest
      * @param Reference to std::string
+     * @return Boolean
      */
-    void getRequestfromMsg(const amaze_mission_sequencer::request& msg, std::string& request_str);
+    [[nodiscard]] bool getRequestfromMsg(const mission_sequencer::MissionRequest& msg, std::string& request_str);
 
     /**
      * @brief Get Action from string
@@ -165,13 +169,18 @@ namespace autonomy {
 
     /**
      * @brief Call/Perform a state transition
+     * @param std::string (next state string)
      */
-    void stateTransition();
+    void stateTransition(std::string str);
 
     /**
-     * @brief Manage the completion of a mission or the multiple mission iteration
+     * @brief Polling with ros spin
+     * @param sleeap time for polling in ms (int)
      */
-    void missionIterationManager();
+    inline void polling(int ms) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(ms));
+      ros::spinOnce();
+    }
 
     /**
      * @brief Watchdog (system status) heartbeat callback, reset timer
@@ -184,10 +193,10 @@ namespace autonomy {
      * @brief Callback method called when a watchdog timer overflow occurs, print infos and unsubscribe
      */
     inline void watchdogTimerOverflowHandler() {
-      std::cout << BOLD(YELLOW(" >>> Timeout overflow -- no heartbeat from system watchdog.\n"));
-      std::cout << BOLD(YELLOW(" >>> Mission continue without the support of the watchdog.\n")) << std::endl;
+      std::cout << BOLD(YELLOW(" >>> Timeout overflow -- no heartbeat from system watchdog.\n")) << std::endl;
       sub_watchdog_heartbeat_.shutdown();
       sub_watchdog_status_.shutdown();
+      stateTransition("land");
     }
 
     /**
@@ -195,8 +204,7 @@ namespace autonomy {
      */
     inline void flightTimerOverflowHandler() {
       std::cout << BOLD(YELLOW(" >>> Timeout overflow -- maximum flight time achieved -- the platform will land.\n")) << std::endl;
-      next_state_ = AutonomyState::LAND;
-      stateTransition();
+      stateTransition("land");
     }
 
     /**
@@ -204,8 +212,7 @@ namespace autonomy {
      */
     inline void failureTimerOverflowHandler() {
       std::cout << BOLD(YELLOW(" >>> Timeout overflow -- maximum waiting time for a sensor fix achieved -- the platform will land.\n")) << std::endl;
-      next_state_ = AutonomyState::LAND;
-      stateTransition();
+      stateTransition("land");
     }
 
     /// Nodehandler
@@ -220,6 +227,7 @@ namespace autonomy {
     /// Publishers
     ros::Publisher pub_watchdog_action_;
     ros::Publisher pub_mission_sequencer_request_;
+    ros::Publisher pub_mission_sequencer_waypoints_;
 
     /// Service clients
     ros::ServiceClient takeoff_service_client_;
@@ -250,9 +258,6 @@ namespace autonomy {
     /// Pointer to State
     State* state_;
 
-    /// Next state for a state transition state_ --> next_state_
-    AutonomyState next_state_;
-
     /// Boolean to check if data is getting recorded
     bool is_recording_ = false;
 
@@ -264,6 +269,9 @@ namespace autonomy {
 
     /// boolean to check if we are holding
     bool holding_ = false;
+
+    /// boolean to check if we are hovering
+    bool hovering_ = false;
 
     /// Boolean to determine weather a mission with multiple touchdown is loaded
     bool multiple_touchdowns_ = false;
@@ -277,16 +285,22 @@ namespace autonomy {
     /// Boolean to check if we expect a land
     bool land_expected_ = false;
 
+    /// Boolean to determine weather there is a pending request to mission sequencer
+    bool ms_request_pending_ = false;
+
     /// Friend classes (able to access private data members)
     friend class Failure;
-    friend class Flight;
     friend class Hold;
     friend class Hover;
     friend class Initialization;
     friend class Land;
     friend class Nominal;
-    friend class Takeoff;
     friend class Undefined;
+    friend class Preflight;
+    friend class StartMission;
+    friend class PerformMission;
+    friend class EndMission;
+    friend class Termination;
 
   }; // class Autonomy
 

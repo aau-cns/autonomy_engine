@@ -65,6 +65,13 @@ class Timer
      */
     void stopTimer();
 
+    /**
+     * @brief Get active_ flag
+     */
+    [[nodiscard]] inline bool isActive() const {
+      return active_;
+    }
+
 
     /// Signal handler
     boost::signals2::signal<void()> sh_;

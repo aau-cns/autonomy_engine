@@ -71,6 +71,7 @@ namespace autonomy {
     const bool perform_takeoff_check;
     const bool perform_estimator_check;
     const bool activate_landing_detection;
+    const bool hover_after_mission_completion;
 
     /// Mission to be loaded in case of no user interface
     const int mission_id_no_ui;
@@ -86,7 +87,8 @@ namespace autonomy {
       std::cout << BOLD(YELLOW(" - Service call to initilize estimator:   " + getStringfromBool(estimator_init_service) + "\n"));
       std::cout << BOLD(YELLOW(" - Takeoff checks:                        " + getStringfromBool(perform_takeoff_check) + "\n"));
       std::cout << BOLD(YELLOW(" - Estimation quality checks:             " + getStringfromBool(perform_estimator_check) + "\n"));
-      std::cout << BOLD(YELLOW(" - Landing detection:                     " + getStringfromBool(activate_landing_detection) + "\n\n"));
+      std::cout << BOLD(YELLOW(" - Landing detection:                     " + getStringfromBool(activate_landing_detection) + "\n"));
+      std::cout << BOLD(YELLOW(" - Hover after mission completion:        " + getStringfromBool(hover_after_mission_completion) + "\n\n"));
 
       if (!activate_user_interface) {
         std::cout << BOLD(YELLOW(" - Loaded mission iwth ID:              " + std::to_string(mission_id_no_ui) + "\n\n"));
@@ -122,7 +124,8 @@ namespace autonomy {
       }
 
       std::cout << BOLD(YELLOW(" - Subscribed to:                         " + mission_sequencer_request_topic + "\n"));
-      std::cout << BOLD(YELLOW(" - Publishing on:                         " + mission_sequencer_responce_topic + "\n\n"));
+      std::cout << BOLD(YELLOW(" - Publishing on:                         " + mission_sequencer_responce_topic + "\n"));
+      std::cout << BOLD(YELLOW(" - Publishing on:                         " + mission_sequencer_waypoints_topic + "\n\n"));
 
       std::cout << BOLD(YELLOW(" - Maximum flight time:                   " + std::to_string(flight_timeout/60000) + " min\n\n"));
 

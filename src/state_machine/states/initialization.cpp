@@ -13,10 +13,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include <iostream>
-
 #include "state_machine/states/initialization.h"
-#include "utils/colors.h"
 
 namespace autonomy {
 
@@ -34,9 +31,15 @@ namespace autonomy {
     std::cout << BOLD(GREEN(" >>> System state: INITIALIZATION <<< \n"));
     std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
 
-    // Perform initialization of the watchdog
+    // Perform initialization of the watchdog and state transition to either NOMINAL or FAILURE
     if (autonomy.opts_->activate_watchdog) {
-      autonomy.startWatchdog();
+      if (autonomy.startWatchdog()) {
+        autonomy.stateTransition("nominal");
+      } else {
+        autonomy.stateTransition("failure");
+      }
+    } else {
+      autonomy.stateTransition("nominal");
     }
 
   }

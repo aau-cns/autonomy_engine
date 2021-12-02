@@ -13,29 +13,33 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include <iostream>
-
-#include "state_machine/states/hover.h"
-#include "utils/colors.h"
+#include "state_machine/states/termination.h"
 
 namespace autonomy {
 
-  Hover::Hover() {};
+  Termination::Termination() {};
 
-  State& Hover::Instance() {
-    static Hover singleton;
+  State& Termination::Instance() {
+    static Termination singleton;
     return singleton;
   }
 
-  void Hover::onEntry(Autonomy&) {
+  void Termination::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
-    std::cout << BOLD(YELLOW(" >>> System state: HOVER <<< \n"));
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+    std::cout << BOLD(MAGENTA("-------------------------------------------------\n"));
+    std::cout << BOLD(MAGENTA(" >>> System state: TERMINATION <<< \n"));
+    std::cout << BOLD(MAGENTA("-------------------------------------------------\n")) << std::endl;
+
+    // Wait
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // Shoutdown
+    autonomy.nh_.shutdown();
+    std::cout << BOLD(MAGENTA(" >>> Press CTRL-C to terminate the autonomy <<< \n")) << std::endl;
 
   }
 
-  void Hover::onExit(Autonomy&) {}
+  void Termination::onExit(Autonomy&) {}
 
 }

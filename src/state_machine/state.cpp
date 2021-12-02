@@ -17,10 +17,13 @@
 #include "state_machine/states/nominal.h"
 #include "state_machine/states/hold.h"
 #include "state_machine/states/failure.h"
-#include "state_machine/states/hover.h"
 #include "state_machine/states/initialization.h"
-#include "state_machine/states/takeoff.h"
 #include "state_machine/states/land.h"
+#include "state_machine/states/preflight.h"
+#include "state_machine/states/start_mission.h"
+#include "state_machine/states/perform_mission.h"
+#include "state_machine/states/end_mission.h"
+#include "state_machine/states/termination.h"
 
 namespace autonomy {
 

@@ -13,10 +13,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include <iostream>
-
 #include "state_machine/states/land.h"
-#include "utils/colors.h"
 
 namespace autonomy {
 
@@ -40,7 +37,7 @@ namespace autonomy {
     // Request landing to the mission sequencer if flying
     if(autonomy.in_flight_) {
       autonomy.land_expected_ = true;
-      autonomy.missionSequencerRequest(amaze_mission_sequencer::request::LAND);
+      autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::LAND);
     } else {
       std::cout << BOLD(YELLOW(" >>> the platform is not flying, skipped LAND request\n")) << std::endl;
     }

@@ -37,11 +37,6 @@ namespace autonomy {
   enum Type {GLOBAL = 0, TOPIC = 1, NODE = 2, DRIVER = 3};
 
   /**
-   * @brief Atonomy state
-   */
-  enum AutonomyState {UNDEFINED = 0, INITIALIZATION = 1, NOMINAL = 2, HOLD = 3, FAILURE = 4, LAND = 5, HOVER = 6, TAKEOFF = 7, FLIGHT = 8};
-
-  /**
    * @brief Action to be performed by the watchdog to react to an entity event
    */
   enum Action {NOTHING = 0, FIX_NODE = 1, FIX_DRIVER = 2};
@@ -114,7 +109,6 @@ namespace autonomy {
     } else {
       return false;
     }
-
     return true;
   }
 
@@ -122,8 +116,9 @@ namespace autonomy {
    * @brief Get String from Entity
    * @param const reference to Entity
    * @param reference to String
+   * @return boolean
    */
-  inline void getStringFromEntity(const Entity& entity, std::string& str) {
+  [[nodiscard]] inline bool getStringFromEntity(const Entity& entity, std::string& str) {
 
     switch (entity) {
     case Entity::PX4_IMU:
@@ -156,15 +151,19 @@ namespace autonomy {
     case Entity::RTK_GPS_2:
       str = "rtk_gps_2";
       break;
+    default:
+      return false;
     }
+    return true;
   }
 
   /**
    * @brief Get String from Entity
    * @param const reference to Entity
    * @param reference to String
+   * @return boolean
    */
-  inline void getStringFromType(const Type& type, std::string& str) {
+  [[nodiscard]] inline bool getStringFromType(const Type& type, std::string& str) {
 
     switch (type) {
     case Type::GLOBAL:
@@ -179,66 +178,26 @@ namespace autonomy {
     case Type::TOPIC:
       str = "Topic";
       break;
-    }
-  }
-
-  /**
-   * @brief Get Autonomy state from String
-   * @param const reference to String
-   * @param reference to Autonomy state
-   */
-  [[nodiscard]] inline bool getAutonomyStateFromString(const std::string& str,  AutonomyState& state) {
-
-    if (str.compare("continue")== 0) {
-      state = AutonomyState::FLIGHT;
-    } else if (str.compare("hold")== 0) {
-      state = AutonomyState::HOLD;
-    } else if (str.compare("failure") == 0) {
-      state = AutonomyState::FAILURE;
-    } else if (str.compare("land") == 0) {
-      state = AutonomyState::LAND;
-    } else {
+    default:
       return false;
     }
-
     return true;
   }
 
   /**
-   * @brief Get String from Autonomy state
-   * @param const reference to Autonomy state
-   * @param reference to String
+   * @brief Check the existance of a state from String
+   * @param const reference to String
+   * @return Bool
    */
-  inline void getStringFromAutonomyState(const AutonomyState& state, std::string& str) {
+  [[nodiscard]] inline bool checkStateFromString(const std::string& str) {
 
-    switch (state) {
-    case AutonomyState::NOMINAL:
-      str = "nominal";
-      break;
-    case AutonomyState::HOLD:
-      str = "hold";
-      break;
-    case AutonomyState::FAILURE:
-      str = "failure";
-      break;
-    case AutonomyState::LAND:
-      str = "land";
-      break;
-    case AutonomyState::HOVER:
-      str = "hover";
-      break;
-    case AutonomyState::INITIALIZATION:
-      str = "initialization";
-      break;
-    case AutonomyState::UNDEFINED:
-      str = "undefined";
-      break;
-    case AutonomyState::TAKEOFF:
-      str = "takeoff";
-      break;
-    case AutonomyState::FLIGHT:
-      str = "flight";
-      break;
+    if (str.compare("continue") == 0 ||
+        str.compare("hold") == 0     ||
+        str.compare("failure") == 0  ||
+        str.compare("land") == 0) {
+      return true;
+    } else {
+      return false;
     }
   }
 

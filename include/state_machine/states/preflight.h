@@ -13,17 +13,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef FLIGHT_H
-#define FLIGHT_H
+#ifndef PREFLIGHT_H
+#define PREFLIGHT_H
 
 #include "state_machine/state.h"
 
 namespace autonomy {
 
   /**
-   * @brief Flight state
+   * @brief Land state.
    */
-  class Flight : public State {
+  class Preflight : public State {
 
   public:
 
@@ -44,21 +44,28 @@ namespace autonomy {
      */
     void onEntry(Autonomy& autonomy) override;
 
+    /**
+     * @brief Return a String relative to the state
+     */
+    const std::string getStringFromState() override {
+      return "preflight";
+    }
+
   private:
 
     /**
      * @brief Private constructor and copy-constructor
      */
-    Flight();
-    Flight(const Flight& other);
+    Preflight();
+    Preflight(const Preflight& other);
 
     /**
      * @brief Assognment operator
      */
-    Flight& operator=(const Flight& other);
+    Preflight& operator=(const Preflight& other);
 
-  }; // calss Flight
+  }; // calss Preflight
 
-} // namepsace autonomy
+} // namespace autonomy
 
-#endif  // FLIGHT_H
+#endif  // PREFLIGHT_H

@@ -62,6 +62,9 @@ int main(int argc, char* argv[])
     // Print info
     std::cout << BOLD(RED(" >>> An error occured. Shutting down Autonomy <<<\n")) << std::endl;
 
+    // Shoutdown
+    ros::shutdown();
+
   }
 
   return EXIT_SUCCESS;

@@ -9,7 +9,7 @@
     <arg name="watchdog_status_topic"     		default="/watchdog/log" />
     <arg name="watchdog_action_topic"     		default="/watchdog/action" />
     <arg name="mission_sequencer_request_topic"		default="/missionsequencer/request" />
-    <arg name="mission_sequencer_responce_topic"	default="/missionsequencer/responce" />
+    <arg name="mission_sequencer_responce_topic"	default="/missionsequencer/response" />
     <arg name="landing_detection_topic"			default="/toland/is_landed" />
     <arg name="mission_sequencer_waypoints_topic"	default="/missionsequencer/waypoints" />
 
@@ -26,16 +26,17 @@
     <arg name="watchdog_heartbeat_timeout_multiplier"	default="2.0" />
     <arg name="maximum_flight_time_min"                 default="10" />
     <arg name="fix_timeout_ms"                          default="1500" />
-    <arg name="mission_id_no_ui"                        default="2" />
+    <arg name="mission_id_no_ui"                        default="1" />
 
     <!-- arguments flags -->
     <arg name="activate_user_interface"                 default="true" />
-    <arg name="activate_watchdog"                       default="true" />
+    <arg name="activate_watchdog"                       default="false" />
     <arg name="activate_data_recording"                 default="false" />
     <arg name="estimator_init_service"                  default="false" />
     <arg name="perform_takeoff_check"                   default="false" />
     <arg name="perform_estimator_check"                 default="false" />
     <arg name="activate_landing_detection"              default="true" />
+    <arg name="hover_after_mission_completion"          default="false" />
 
     <!-- autonomy node -->
     <node name="autonomy" pkg="autonomy" type="autonomy" output="screen" clear_params="true" required="true">
@@ -75,6 +76,7 @@
         <param name="perform_takeoff_check"                     type="bool"   value = "$(arg perform_takeoff_check)" />
         <param name="perform_estimator_check"                   type="bool"   value = "$(arg perform_estimator_check)" />
         <param name="activate_landing_detection"                type="bool"   value = "$(arg activate_landing_detection)" />
+        <param name="hover_after_mission_completion"            type="bool"   value = "$(arg hover_after_mission_completion)" />
 
     </node>
 

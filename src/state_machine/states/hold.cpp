@@ -13,10 +13,7 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include <iostream>
-
 #include "state_machine/states/hold.h"
-#include "utils/colors.h"
 
 namespace autonomy {
 
@@ -39,7 +36,7 @@ namespace autonomy {
 
     // Request holding to the mission sequencer if not holding
     if(!autonomy.holding_) {
-      autonomy.missionSequencerRequest(amaze_mission_sequencer::request::HOLD);
+      autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::HOLD);
     } else {
       std::cout << BOLD(YELLOW(" >>> the platform is already holding, skipped HOLD request\n")) << std::endl;
     }

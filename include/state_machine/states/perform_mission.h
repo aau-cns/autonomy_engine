@@ -13,17 +13,17 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef INITIALIZATION_H
-#define INITIALIZATION_H
+#ifndef PERFORM_MISSION_H
+#define PERFORM_MISSION_H
 
 #include "state_machine/state.h"
 
 namespace autonomy {
 
   /**
-   * @brief Initialization state.
+   * @brief Land state.
    */
-  class Initialization : public State {
+  class PerformMission : public State {
 
   public:
 
@@ -48,7 +48,7 @@ namespace autonomy {
      * @brief Return a String relative to the state
      */
     const std::string getStringFromState() override {
-      return "initialization";
+      return "perform_mission";
     }
 
   private:
@@ -56,16 +56,16 @@ namespace autonomy {
     /**
      * @brief Private constructor and copy-constructor
      */
-    Initialization();
-    Initialization(const Initialization& other);
+    PerformMission();
+    PerformMission(const PerformMission& other);
 
     /**
      * @brief Assognment operator
      */
-    Initialization& operator=(const Initialization& other);
+    PerformMission& operator=(const PerformMission& other);
 
-  }; // calss Initialization
+  }; // calss PerformMission
 
 } // namespace autonomy
 
-#endif  // INITIALIZATION_H
+#endif  // PERFORM_MISSION_H

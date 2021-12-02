@@ -44,6 +44,13 @@ namespace autonomy {
      */
     void onEntry(Autonomy& autonomy) override;
 
+    /**
+     * @brief Return a String relative to the state
+     */
+    const std::string getStringFromState() override {
+      return "land";
+    }
+
   private:
 
     /**

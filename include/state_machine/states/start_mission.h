@@ -13,8 +13,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#ifndef TAKEOFF_H
-#define TAKEOFF_H
+#ifndef START_MISSION_H
+#define START_MISSION_H
 
 #include "state_machine/state.h"
 
@@ -23,7 +23,7 @@ namespace autonomy {
   /**
    * @brief Land state.
    */
-  class Takeoff : public State {
+  class StartMission : public State {
 
   public:
 
@@ -44,21 +44,28 @@ namespace autonomy {
      */
     void onEntry(Autonomy& autonomy) override;
 
+    /**
+     * @brief Return a String relative to the state
+     */
+    const std::string getStringFromState() override {
+      return "start_mission";
+    }
+
   private:
 
     /**
      * @brief Private constructor and copy-constructor
      */
-    Takeoff();
-    Takeoff(const Takeoff& other);
+    StartMission();
+    StartMission(const StartMission& other);
 
     /**
      * @brief Assognment operator
      */
-    Takeoff& operator=(const Takeoff& other);
+    StartMission& operator=(const StartMission& other);
 
-  }; // calss Takeoff
+  }; // calss StartMission
 
 } // namespace autonomy
 
-#endif  // TAKEOFF_H
+#endif  // START_MISSION_H

@@ -13,29 +13,33 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 // DEALINGS IN THE SOFTWARE.
 
-#include <iostream>
-
-#include "state_machine/states/flight.h"
-#include "utils/colors.h"
+#include "state_machine/states/preflight.h"
 
 namespace autonomy {
 
-  Flight::Flight() {};
+  Preflight::Preflight() {};
 
-  State& Flight::Instance() {
-    static Flight singleton;
+  State& Preflight::Instance() {
+    static Preflight singleton;
     return singleton;
   }
 
-  void Flight::onEntry(Autonomy&)  {
+  void Preflight::onEntry(Autonomy& autonomy) {
 
     // print info
     std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: FLIGHT <<< \n"));
+    std::cout << BOLD(GREEN(" >>> System state: PREFLIGHT <<< \n"));
     std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+
+    // Perform preflight checks and state transition
+    if (autonomy.preFlightChecks()) {
+      autonomy.stateTransition("start_mission");
+    } else {
+      autonomy.stateTransition("failure");
+    }
 
   }
 
-  void Flight::onExit(Autonomy&) {}
+  void Preflight::onExit(Autonomy&) {}
 
 }
