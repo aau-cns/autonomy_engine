@@ -82,7 +82,7 @@ namespace autonomy {
         ++autonomy.filepaths_cnt_;
 
         // Setting state to START MISSION
-        autonomy.stateTransition("start_mission");
+        autonomy.stateTransition("preflight");
 
       } else {
 
