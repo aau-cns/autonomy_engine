@@ -690,14 +690,6 @@ namespace autonomy {
 
           case mission_sequencer::MissionRequest::ARM:
 
-            // Set armed_ flag
-            armed_ = true;
-
-            // Reset flight_timer only at first arming (if not active)
-            if (!flight_timer_->isActive()) {
-              flight_timer_->resetTimer();
-            }
-
             break;
 
           case mission_sequencer::MissionRequest::TAKEOFF:
@@ -769,12 +761,25 @@ namespace autonomy {
           stateTransition("failure");
         }
 
+        // Check if mission has been compoleted (last waypoint reached)
       } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::UNDEF) {
 
         std::cout << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->request.id) + " succesfully reached last waypoint.\n")) << std::endl;
 
         // set last_waypoint_reached_ flag
         last_waypoint_reached_ = true;
+
+        // Check parameter server
+        bool hover_after_mission_completion;
+        nh_.getParam("hover_after_mission_completion", hover_after_mission_completion);
+
+        // Check if the parameter has changed from previously assigned value
+        if (hover_after_mission_completion != opts_->hover_after_mission_completion) {
+          // Assign new flag
+          opts_->hover_after_mission_completion = hover_after_mission_completion;
+          // Print info
+          std::cout << BOLD(YELLOW(" >>> Changed behaviour at mission completion: Hover is now " + opts_->getStringfromBool(opts_->hover_after_mission_completion) + "\n")) << std::endl;
+        }
 
         // Call state transition to LAND or request HOVER to mission sequencer based on param
         if (!opts_->hover_after_mission_completion) {
@@ -789,6 +794,17 @@ namespace autonomy {
           } else {
             std::cout << BOLD(YELLOW(" >>> the platform is already hovering, skipped HOVER request\n")) << std::endl;
           }
+        }
+
+        // Check if arm request has been completed
+      } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::ARM) {
+
+        // Set armed_ flag
+        armed_ = true;
+
+        // Reset flight_timer only at first arming (if not active)
+        if (!flight_timer_->isActive()) {
+          flight_timer_->resetTimer();
         }
 
       } else {

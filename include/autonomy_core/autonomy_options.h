@@ -71,7 +71,10 @@ namespace autonomy {
     const bool perform_takeoff_check;
     const bool perform_estimator_check;
     const bool activate_landing_detection;
-    const bool hover_after_mission_completion;
+
+    /// Boolean to decide what to do in case of mission completion
+    /// Note: This is not const because it can be overwritten during runtime
+    bool hover_after_mission_completion;
 
     /// Mission to be loaded in case of no user interface
     const int mission_id_no_ui;
