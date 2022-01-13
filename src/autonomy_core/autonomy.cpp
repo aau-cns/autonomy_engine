@@ -1034,8 +1034,9 @@ namespace autonomy {
   bool Autonomy::estimatorCheck() {
 
     std::cout << BOLD(YELLOW(" >>> Please, Initialize estimator now\n"));
-    std::cout << BOLD(YELLOW(" >>> When done, press [ENTER] to start the experiment"));
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cout << BOLD(YELLOW(" >>> When done, press [SPACE] and then [ENTER] to start the experiment"));
+    std::cin.clear();
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
     std::cout << std::endl;
 
     // Define takeoff request
@@ -1098,7 +1099,7 @@ namespace autonomy {
     // Define init service
     std_srvs::Empty init;
 
-    std::cout << BOLD(GREEN(" >>> Starting in flight initialization... Please wait\n"));
+    std::cout << BOLD(GREEN(" >>> Starting in flight initialization...\n\n"));
 
     // Loop trough all the service call
     for (size_t i = 0; i < inflight_sensor_init_service_client_.size(); ++i) {
@@ -1112,6 +1113,9 @@ namespace autonomy {
       }
 
     }
+
+    // Newline and flish
+    std::cout << std::endl;
 
     return true;
 
