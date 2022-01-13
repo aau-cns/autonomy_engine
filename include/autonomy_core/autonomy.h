@@ -26,6 +26,7 @@
 #include <mission_sequencer/MissionWaypointArray.h>
 #include <sensor_msgs/Imu.h>
 #include <std_srvs/Trigger.h>
+#include <std_srvs/Empty.h>
 #include <std_srvs/SetBool.h>
 #include <std_msgs/Bool.h>
 #include <boost/bind/bind.hpp>
@@ -118,6 +119,12 @@ namespace autonomy {
      * @return boolean
      */
     [[nodiscard]] bool initializeStateEstimation();
+
+    /**
+     * @brief Perform service call to start in flight sensor initialization
+     * @return boolean
+     */
+    [[nodiscard]] bool InFlightSensorInit();
 
     /**
      * @brief Watchdog system status changes callback
@@ -235,6 +242,7 @@ namespace autonomy {
     ros::ServiceClient data_recording_service_client_;
     ros::ServiceClient estimator_supervisor_service_client_;
     ros::ServiceClient estimator_init_service_client_;
+    std::vector<ros::ServiceClient> inflight_sensor_init_service_client_;
 
     /// Timeout timers
     std::unique_ptr<Timer> watchdog_timer_;

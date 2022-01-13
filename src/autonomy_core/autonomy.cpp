@@ -55,6 +55,13 @@ namespace autonomy {
       estimator_init_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->estimator_init_service_name);
     }
 
+    // Advertise in flight sensor init service
+    if (opts_->inflight_sensors_init_service) {
+      for (size_t i = 0; i < opts_->inflight_sensor_init_services_name.size(); ++i) {
+        inflight_sensor_init_service_client_.emplace_back(nh_.serviceClient<std_srvs::Empty>(opts_->inflight_sensor_init_services_name.at(i)));
+      }
+    }
+
     // Advertise estimator supervisor service
     if (opts_->perform_estimator_check) {
       estimator_supervisor_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->estimator_supervisor_service_name);
@@ -106,6 +113,7 @@ namespace autonomy {
     std::string landing_detection_topic;
     std::string estimator_init_service_name;
     std::string mission_sequencer_waypoints_topic;
+    std::vector<std::string> inflight_sensor_init_services_name;
     std::vector<Mission> missions;
     XmlRpc::XmlRpcValue XRV_missions;
     XmlRpc::XmlRpcValue XRV_filepaths;
@@ -124,6 +132,7 @@ namespace autonomy {
     bool perform_estimator_check;
     bool activate_landing_detection;
     bool hover_after_mission_completion;
+    bool inflight_sensors_init_service;
     int mission_id_no_ui = -1;
 
     // Get Parmaters from ros param server
@@ -157,6 +166,10 @@ namespace autonomy {
     }
     if (!nh_.getParam("hover_after_mission_completion", hover_after_mission_completion)) {
       std::cout << BOLD(RED(" >>> [hover_after_mission_completion] parameter not defined.\n")) << std::endl;
+      return false;
+    }
+    if (!nh_.getParam("inflight_sensors_init_service", inflight_sensors_init_service)) {
+      std::cout << BOLD(RED(" >>> [inflight_sensors_init_service] parameter not defined.\n")) << std::endl;
       return false;
     }
     if (!activate_user_interface) {
@@ -225,6 +238,15 @@ namespace autonomy {
       if (!nh_.getParam("estimator_init_service_name", estimator_init_service_name)) {
         std::cout << BOLD(RED(" >>> [estimator_init_service_name] parameter not defined.\n")) << std::endl;
         return false;
+      }
+    } 
+    if (inflight_sensors_init_service) {
+      nh_.param<std::vector<std::string>>("inflight_sensor_init_services_name", inflight_sensor_init_services_name, std::vector<std::string>{""});
+      for (const auto &it : inflight_sensor_init_services_name) {
+        if (it == "") {
+          std::cout << BOLD(RED(" >>> [inflight_sensor_init_service_name] parameter not defined.\n")) << std::endl;
+          return false;
+        }
       }
     }
     if (perform_takeoff_check) {
@@ -381,6 +403,7 @@ namespace autonomy {
                                                                data_recrding_service_name,
                                                                takeoff_service_name,
                                                                estimator_init_service_name,
+                                                               inflight_sensor_init_services_name,
                                                                watchdog_timeout_ms,
                                                                flight_timeout_ms,
                                                                fix_timeout_ms,
@@ -392,6 +415,7 @@ namespace autonomy {
                                                                perform_takeoff_check,
                                                                perform_estimator_check,
                                                                activate_landing_detection,
+                                                               inflight_sensors_init_service,
                                                                hover_after_mission_completion,
                                                                mission_id_no_ui}));
 
@@ -694,15 +718,6 @@ namespace autonomy {
 
           case mission_sequencer::MissionRequest::TAKEOFF:
 
-            // Set in_flight_ and reset last_waypoint_reached_ flag
-            in_flight_ = true;
-            last_waypoint_reached_ = false;
-
-            // Subscribe to landing after taking off if detection if active
-            if (opts_->activate_landing_detection) {
-              sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &Autonomy::landingDetectionCallback, this);
-            }
-
             break;
 
           case mission_sequencer::MissionRequest::HOLD:
@@ -805,6 +820,17 @@ namespace autonomy {
         // Reset flight_timer only at first arming (if not active)
         if (!flight_timer_->isActive()) {
           flight_timer_->resetTimer();
+        }
+
+      } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::TAKEOFF) {
+
+        // Set in_flight_ and reset last_waypoint_reached_ flag
+        in_flight_ = true;
+        last_waypoint_reached_ = false;
+
+        // Subscribe to landing after taking off if detection if active
+        if (opts_->activate_landing_detection) {
+          sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &Autonomy::landingDetectionCallback, this);
         }
 
       } else {
@@ -1038,7 +1064,7 @@ namespace autonomy {
 
   bool Autonomy::initializeStateEstimation() {
 
-    // Define data recording
+    // Define init service
     std_srvs::SetBool init;
 
     // Set data recording start request
@@ -1065,6 +1091,30 @@ namespace autonomy {
     }
 
     return true;
+  }
+
+  bool Autonomy::InFlightSensorInit() {
+
+    // Define init service
+    std_srvs::Empty init;
+
+    std::cout << BOLD(GREEN(" >>> Starting in flight initialization... Please wait\n"));
+
+    // Loop trough all the service call
+    for (size_t i = 0; i < inflight_sensor_init_service_client_.size(); ++i) {
+
+      // Print info
+      std::cout << BOLD(GREEN(" >>> Calling service: " + opts_->inflight_sensor_init_services_name.at(i) + "\n"));
+
+      // service call to check if we are ready to takeoff
+      if (!inflight_sensor_init_service_client_.at(i).call(init)) {
+        return false;
+      }
+
+    }
+
+    return true;
+
   }
 
   void Autonomy::DataRecording(const bool& start_stop) {

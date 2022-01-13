@@ -50,6 +50,7 @@ namespace autonomy {
     const std::string data_recrding_service_name;
     const std::string takeoff_service_name;
     const std::string estimator_init_service_name;
+    const std::vector<std::string> inflight_sensor_init_services_name;
 
     /// Timeout in milliseconds for watchdog heartbeat
     const int watchdog_timeout;
@@ -71,6 +72,7 @@ namespace autonomy {
     const bool perform_takeoff_check;
     const bool perform_estimator_check;
     const bool activate_landing_detection;
+    const bool inflight_sensors_init_service;
 
     /// Boolean to decide what to do in case of mission completion
     /// Note: This is not const because it can be overwritten during runtime
@@ -91,6 +93,7 @@ namespace autonomy {
       std::cout << BOLD(YELLOW(" - Takeoff checks:                        " + getStringfromBool(perform_takeoff_check) + "\n"));
       std::cout << BOLD(YELLOW(" - Estimation quality checks:             " + getStringfromBool(perform_estimator_check) + "\n"));
       std::cout << BOLD(YELLOW(" - Landing detection:                     " + getStringfromBool(activate_landing_detection) + "\n"));
+      std::cout << BOLD(YELLOW(" - Inflight sensors init:                 " + getStringfromBool(inflight_sensors_init_service) + "\n"));
       std::cout << BOLD(YELLOW(" - Hover after mission completion:        " + getStringfromBool(hover_after_mission_completion) + "\n\n"));
 
       if (!activate_user_interface) {
@@ -120,6 +123,13 @@ namespace autonomy {
 
       if (activate_data_recording) {
         std::cout << BOLD(YELLOW(" - Service available at:                  " + data_recrding_service_name + "\n\n"));
+      }
+
+      if (inflight_sensors_init_service) {
+        for (const auto &it : inflight_sensor_init_services_name) {
+          std::cout << BOLD(YELLOW(" - Service available at:                  " + it + "\n"));
+        }
+        std::cout << "\n";
       }
 
       if (activate_landing_detection) {

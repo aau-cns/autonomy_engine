@@ -96,8 +96,15 @@ namespace autonomy {
         wps.waypoints.emplace_back(wp);
       }
 
-      // publish mission start request
+      // publish mission waypoints
       autonomy.pub_mission_sequencer_waypoints_.publish(wps);
+
+      // Call inflight sensor init service
+      if (autonomy.opts_->estimator_init_service) {
+        if (!autonomy.InFlightSensorInit()) {
+          autonomy.stateTransition("failure");
+        }
+      }
 
       // Setting state to PERFORM_MISSION
       autonomy.stateTransition("perform_mission");

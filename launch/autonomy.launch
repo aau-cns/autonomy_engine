@@ -2,7 +2,7 @@
 <launch>
 
     <!-- arguments config -->
-    <arg name="config_filepath"     			default="/home/alfornasier/Catkin_ws/catkin_ws_amadee/src/amadee/amadee_bringup/configs/autonomy/mission_config_dh.yaml" />
+    <arg name="config_filepath"     			default="/home/alfornasier/Catkin_ws/catkin_ws_bw2/src/bw2/bw2_bringup/configs/autonomy/config_dh_test.yaml" />
 
     <!-- arguments topics -->
     <arg name="watchdog_heartbeat_topic"     		default="/watchdog/status" />
@@ -19,6 +19,7 @@
     <arg name="takeoff_service_name"			default="/toland/service/takeoff" />
     <arg name="estimator_supervisor_service_name"       default="/estimator_supervisor/supervise" />
     <arg name="estimator_init_service_name"             default="/estimator/init" />
+    <arg name="inflight_sensor_init_services_name"      default="[/uwb_init/start]" />
 
     <!-- arguments setup -->
     <arg name="watchdog_rate_Hz"			default="1.0" />
@@ -36,6 +37,7 @@
     <arg name="perform_takeoff_check"                   default="false" />
     <arg name="perform_estimator_check"                 default="false" />
     <arg name="activate_landing_detection"              default="true" />
+    <arg name="inflight_sensors_init_service"           default="true" />
     <arg name="hover_after_mission_completion"          default="false" />
 
     <!-- autonomy node -->
@@ -51,11 +53,12 @@
         <param name="mission_sequencer_waypoints_topic" type="string"   value="$(arg mission_sequencer_waypoints_topic)" />
 
         <!-- services -->
-        <param name="watchdog_start_service_name"       type="string"   value="$(arg watchdog_start_service_name)" />
-        <param name="data_recrding_service_name"        type="string"   value="$(arg data_recrding_service_name)" />
-        <param name="takeoff_service_name"              type="string"   value="$(arg takeoff_service_name)" />     
-        <param name="estimator_supervisor_service_name" type="string"   value="$(arg estimator_supervisor_service_name)" />
-        <param name="estimator_init_service_name"       type="string"   value="$(arg estimator_init_service_name)" />
+        <param name="watchdog_start_service_name"            type="string"   value="$(arg watchdog_start_service_name)" />
+        <param name="data_recrding_service_name"             type="string"   value="$(arg data_recrding_service_name)" />
+        <param name="takeoff_service_name"                   type="string"   value="$(arg takeoff_service_name)" />
+        <param name="estimator_supervisor_service_name"      type="string"   value="$(arg estimator_supervisor_service_name)" />
+        <param name="estimator_init_service_name"            type="string"   value="$(arg estimator_init_service_name)" />
+        <rosparam param="inflight_sensor_init_services_name" subst_value="True">$(arg inflight_sensor_init_services_name)</rosparam>
 
         <!-- load parameters from file -->
         <rosparam command="load"    file="$(arg config_filepath)" />
@@ -76,6 +79,7 @@
         <param name="perform_takeoff_check"                     type="bool"   value = "$(arg perform_takeoff_check)" />
         <param name="perform_estimator_check"                   type="bool"   value = "$(arg perform_estimator_check)" />
         <param name="activate_landing_detection"                type="bool"   value = "$(arg activate_landing_detection)" />
+        <param name="inflight_sensors_init_service"             type="bool"   value = "$(arg inflight_sensors_init_service)" />
         <param name="hover_after_mission_completion"            type="bool"   value = "$(arg hover_after_mission_completion)" />
 
     </node>
