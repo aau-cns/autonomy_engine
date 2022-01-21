@@ -24,7 +24,7 @@ namespace autonomy {
   /**
    * @brief Entity
    */
-  enum Entity {PX4_GPS = 0, PX4_IMU = 1, PX4_MAG = 2, PX4_BAR = 3, MISSION_CAM = 4, REALSENSE = 5, LSM9DS1 = 6, LRF = 7, RTK_GPS_1 = 8, RTK_GPS_2 = 9};
+  enum Entity {PX4_GPS = 0, PX4_IMU = 1, PX4_MAG = 2, PX4_BAR = 3, MISSION_CAM = 4, REALSENSE = 5, LSM9DS1 = 6, LRF = 7, RTK_GPS_1 = 8, RTK_GPS_2 = 9, UWB = 10, OPTITRACK = 11};
 
   /**
    * @brief Event regarding an entity.
@@ -102,10 +102,14 @@ namespace autonomy {
       entity = Entity::LSM9DS1;
     } else if (str.compare("lrf") == 0) {
       entity = Entity::LRF;
+    } else if (str.compare("uwb") == 0) {
+      entity = Entity::UWB;
     } else if (str.compare("rtk_gps_1") == 0) {
       entity = Entity::RTK_GPS_1;
     } else if (str.compare("rtk_gps_2") == 0) {
       entity = Entity::RTK_GPS_2;
+    } else if (str.compare("optitrack") == 0) {
+      entity = Entity::OPTITRACK;
     } else {
       return false;
     }
@@ -145,11 +149,17 @@ namespace autonomy {
     case Entity::LRF:
       str = "lrf";
       break;
+    case Entity::UWB:
+      str = "uwb";
+      break;
     case Entity::RTK_GPS_1:
       str = "rtk_gps_1";
       break;
     case Entity::RTK_GPS_2:
       str = "rtk_gps_2";
+      break;
+    case Entity::OPTITRACK:
+      str = "optitrack";
       break;
     default:
       return false;
