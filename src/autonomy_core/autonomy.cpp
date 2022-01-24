@@ -1130,30 +1130,30 @@ namespace autonomy {
     data_rec.request.data = start_stop;
 
     // service call (before stopping check if we are recording)
-    if (!start_stop && is_recording_) {
+    if (!start_stop && !is_recording_) {
+      std::cout << BOLD(RED(" >>> Data recording stop failure, cannot stop data recording if the recording is inactive\n")) << std::endl;
+    } else {
       if (data_recording_service_client_.call(data_rec)) {
 
         // Check responce
         if (data_rec.response.success) {
           if (data_rec.request.data) {
-            std::cout << BOLD(GREEN(" >>> Data recorded started succesfully\n")) << std::endl;
+            std::cout << BOLD(GREEN(" >>> Data recording started succesfully\n")) << std::endl;
             is_recording_ = true;
           } else {
-            std::cout << BOLD(GREEN(" >>> Data recorded stopped succesfully\n")) << std::endl;
+            std::cout << BOLD(GREEN(" >>> Data recording stopped succesfully\n")) << std::endl;
             is_recording_ = false;
           }
         } else {
-          std::cout << BOLD(RED(" >>> Data recorded service failure\n")) << std::endl;
+          std::cout << BOLD(RED(" >>> Data recording service failure\n")) << std::endl;
         }
       } else {
         if (data_rec.request.data) {
-          std::cout << BOLD(RED(" >>> Data recorded start failure\n")) << std::endl;
+          std::cout << BOLD(RED(" >>> Data recording start failure\n")) << std::endl;
         } else {
-          std::cout << BOLD(RED(" >>> Data recorded stop failure\n")) << std::endl;
+          std::cout << BOLD(RED(" >>> Data recording stop failure\n")) << std::endl;
         }
       }
-    } else {
-      std::cout << BOLD(RED(" >>> Data recorded stop failure, cannot stop data recording if the recording is inactive\n")) << std::endl;
     }
   }
 
