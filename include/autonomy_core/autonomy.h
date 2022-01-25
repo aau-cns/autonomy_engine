@@ -275,6 +275,9 @@ namespace autonomy {
     /// Boolean to check if we are in flight
     bool in_flight_ = false;
 
+    /// Boolean to check if we are currently in takeoff
+    bool in_takeoff_ = false;
+
     /// boolean to check if we are holding
     bool holding_ = false;
 

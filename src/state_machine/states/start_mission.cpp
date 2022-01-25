@@ -48,6 +48,7 @@ namespace autonomy {
     }
 
     // Print info
+    autonomy.in_takeoff_ = true;
     std::cout << BOLD(GREEN(" >>> Taking off...\n")) << std::endl;
 
     // Takeoff, if not already in flight and if armed

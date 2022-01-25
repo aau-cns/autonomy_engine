@@ -474,7 +474,7 @@ namespace autonomy {
         pending_failures_.back().second->sh_.connect(boost::bind(&Autonomy::failureTimerOverflowHandler, this));
         pending_failures_.back().second->resetTimer();
       }
-    } else if (msg.status == watchdog_msgs::Status::NOMINAL) {
+    } else if (msg.status == watchdog_msgs::Status::NOMINAL || msg.status == watchdog_msgs::Status::DEFECT) {
       // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fixing
       // which can only be triggered if the hold status is requested. If for some reason we got a NOMINAL status without
       // requiring a specific action we set the event to OTHER
@@ -573,7 +573,7 @@ namespace autonomy {
             // Failure -- search an action (next state) on specific mission (mission id) [Next states strings can be: continue, hold, land, failure]
             // If the state string is not continue then, if in_flight_, call state transition otherwise, trigger a failure
             if (missions_.at(mission_id_).getNextState(status.entity).compare("continue") != 0) {
-              if (!in_flight_) {
+              if (!in_flight_ && !in_takeoff_) {
                 stateTransition("failure");
               } else {
                 stateTransition(missions_.at(mission_id_).getNextState(status.entity));
@@ -606,7 +606,7 @@ namespace autonomy {
             if (pending_failures_.size() == 0) {
 
               // Redundant check, check if we are flying (we should not be here if we are not flying)
-              if (in_flight_) {
+              if (in_flight_ || in_takeoff_) {
 
                 // Call state transition to PERFORM_MISSION
                 stateTransition("perform_mission");
@@ -826,6 +826,7 @@ namespace autonomy {
 
         // Set in_flight_ and reset last_waypoint_reached_ flag
         in_flight_ = true;
+        in_takeoff_ = false;
         last_waypoint_reached_ = false;
 
         // Subscribe to landing after taking off if detection if active
