@@ -77,6 +77,14 @@ namespace autonomy {
       }
       return false;
     }
+
+    /// Equal operator, that checks for everything except timestamps
+    bool isEqual(const SensorStatus& ss) const {
+      if (entity == ss.entity && type == ss.type) {
+        return true;
+      }
+      return false;
+    }
   };
 
   /**

@@ -478,7 +478,7 @@ namespace autonomy {
       // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fixing
       // which can only be triggered if the hold status is requested. If for some reason we got a NOMINAL status without
       // requiring a specific action we set the event to OTHER
-      const auto &it = std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first == status;});
+      const auto &it = std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
       if (it != pending_failures_.end()) {
         it->second->stopTimer();
         pending_failures_.erase(it, pending_failures_.end());
@@ -1002,7 +1002,7 @@ namespace autonomy {
       return false;
     }
 
-    std::cout << BOLD(GREEN(" >>> Pre-Flight checks successed\n")) << std::endl;
+    std::cout << BOLD(GREEN(" >>> Pre-Flight checks succeeded\n")) << std::endl;
     return true;
 
   }
@@ -1018,7 +1018,7 @@ namespace autonomy {
       // Check responce
       if(takeoff.response.success) {
         std::cout << BOLD(GREEN(" >>> Vehicle flat on the ground\n"));
-        std::cout << BOLD(GREEN(" >>> Takeoff checks successed\n")) << std::endl;
+        std::cout << BOLD(GREEN(" >>> Takeoff checks succeeded\n")) << std::endl;
       }
     } else {
       takeoff.response.success = false;
