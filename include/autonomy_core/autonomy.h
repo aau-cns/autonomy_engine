@@ -41,6 +41,7 @@
 #include "timer/timer.h"
 #include "utils/except.h"
 #include "waypoints_parser/waypoints_parser.h"
+#include "utils/logger.h"
 
 namespace autonomy {
 
