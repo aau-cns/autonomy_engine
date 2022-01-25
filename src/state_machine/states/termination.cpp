@@ -31,6 +31,12 @@ namespace autonomy {
     std::cout << BOLD(MAGENTA(" >>> System state: TERMINATION <<< \n"));
     std::cout << BOLD(MAGENTA("-------------------------------------------------\n")) << std::endl;
 
+    // Terminate remaining timers
+    autonomy.watchdog_timer_->stopTimer();
+    for (const auto& it : autonomy.pending_failures_) {
+      it.second->stopTimer();
+    }
+
     // Wait
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
