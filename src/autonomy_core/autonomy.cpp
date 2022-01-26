@@ -475,13 +475,24 @@ namespace autonomy {
         pending_failures_.back().second->resetTimer();
       }
     } else if (msg.status == watchdog_msgs::Status::NOMINAL || msg.status == watchdog_msgs::Status::DEFECT) {
-      // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fixing
+      std::cout << "[WATCHDOG] E-" << status.entity << ": received fix" << std::endl;
+      std::cout << "[AUTONOMY] E-" << status.entity << ": need no of fixes = " << pending_failures_.size() << std::endl;
+
+      // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fiWxing
       // which can only be triggered if the hold status is requested. If for some reason we got a NOMINAL status without
       // requiring a specific action we set the event to OTHER
-      const auto &it = std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
+//      const auto &it = std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
+      const auto &it = std::find_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
+      for (size_t i=0; i < pending_failures_.size(); ++i)
+        std::cout << "[AUTONOMY] E-" << status.entity << ": compare " << i << " = " << pending_failures_.at(i).first.isEqual(status) << "\n"
+                  << "                entity --> " << pending_failures_.at(i).first.entity << "-" << status.entity << "\n"
+                  << "                type   --> " << pending_failures_.at(i).first.type << "-" << status.type << "\n"
+                  << "                it=end? -> " << (it != pending_failures_.end()) << std::endl;
+
       if (it != pending_failures_.end()) {
         it->second->stopTimer();
-        pending_failures_.erase(it, pending_failures_.end());
+//        pending_failures_.erase(it, pending_failures_.end());
+        pending_failures_.erase(it);
         status.event = Event::ENTITY_FIX;
       } else {
         status.event = Event::ENTITY_OTHER;
