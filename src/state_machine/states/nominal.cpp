@@ -27,9 +27,9 @@ namespace autonomy {
   void Nominal::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> System state: NOMINAL (IDLE) <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
 
     // Start data recording if enabled
     if (autonomy.opts_->activate_data_recording && !autonomy.is_recording_) {

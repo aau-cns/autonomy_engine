@@ -27,19 +27,19 @@ namespace autonomy {
   void Land::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: LAND <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> System state: LAND <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
 
     // Print info
-    std::cout << BOLD(GREEN(" >>> Landing...\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Landing...\n")) << std::endl);
 
     // Request landing to the mission sequencer if flying
     if(autonomy.in_flight_) {
       autonomy.land_expected_ = true;
       autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::LAND);
     } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is not flying, skipped LAND request\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is not flying, skipped LAND request\n")) << std::endl);
     }
 
   }

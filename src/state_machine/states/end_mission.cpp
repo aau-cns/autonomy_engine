@@ -27,9 +27,9 @@ namespace autonomy {
   void EndMission::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: MISSION (ENDING) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> System state: MISSION (ENDING) <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
 
     // Set in_flight_ flag
     autonomy.in_flight_ = false;
@@ -52,7 +52,7 @@ namespace autonomy {
       if (autonomy.armed_) {
         autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::DISARM);
       } else {
-        std::cout << BOLD(YELLOW(" >>> the platform is already disarmed, skipped DISARM request\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already disarmed, skipped DISARM request\n")) << std::endl);
       }
 
       // Wait until disarm request got accepted
@@ -69,12 +69,12 @@ namespace autonomy {
       if (autonomy.multiple_touchdowns_ && (autonomy.filepaths_cnt_ < static_cast<int>(autonomy.missions_.at(autonomy.mission_id_).getTouchdowns()))) {
 
         // Print info
-        std::cout << BOLD(GREEN(" >>> Iteration of mission ID: " + std::to_string(autonomy.mission_id_) + " succesfully completed.\n\n"));
-        std::cout << BOLD(GREEN(" >>> Continuing with next iteration ...\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Iteration of mission ID: " + std::to_string(autonomy.mission_id_) + " succesfully completed.\n\n")));
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Continuing with next iteration ...\n")) << std::endl);
 
         // Give room for "phisical" landing and disarming by sleeping 10 seconds
         if (!autonomy.opts_->activate_landing_detection) {
-          std::cout << BOLD(GREEN(" >>> Waiting 10 seconds ...\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Waiting 10 seconds ...\n")) << std::endl);
           std::this_thread::sleep_for(std::chrono::seconds(10));
         }
 
@@ -96,8 +96,8 @@ namespace autonomy {
     } else {
 
       // Print info
-      std::cout << BOLD(YELLOW(" >>> Safety land <<<\n\n"));
-      std::cout << BOLD(YELLOW(" >>> Mission ID: " + std::to_string(autonomy.mission_id_) + " safely interrupted.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Safety land <<<\n\n")));
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Mission ID: " + std::to_string(autonomy.mission_id_) + " safely interrupted.\n")) << std::endl);
 
       // Terminate
       Terminate(autonomy);

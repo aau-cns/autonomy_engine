@@ -138,106 +138,106 @@ namespace autonomy {
 
     // Get Parmaters from ros param server
     if (!nh_.getParam("activate_user_interface", activate_user_interface)) {
-      std::cout << BOLD(RED(" >>> [activate_user_interface] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_user_interface] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("activate_watchdog", activate_watchdog)) {
-      std::cout << BOLD(RED(" >>> [activate_watchdog] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_watchdog] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("activate_data_recording", activate_data_recording)) {
-      std::cout << BOLD(RED(" >>> [activate_data_recording] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_data_recording] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("estimator_init_service", estimator_init_service)) {
-      std::cout << BOLD(RED(" >>> [estimator_init_service] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [estimator_init_service] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("perform_takeoff_check", perform_takeoff_check)) {
-      std::cout << BOLD(RED(" >>> [perform_takeoff_check] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [perform_takeoff_check] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("perform_estimator_check", perform_estimator_check)) {
-      std::cout << BOLD(RED(" >>> [perform_estimator_check] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [perform_estimator_check] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("activate_landing_detection", activate_landing_detection)) {
-      std::cout << BOLD(RED(" >>> [activate_takeoff_landing_detection] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_takeoff_landing_detection] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("hover_after_mission_completion", hover_after_mission_completion)) {
-      std::cout << BOLD(RED(" >>> [hover_after_mission_completion] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [hover_after_mission_completion] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("inflight_sensors_init_service", inflight_sensors_init_service)) {
-      std::cout << BOLD(RED(" >>> [inflight_sensors_init_service] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [inflight_sensors_init_service] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!activate_user_interface) {
       if (!nh_.getParam("mission_id_no_ui", mission_id_no_ui)) {
-        std::cout << BOLD(RED(" >>> [mission_id_no_ui] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_id_no_ui] parameter not defined.\n")) << std::endl);
         return false;
       }
     }
     if (activate_watchdog) {
       if (!nh_.getParam("watchdog_start_service_name", watchdog_start_service_name)) {
-        std::cout << BOLD(RED(" >>> [watchdog_start_service_name] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_start_service_name] parameter not defined.\n")) << std::endl);
         return false;
       }
       if (!nh_.getParam("watchdog_heartbeat_topic", watchdog_heartbeat_topic)) {
-        std::cout << BOLD(RED(" >>> [watchdog_heartbeat_topic] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_heartbeat_topic] parameter not defined.\n")) << std::endl);
         return false;
       }
       if (!nh_.getParam("watchdog_status_topic", watchdog_status_topic)) {
-        std::cout << BOLD(RED(" >>> [watchdog_status_topic] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_status_topic] parameter not defined.\n")) << std::endl);
         return false;
       }
       if (!nh_.getParam("watchdog_action_topic", watchdog_action_topic)) {
-        std::cout << BOLD(RED(" >>> [watchdog_action_topic] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_action_topic] parameter not defined.\n")) << std::endl);
         return false;
       }
       if (!nh_.getParam("watchdog_rate_Hz", watchdog_rate)) {
-         std::cout << BOLD(RED(" >>> [watchdog_rate_Hz] parameter not defined.\n")) << std::endl;
+         AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_rate_Hz] parameter not defined.\n")) << std::endl);
          return false;
       }
       if (!nh_.getParam("watchdog_heartbeat_timeout_multiplier", watchdog_heartbeat_timeout_multiplier)) {
-        std::cout << BOLD(RED(" >>> [watchdog_heartbeat_timeot_multiplier] paramter not defined. This set the heartbeat timer timeout to be a scaled version of the period of the watchdog rate. Please set it higher than 1.0.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_heartbeat_timeot_multiplier] paramter not defined. This set the heartbeat timer timeout to be a scaled version of the period of the watchdog rate. Please set it higher than 1.0.\n")) << std::endl);
         return false;
       } else {
         if (watchdog_heartbeat_timeout_multiplier >= 1) {
           // Set watchdog timer timeout to be n/watchdog_rate ms (n >= 1)
           watchdog_timeout_ms = static_cast<int>(std::ceil((1000*watchdog_heartbeat_timeout_multiplier)/watchdog_rate));
         } else {
-          std::cout << BOLD(RED(" >>> [watchdog_heartbeat_timeot_multiplier] paramter smaller than 1.0. Please set it higher than 1.0.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_heartbeat_timeot_multiplier] paramter smaller than 1.0. Please set it higher than 1.0.\n")) << std::endl);
           return false;
         }
       }
       if (!nh_.getParam("watchdog_startup_time_s", watchdog_startup_time_s)) {
-        std::cout << BOLD(RED(" >>> [watchdog_startup_time_s] paramter not defined. Please set it higher than 10.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_startup_time_s] paramter not defined. Please set it higher than 10.\n")) << std::endl);
         return false;
       }
     }
     if (!nh_.getParam("mission_sequencer_request_topic", mission_sequencer_request_topic)) {
-      std::cout << BOLD(RED(" >>> [mission_sequencer_request_topic] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_sequencer_request_topic] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("mission_sequencer_responce_topic", mission_sequencer_responce_topic)) {
-      std::cout << BOLD(RED(" >>> [mission_sequencer_responce_topic] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_sequencer_responce_topic] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("mission_sequencer_waypoints_topic", mission_sequencer_waypoints_topic)) {
-      std::cout << BOLD(RED(" >>> [mission_sequencer_waypoints_topic] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_sequencer_waypoints_topic] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (activate_data_recording) {
       if (!nh_.getParam("data_recrding_service_name", data_recrding_service_name)) {
-        std::cout << BOLD(RED(" >>> [data_recrding_service_name] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [data_recrding_service_name] parameter not defined.\n")) << std::endl);
         return false;
       }
     }
     if (estimator_init_service) {
       if (!nh_.getParam("estimator_init_service_name", estimator_init_service_name)) {
-        std::cout << BOLD(RED(" >>> [estimator_init_service_name] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [estimator_init_service_name] parameter not defined.\n")) << std::endl);
         return false;
       }
     } 
@@ -245,54 +245,54 @@ namespace autonomy {
       nh_.param<std::vector<std::string>>("inflight_sensor_init_services_name", inflight_sensor_init_services_name, std::vector<std::string>{""});
       for (const auto &it : inflight_sensor_init_services_name) {
         if (it == "") {
-          std::cout << BOLD(RED(" >>> [inflight_sensor_init_service_name] parameter not defined.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> [inflight_sensor_init_service_name] parameter not defined.\n")) << std::endl);
           return false;
         }
       }
     }
     if (perform_takeoff_check) {
       if (!nh_.getParam("takeoff_service_name", takeoff_service_name)) {
-        std::cout << BOLD(RED(" >>> [takeoff_service_name] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [takeoff_service_name] parameter not defined.\n")) << std::endl);
         return false;
       }
     }
     if (perform_estimator_check) {
       if (!nh_.getParam("estimator_supervisor_service_name", estimator_supervisor_service_name)) {
-        std::cout << BOLD(RED(" >>> [estimator_supervisor_service_name] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [estimator_supervisor_service_name] parameter not defined.\n")) << std::endl);
         return false;
       }
     }
     if (activate_landing_detection) {
       if (!nh_.getParam("landing_detection_topic", landing_detection_topic)) {
-        std::cout << BOLD(RED(" >>> [landing_detection_topic] parameter not defined.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [landing_detection_topic] parameter not defined.\n")) << std::endl);
         return false;
       }
     }
     if (!nh_.getParam("missions", XRV_missions)) {
-      std::cout << BOLD(RED(" >>> [missions] paramter not defined. Please specify/load correctly a mission config file.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [missions] paramter not defined. Please specify/load correctly a mission config file.\n")) << std::endl);
       return false;
     } else {
       // Check type
       if (XRV_missions.getType() != XmlRpc::XmlRpcValue::TypeStruct) {
-        std::cout << BOLD(RED(" >>> [missions] paramter not correctly defined. Please check/correct the specified mission config file.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [missions] paramter not correctly defined. Please check/correct the specified mission config file.\n")) << std::endl);
         return false;
       }
     }
     if (!nh_.getParam("maximum_flight_time_min", flight_timeout_ms)) {
-       std::cout << BOLD(RED(" >>> [maximum_flight_time] parameter not defined.\n")) << std::endl;
+       AUTONOMY_UI_STREAM(BOLD(RED(" >>> [maximum_flight_time] parameter not defined.\n")) << std::endl);
        return false;
     } else {
       // Convert given time from minutes to milliseconds
       flight_timeout_ms *= 60000;
     }
     if (!nh_.getParam("fix_timeout_ms", fix_timeout_ms)) {
-      std::cout << BOLD(RED(" >>> [fix_timeout_ms] parameter not defined.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [fix_timeout_ms] parameter not defined.\n")) << std::endl);
       return false;
     }
 
     // Check whether missions are defined and parse them
     if (XRV_missions.size() == 0) {
-      std::cout << BOLD(RED(" >>> No missions defined on the specified mission config file.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> No missions defined on the specified mission config file.\n")) << std::endl);
       return false;
     } else {
 
@@ -307,13 +307,13 @@ namespace autonomy {
 
         // Get mission description
         if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/description", description)) {
-          std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [description] missing.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [description] missing.\n")) << std::endl);
           return false;
         }
 
         // Get filepaths
         if (!nh_.getParam("/autonomy/missions/mission_" + std::to_string(i) + "/filepaths", XRV_filepaths)) {
-            std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepaths] missing.\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepaths] missing.\n")) << std::endl);
             return false;
         }
 
@@ -329,18 +329,18 @@ namespace autonomy {
               // assign filepath
               filepaths.emplace_back(std::string(XRV_filepaths[j]));
             } else {          
-              std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepath] wrongly defined in [filepaths] list.\n")) << std::endl;
+              AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepath] wrongly defined in [filepaths] list.\n")) << std::endl);
               return false;
             }
           }
         } else {
-          std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepaths] wrongly defined, it must be a list.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepaths] wrongly defined, it must be a list.\n")) << std::endl);
           return false;
         }
 
         // Get entities and next states
         if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/entities_actions", XRV_entities_states)) {
-          std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entities_actions] list missing.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entities_actions] list missing.\n")) << std::endl);
           return false;
         }
 
@@ -356,7 +356,7 @@ namespace autonomy {
               // Check type to be string and get entity
               if (XRV_entities_states[k][0].getType() == XmlRpc::XmlRpcValue::TypeString) {
                 if (!getEntityFromString(std::string(XRV_entities_states[k][0]), entity)) {
-                  std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entity] wrongly defined in [entities_actions] list.\n")) << std::endl;
+                  AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entity] wrongly defined in [entities_actions] list.\n")) << std::endl);
                   return false;
                 }
               }
@@ -366,7 +366,7 @@ namespace autonomy {
 
                 // Check the existance of predefined state for the given string action
                 if (!checkStateFromString(std::string(XRV_entities_states[k][1]))) {
-                  std::cout << std::endl << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [action] wrongly defined in [entities_actions] list.\n")) << std::endl;
+                  AUTONOMY_UI_STREAM(std::endl << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [action] wrongly defined in [entities_actions] list.\n")) << std::endl);
                   return false;
                 } else {
                   state = std::string(XRV_entities_states[k][1]);
@@ -377,12 +377,12 @@ namespace autonomy {
               entity_state_map.try_emplace(entity, state);
 
             } else {
-              std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entitiy_action] wrongly defined in [entities_actions] list.\n")) << std::endl;
+              AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entitiy_action] wrongly defined in [entities_actions] list.\n")) << std::endl);
               return false;
             }
           }
         } else {
-          std::cout << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entities_actions] wrongly defined.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entities_actions] wrongly defined.\n")) << std::endl);
           return false;
         }
 
@@ -476,8 +476,8 @@ namespace autonomy {
         pending_failures_.back().second->resetTimer();
       }
     } else if (msg.status == watchdog_msgs::Status::NOMINAL || msg.status == watchdog_msgs::Status::DEFECT) {
-//      std::cout << "[WATCHDOG] E-" << status.entity << ": received fix" << std::endl;
-//      std::cout << "[AUTONOMY] E-" << status.entity << ": need no of fixes = " << pending_failures_.size() << std::endl;
+//      AUTONOMY_UI_STREAM("[WATCHDOG] E-" << status.entity << ": received fix" << std::endl);
+//      AUTONOMY_UI_STREAM("[AUTONOMY] E-" << status.entity << ": need no of fixes = " << pending_failures_.size() << std::endl);
 
       // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fiWxing
       // which can only be triggered if the hold status is requested. If for some reason we got a NOMINAL status without
@@ -485,10 +485,10 @@ namespace autonomy {
 //      const auto &it = std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
       const auto &it = std::find_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
 //      for (size_t i=0; i < pending_failures_.size(); ++i)
-//        std::cout << "[AUTONOMY] E-" << status.entity << ": compare " << i << " = " << pending_failures_.at(i).first.isEqual(status) << "\n"
+//        AUTONOMY_UI_STREAM("[AUTONOMY] E-" << status.entity << ": compare " << i << " = " << pending_failures_.at(i).first.isEqual(status) << "\n"
 //                  << "                entity --> " << pending_failures_.at(i).first.entity << "-" << status.entity << "\n"
 //                  << "                type   --> " << pending_failures_.at(i).first.type << "-" << status.type << "\n"
-//                  << "                it=end? -> " << (it != pending_failures_.end()) << std::endl;
+//                  << "                it=end? -> " << (it != pending_failures_.end()) << std::endl);
 
       if (it != pending_failures_.end()) {
         it->second->stopTimer();
@@ -569,20 +569,20 @@ namespace autonomy {
 
             // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromEntity
             if (!getStringFromEntity(status.entity, entity)) {
-              std::cout << BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl;
+              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl);
             }
 
             // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
             if (!getStringFromType(status.type, type)) {
-              std::cout << BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl;
+              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl);
             }
 
-            std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
-            std::cout << BOLD(YELLOW(" >>> Sensor failure reported by the watchdog <<< \n"));
-            std::cout << BOLD(YELLOW(" >>> Error code:  " + std::to_string(status.entity) + std::to_string(status.type) + std::to_string(status.event) + "\n"));
-            std::cout << BOLD(YELLOW(" >>> Entity:      " + entity + "\n"));
-            std::cout << BOLD(YELLOW(" >>> Type:        " + type + "\n"));
-            std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")));
+            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Sensor failure reported by the watchdog <<< \n")));
+            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Error code:  " + std::to_string(status.entity) + std::to_string(status.type) + std::to_string(status.event) + "\n")));
+            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Entity:      " + entity + "\n")));
+            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Type:        " + type + "\n")));
+            AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")) << std::endl);
 
             // Failure -- search an action (next state) on specific mission (mission id) [Next states strings can be: continue, hold, land, failure]
             // If the state string is not continue then, if in_flight_, call state transition otherwise, trigger a failure
@@ -601,19 +601,19 @@ namespace autonomy {
 
             // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromEntity
             if (!getStringFromEntity(status.entity, entity)) {
-              std::cout << BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl;
+              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl);
             }
 
             // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
             if (!getStringFromType(status.type, type)) {
-              std::cout << BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl;
+              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl);
             }
 
-            std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-            std::cout << BOLD(GREEN(" >>> Sensor fix reported by the watchdog <<< \n"));
-            std::cout << BOLD(GREEN(" >>> Entity:      " + entity + "\n"));
-            std::cout << BOLD(GREEN(" >>> Type:        " + type + "\n"));
-            std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")));
+            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Sensor fix reported by the watchdog <<< \n")));
+            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Entity:      " + entity + "\n")));
+            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Type:        " + type + "\n")));
+            AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
 
             // Fix -- At this stage the pending failure relative to the fix has already been removed.
             // Check if pending failure size == 0 then stop holding and resulme the mission otherwise keep holding
@@ -629,7 +629,7 @@ namespace autonomy {
                 missionSequencerRequest(mission_sequencer::MissionRequest::RESUME);
 
               } else {
-                std::cout << BOLD(RED(" >>> Received Fix while not flying.\n")) << std::endl;
+                AUTONOMY_UI_STREAM(BOLD(RED(" >>> Received Fix while not flying.\n")) << std::endl);
               }
             }
           }
@@ -638,7 +638,7 @@ namespace autonomy {
             // TODO: Log the Defect
         }
       } else {
-        std::cout << BOLD(RED(" >>> Wrong message received from watchdog.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> Wrong message received from watchdog.\n")) << std::endl);
       }
     }
   }
@@ -668,7 +668,7 @@ namespace autonomy {
       }
 
       // Publish action message
-      std::cout << BOLD(YELLOW(" >>> Action communicated to the watchdog.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Action communicated to the watchdog.\n")) << std::endl);
       logger_.logMessage(state_->getStringFromState(), opts_->watchdog_action_topic,
                          false, "watchdog action: " + std::to_string(action_msg.action.action));
       pub_watchdog_action_.publish(action_msg);
@@ -676,7 +676,7 @@ namespace autonomy {
     } else {
 
       // Print info
-      std::cout << BOLD(YELLOW(" >>> No subscribers for watchdog action. Action will be ignored.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> No subscribers for watchdog action. Action will be ignored.\n")) << std::endl);
 
     }
 
@@ -686,11 +686,11 @@ namespace autonomy {
 
 
     if (msg) {
-      std::cout << BOLD(GREEN(" >>> Flat land detected.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Flat land detected.\n")) << std::endl);
       logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic,
                          true, "flat land detected");
     } else {
-      std::cout << BOLD(YELLOW(" >>> Non flat land detected.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Non flat land detected.\n")) << std::endl);
       logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic,
                          true, "non-flat land detected");
     }
@@ -704,7 +704,7 @@ namespace autonomy {
     } else {
 
       // Print info
-      std::cout << BOLD(RED(" >>> Unexpected land detected <<<\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Unexpected land detected <<<\n")) << std::endl);
       logger_.logInfo(state_->getStringFromState(), "landing was UNEXPECTED: initiating landing");
 
       // Call state transition to LAND
@@ -732,7 +732,7 @@ namespace autonomy {
 
         // Check if mission sequencer request has been accepted
         if (msg->response && msg->request.request != mission_sequencer::MissionRequest::UNDEF) {
-          std::cout << BOLD(GREEN(" >>> Request [" + req + "] accepted from Mission Sequencer.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Request [" + req + "] accepted from Mission Sequencer.\n")) << std::endl);
 
           // Acts specifically based on the request
           switch (msg->request.request) {
@@ -797,14 +797,14 @@ namespace autonomy {
 
         // Check if mission sequencer request has been rejected
         if (!msg->response && !msg->completed) {
-          std::cout << BOLD(RED(" >>> Request [" + req + "] for mission ID: " + std::to_string(msg->request.id) + "  rejected from Mission Sequencer.\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Request [" + req + "] for mission ID: " + std::to_string(msg->request.id) + "  rejected from Mission Sequencer.\n")) << std::endl);
           stateTransition("failure");
         }
 
         // Check if mission has been compoleted (last waypoint reached)
       } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::UNDEF) {
 
-        std::cout << BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->request.id) + " succesfully reached last waypoint.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->request.id) + " succesfully reached last waypoint.\n")) << std::endl);
 
         // set last_waypoint_reached_ flag
         last_waypoint_reached_ = true;
@@ -818,7 +818,7 @@ namespace autonomy {
           // Assign new flag
           opts_->hover_after_mission_completion = hover_after_mission_completion;
           // Print info
-          std::cout << BOLD(YELLOW(" >>> Changed behaviour at mission completion: Hover is now " + opts_->getStringfromBool(opts_->hover_after_mission_completion) + "\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Changed behaviour at mission completion: Hover is now " + opts_->getStringfromBool(opts_->hover_after_mission_completion) + "\n")) << std::endl);
         }
 
         // Call state transition to LAND or request HOVER to mission sequencer based on param
@@ -826,13 +826,13 @@ namespace autonomy {
           stateTransition("land");
         } else {
           // Print info
-          std::cout << BOLD(GREEN(" >>> Hovering...\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Hovering...\n")) << std::endl);
 
           // Request hovering to the mission sequencer if not hovering
           if (!hovering_) {
             missionSequencerRequest(mission_sequencer::MissionRequest::HOVER);
           } else {
-            std::cout << BOLD(YELLOW(" >>> the platform is already hovering, skipped HOVER request\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already hovering, skipped HOVER request\n")) << std::endl);
           }
         }
 
@@ -860,10 +860,10 @@ namespace autonomy {
         }
 
       } else {
-        std::cout << BOLD(YELLOW(" >>> Received responce from mission sequencer without a prior request. Ignoring it.\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Received responce from mission sequencer without a prior request. Ignoring it.\n")) << std::endl);
       }
     } else {
-      std::cout << BOLD(YELLOW(" >>> Received responce from mission sequencer to a unknown request. Ignoring it.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Received responce from mission sequencer to a unknown request. Ignoring it.\n")) << std::endl);
     }
   }
 
@@ -891,7 +891,7 @@ namespace autonomy {
     } else {
 
       // Print info
-      std::cout << BOLD(RED(" >>> No subscribers for mission sequencer request.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> No subscribers for mission sequencer request.\n")) << std::endl);
 
       // At this stage we are not flying yet, state transition to FAILURE
       stateTransition("failure");
@@ -907,7 +907,7 @@ namespace autonomy {
     watchdog_start.request.header.stamp = ros::Time::now();
     watchdog_start.request.startup_time = opts_->watchdog_startup_time;
 
-    std::cout << BOLD(GREEN(" >>> Starting Watchdog... Please wait\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Starting Watchdog... Please wait\n")) << std::endl);
 
     // Call service request
     logger_.logServiceCall(state_->getStringFromState(), opts_->watchdog_start_service_name);
@@ -917,7 +917,7 @@ namespace autonomy {
       if(watchdog_start.response.successful) {
 
         logger_.logServiceAnswer(state_->getStringFromState(), opts_->watchdog_start_service_name, "watchdog started successfully");
-        std::cout << BOLD(GREEN(" >>> Watchdog is running\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Watchdog is running\n")) << std::endl);
 
         // Subscriber to watchdog (system status) heartbeat
         sub_watchdog_heartbeat_ = nh_.subscribe(opts_->watchdog_heartbeat_topic, 1, &Autonomy::watchdogHeartBeatCallback, this);
@@ -931,7 +931,7 @@ namespace autonomy {
       } else {
 
         logger_.logServiceAnswer(state_->getStringFromState(), opts_->watchdog_start_service_name, "failed to start watchdog");
-        std::cout << BOLD(RED(" >>> FAILED TO START WATCHDOG --- Please perform a system hard restart <<< \n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(RED(" >>> FAILED TO START WATCHDOG --- Please perform a system hard restart <<< \n")) << std::endl);
 
         // Define status to get debug info
         SensorStatus status;
@@ -948,21 +948,21 @@ namespace autonomy {
 
           // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromEntity
           if (!getStringFromEntity(status.entity, entity)) {
-            std::cout << BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl);
           }
 
           // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
           if (!getStringFromType(status.type, type)) {
-            std::cout << BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl);
           }
 
-          std::cout << BOLD(RED("------------------------------------------------\n"));
-          std::cout << BOLD(RED(" DEBUG INFORMATION\n"));
-          std::cout << BOLD(RED(" - Entity:      " + entity + "\n"));
-          std::cout << BOLD(RED(" - Type:        " + type + "\n"));
-          std::cout << BOLD(RED(" - Debug name : " + status.debug_name + "\n"));
-          std::cout << BOLD(RED(" - Debug info : " + status.debug_info + "\n"));
-          std::cout << BOLD(RED("-------------------------------------------------\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED("------------------------------------------------\n")));
+          AUTONOMY_UI_STREAM(BOLD(RED(" DEBUG INFORMATION\n")));
+          AUTONOMY_UI_STREAM(BOLD(RED(" - Entity:      " + entity + "\n")));
+          AUTONOMY_UI_STREAM(BOLD(RED(" - Type:        " + type + "\n")));
+          AUTONOMY_UI_STREAM(BOLD(RED(" - Debug name : " + status.debug_name + "\n")));
+          AUTONOMY_UI_STREAM(BOLD(RED(" - Debug info : " + status.debug_info + "\n")));
+          AUTONOMY_UI_STREAM(BOLD(RED("-------------------------------------------------\n")) << std::endl);
         }
 
         // Failure
@@ -983,20 +983,20 @@ namespace autonomy {
     if (opts_->activate_user_interface) {
 
       // Print missions
-      std::cout << BOLD(GREEN(" >>> Please select one of the following mission by inserting the mission ID\n\n"));
+      AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Please select one of the following mission by inserting the mission ID\n\n")));
       for (auto &it : missions_) {
-        std::cout << BOLD(GREEN("      - ID: ")) << it.first << BOLD(GREEN(" DESCRIPTION: ")) << it.second.getDescription() << "\n";
+        AUTONOMY_UI_STREAM(BOLD(GREEN("      - ID: ")) << it.first << BOLD(GREEN(" DESCRIPTION: ")) << it.second.getDescription() << "\n");
       }
 
       // Get ID of mission being executed
       logger_.logInfo(state_->getStringFromState(), "asking user to select mission");
-      std::cout << "\n" << BOLD(GREEN(" >>> Mission ID: ")) << std::flush;
+      AUTONOMY_UI_STREAM("\n" << BOLD(GREEN(" >>> Mission ID: ")) << std::flush);
       std::cin >> mission_id_;
       logger_.logUserInput(state_->getStringFromState(), std::to_string(mission_id_));
 
       // Check validity of mission id
       if (mission_id_ < 1 || mission_id_ > static_cast<int>(missions_.size())) {
-        std::cout << "\n" << BOLD(RED(" >>> Wrong mission ID chosen\n")) << std::endl;
+        AUTONOMY_UI_STREAM("\n" << BOLD(RED(" >>> Wrong mission ID chosen\n")) << std::endl);
 
         // Call recursively mission selection
         missionSelection();
@@ -1010,17 +1010,17 @@ namespace autonomy {
 
     }
 
-    std::cout << BOLD(GREEN("\n >>> Loaded mission with ID: " << std::to_string(mission_id_) << "\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN("\n >>> Loaded mission with ID: " << std::to_string(mission_id_) << "\n")) << std::endl);
 
     if (missions_.at(mission_id_).getTouchdowns() > 0) {
-      std::cout << BOLD(YELLOW(" >>> Mission with Multiple touchdowns: " << std::to_string(missions_.at(mission_id_).getTouchdowns()) << " touchdown(s)\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Mission with Multiple touchdowns: " << std::to_string(missions_.at(mission_id_).getTouchdowns()) << " touchdown(s)\n")) << std::endl);
       multiple_touchdowns_ = true;
     }
   }
 
   bool Autonomy::preFlightChecks() {
 
-    std::cout << BOLD(GREEN(" >>> Starting Pre-Flight Checks...\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Starting Pre-Flight Checks...\n")) << std::endl);
     logger_.logInfo(state_->getStringFromState(), "starting pre-flight checks");
 
     if (opts_->perform_takeoff_check && !takeoffChecks()) {
@@ -1036,7 +1036,7 @@ namespace autonomy {
       return false;
     }
 
-    std::cout << BOLD(GREEN(" >>> Pre-Flight checks succeeded\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Pre-Flight checks succeeded\n")) << std::endl);
     logger_.logInfo(state_->getStringFromState(), "suceeded pre-flight checks -> ARMING");
     return true;
 
@@ -1054,8 +1054,8 @@ namespace autonomy {
       // Check responce
       if(takeoff.response.success) {
         logger_.logServiceAnswer(state_->getStringFromState(), opts_->takeoff_service_name, "takeoff checks succeeded");
-        std::cout << BOLD(GREEN(" >>> Vehicle flat on the ground\n"));
-        std::cout << BOLD(GREEN(" >>> Takeoff checks succeeded\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Vehicle flat on the ground\n")));
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Takeoff checks succeeded\n")) << std::endl);
       }
     } else {
       takeoff.response.success = false;
@@ -1063,7 +1063,7 @@ namespace autonomy {
     }
 
     if (!takeoff.response.success) {
-      std::cout << BOLD(RED(" >>> Takeoff checks failed\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Takeoff checks failed\n")) << std::endl);
       logger_.logInfo(state_->getStringFromState(), "failed takeoff checks -> TERMINATING");
       return false;
     }
@@ -1073,12 +1073,12 @@ namespace autonomy {
 
   bool Autonomy::estimatorCheck() {
 
-    std::cout << BOLD(YELLOW(" >>> Please, Initialize estimator now\n"));
-    std::cout << BOLD(YELLOW(" >>> When done, press [SPACE] and then [ENTER] to start the experiment"));
+    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Please, Initialize estimator now\n")));
+    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> When done, press [SPACE] and then [ENTER] to start the experiment")));
     logger_.logInfo(state_->getStringFromState(), "asking user start estimator initialization checks");
     std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
-    std::cout << std::endl;
+    AUTONOMY_UI_STREAM(std::endl);
     logger_.logUserInput(state_->getStringFromState(), "[SPACE]");
     logger_.logUserInput(state_->getStringFromState(), "[ENTER]");
 
@@ -1092,7 +1092,7 @@ namespace autonomy {
       // Check responce
       if(superivsion.response.success) {
         logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks succeeded");
-        std::cout << BOLD(GREEN(" >>> State estimator Correctly initilized\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> State estimator Correctly initilized\n")) << std::endl);
       } else {
         superivsion.response.success = false;
         logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks failed");
@@ -1103,7 +1103,7 @@ namespace autonomy {
     }
 
     if (!superivsion.response.success) {
-      std::cout << BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl);
       logger_.logInfo(state_->getStringFromState(), "failed estimator checks -> TERMINATING");
       return false;
     }
@@ -1119,7 +1119,7 @@ namespace autonomy {
     // Set data recording start request
     init.request.data = true;
 
-    std::cout << BOLD(GREEN(" >>> Initializing state estimator... Please wait\n"));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Initializing state estimator... Please wait\n")));
 
     // service call to check if we are ready to takeoff
     logger_.logServiceCall(state_->getStringFromState(), opts_->estimator_init_service_name);
@@ -1128,7 +1128,7 @@ namespace autonomy {
       // Check responce
       if (init.response.success) {
         logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator correctly initialized");
-        std::cout << BOLD(GREEN(" >>> State estimator initialized succesfully\n")) << std::endl;
+        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> State estimator initialized succesfully\n")) << std::endl);
       } else {
         init.response.success = false;
         logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator wrongly initialized");
@@ -1139,7 +1139,7 @@ namespace autonomy {
     }
 
     if (!init.response.success) {
-      std::cout << BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl);
       logger_.logInfo(state_->getStringFromState(), "failed estimator initialization -> TERMINATING");
       return false;
     }
@@ -1152,13 +1152,13 @@ namespace autonomy {
     // Define init service
     std_srvs::Empty init;
 
-    std::cout << BOLD(GREEN(" >>> Starting in flight initialization...\n\n"));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Starting in flight initialization...\n\n")));
 
     // Loop trough all the service call
     for (size_t i = 0; i < inflight_sensor_init_service_client_.size(); ++i) {
 
       // Print info
-      std::cout << BOLD(GREEN(" >>> Calling service: " + opts_->inflight_sensor_init_services_name.at(i) + "\n"));
+      AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Calling service: " + opts_->inflight_sensor_init_services_name.at(i) + "\n")));
 
       // service call to check if we are ready to takeoff
       logger_.logServiceCall(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i));
@@ -1172,7 +1172,7 @@ namespace autonomy {
     }
 
     // Newline and flish
-    std::cout << std::endl;
+    AUTONOMY_UI_STREAM(std::endl);
 
     return true;
 
@@ -1188,7 +1188,7 @@ namespace autonomy {
 
     // service call (before stopping check if we are recording)
     if (!start_stop && !is_recording_) {
-      std::cout << BOLD(RED(" >>> Data recording stop failure, cannot stop data recording if the recording is inactive\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording stop failure, cannot stop data recording if the recording is inactive\n")) << std::endl);
     } else {
       logger_.logServiceCall(state_->getStringFromState(), opts_->data_recrding_service_name);
       if (data_recording_service_client_.call(data_rec)) {
@@ -1196,24 +1196,24 @@ namespace autonomy {
         // Check responce
         if (data_rec.response.success) {
           if (data_rec.request.data) {
-            std::cout << BOLD(GREEN(" >>> Data recording started successfully\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Data recording started successfully\n")) << std::endl);
             logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "started recording successfully");
             is_recording_ = true;
           } else {
-            std::cout << BOLD(GREEN(" >>> Data recording stopped successfully\n")) << std::endl;
+            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Data recording stopped successfully\n")) << std::endl);
             logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "stoped recording successfully");
             is_recording_ = false;
           }
         } else {
-          std::cout << BOLD(RED(" >>> Data recording service failure\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording service failure\n")) << std::endl);
           logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while calling data recorder service");
         }
       } else {
         if (data_rec.request.data) {
-          std::cout << BOLD(RED(" >>> Data recording start failure\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording start failure\n")) << std::endl);
           logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while starting data recorder");
         } else {
-          std::cout << BOLD(RED(" >>> Data recording stop failure\n")) << std::endl;
+          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording stop failure\n")) << std::endl);
           logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while stopping data recorder");
         }
       }
@@ -1263,7 +1263,7 @@ namespace autonomy {
     } else if (str.compare("termination") == 0) {
       state_ = &Termination::Instance();
     } else {
-      std::cout << BOLD(RED(" >>> Wrong state transition required.\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Wrong state transition required.\n")) << std::endl);
       state_ = &Failure::Instance();
     }
 

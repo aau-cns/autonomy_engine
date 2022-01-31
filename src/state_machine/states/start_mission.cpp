@@ -28,18 +28,18 @@ namespace autonomy {
   void StartMission::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: MISSION (STARTING) <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> System state: MISSION (STARTING) <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
 
     // Print info
-    std::cout << BOLD(GREEN(" >>> Arming...\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Arming...\n")) << std::endl);
 
     // Request arming to the mission sequencer if not armed
     if (!autonomy.armed_) {
       autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::ARM);
     } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is already armed, skipped ARM request\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already armed, skipped ARM request\n")) << std::endl);
     }
 
     // Wait until the platform is armed
@@ -49,13 +49,13 @@ namespace autonomy {
 
     // Print info
     autonomy.in_takeoff_ = true;
-    std::cout << BOLD(GREEN(" >>> Taking off...\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Taking off...\n")) << std::endl);
 
     // Takeoff, if not already in flight and if armed
     if (!autonomy.in_flight_ && autonomy.armed_) {
       autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::TAKEOFF);
     } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is already flying, skipped TAKEOFF request\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already flying, skipped TAKEOFF request\n")) << std::endl);
     }
 
     // Wait until the platform is flying
@@ -77,7 +77,7 @@ namespace autonomy {
     if (autonomy.waypoints_.size() > 0 && autonomy.pub_mission_sequencer_waypoints_.getNumSubscribers() > 0) {
 
       // Print info
-      std::cout << BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl);
 
       // Define waypoints message to mission sequencer
       mission_sequencer::MissionWaypoint wp;
@@ -112,7 +112,7 @@ namespace autonomy {
 
     } else {
 
-      std::cout << BOLD(YELLOW(" >>> No subscriber for mission sequencer waypoint. Triggering a safely land request...\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> No subscriber for mission sequencer waypoint. Triggering a safely land request...\n")) << std::endl);
 
       // Call state transition to LAND
       autonomy.stateTransition("land");

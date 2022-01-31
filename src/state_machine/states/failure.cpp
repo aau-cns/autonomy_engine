@@ -27,9 +27,9 @@ namespace autonomy {
   void Failure::onEntry(Autonomy& autonomy) {
 
     // Print info
-    std::cout << BOLD(RED("-------------------------------------------------\n"));
-    std::cout << BOLD(RED(" >>> System state: FAILURE <<< \n"));
-    std::cout << BOLD(RED("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(RED("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(RED(" >>> System state: FAILURE <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(RED("-------------------------------------------------\n")) << std::endl);
 
     // Stop data recording if data is getting recorded
     if (autonomy.opts_->activate_data_recording && autonomy.is_recording_) {

@@ -27,18 +27,18 @@ namespace autonomy {
   void Hold::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n"));
-    std::cout << BOLD(YELLOW(" >>> System state: HOLD <<< \n"));
-    std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> System state: HOLD <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")) << std::endl);
 
     // Print info
-    std::cout << BOLD(YELLOW(" >>> Holding...\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Holding...\n")) << std::endl);
 
     // Request holding to the mission sequencer if not holding
     if(!autonomy.holding_) {
       autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::HOLD);
     } else {
-      std::cout << BOLD(YELLOW(" >>> the platform is already holding, skipped HOLD request\n")) << std::endl;
+      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already holding, skipped HOLD request\n")) << std::endl);
     }
 
   }

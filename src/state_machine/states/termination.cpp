@@ -27,9 +27,9 @@ namespace autonomy {
   void Termination::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(MAGENTA("-------------------------------------------------\n"));
-    std::cout << BOLD(MAGENTA(" >>> System state: TERMINATION <<< \n"));
-    std::cout << BOLD(MAGENTA("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(MAGENTA("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(MAGENTA(" >>> System state: TERMINATION <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(MAGENTA("-------------------------------------------------\n")) << std::endl);
 
     // Terminate remaining timers
     autonomy.watchdog_timer_->stopTimer();
@@ -42,7 +42,7 @@ namespace autonomy {
 
     // Shoutdown
     autonomy.nh_.shutdown();
-    std::cout << BOLD(MAGENTA(" >>> Press CTRL-C to terminate the autonomy <<< \n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(MAGENTA(" >>> Press CTRL-C to terminate the autonomy <<< \n")) << std::endl);
 
   }
 

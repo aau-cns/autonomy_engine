@@ -27,9 +27,9 @@ namespace autonomy {
   void Initialization::onEntry(Autonomy& autonomy) {
 
     // print info
-    std::cout << BOLD(GREEN("-------------------------------------------------\n"));
-    std::cout << BOLD(GREEN(" >>> System state: INITIALIZATION <<< \n"));
-    std::cout << BOLD(GREEN("-------------------------------------------------\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> System state: INITIALIZATION <<< \n")));
+    AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
 
     // Perform initialization of the watchdog and state transition to either NOMINAL or FAILURE
     if (autonomy.opts_->activate_watchdog) {
