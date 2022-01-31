@@ -96,6 +96,7 @@ namespace autonomy {
     // Setting state to UNDEFINED
     state_ = &Undefined::Instance();
 
+    logger_.logInfo(state_->getStringFromState(), "started autonomy");
   }
 
   bool Autonomy::parseParams() {
@@ -554,6 +555,8 @@ namespace autonomy {
 
       // Parse information of status changes
       if (getSensorStatusFromMsg(it, status)) {
+        logger_.logMessage(state_->getStringFromState(), opts_->watchdog_status_topic,
+                           true, "status change: " + std::to_string(status.entity) + std::to_string(status.type) + std::to_string(status.event));
 
         // Check event
         if (status.event != Event::ENTITY_OTHER) { 
@@ -666,6 +669,8 @@ namespace autonomy {
 
       // Publish action message
       std::cout << BOLD(YELLOW(" >>> Action communicated to the watchdog.\n")) << std::endl;
+      logger_.logMessage(state_->getStringFromState(), opts_->watchdog_action_topic,
+                         false, "watchdog action: " + std::to_string(action_msg.action.action));
       pub_watchdog_action_.publish(action_msg);
 
     } else {
@@ -679,10 +684,15 @@ namespace autonomy {
 
   void Autonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) {
 
+
     if (msg) {
       std::cout << BOLD(GREEN(" >>> Flat land detected.\n")) << std::endl;
+      logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic,
+                         true, "flat land detected");
     } else {
       std::cout << BOLD(YELLOW(" >>> Non flat land detected.\n")) << std::endl;
+      logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic,
+                         true, "non-flat land detected");
     }
 
     // Stop data recording after landing in case mission has been succesfully completed
@@ -695,6 +705,7 @@ namespace autonomy {
 
       // Print info
       std::cout << BOLD(RED(" >>> Unexpected land detected <<<\n")) << std::endl;
+      logger_.logInfo(state_->getStringFromState(), "landing was UNEXPECTED: initiating landing");
 
       // Call state transition to LAND
       stateTransition("land");
@@ -709,6 +720,9 @@ namespace autonomy {
 
     // Get request and check
     if (getRequestfromMsg(msg->request, req)) {
+      logger_.logMessage(state_->getStringFromState(), opts_->mission_sequencer_responce_topic,
+                         true, "sequencer: " + std::to_string(msg->request.request) + " -- " +
+                                   std::to_string(msg->response) + ", " + std::to_string(msg->completed));
 
       // Check pending request flag
       if (ms_request_pending_) {
@@ -867,6 +881,8 @@ namespace autonomy {
       req.request = uint8_t(request);
 
       // publish mission start request
+      logger_.logMessage(state_->getStringFromState(), opts_->mission_sequencer_request_topic,
+                         false, "sequencer request: " + std::to_string(req.request));
       pub_mission_sequencer_request_.publish(req);
 
       // Set flag
@@ -894,11 +910,13 @@ namespace autonomy {
     std::cout << BOLD(GREEN(" >>> Starting Watchdog... Please wait\n")) << std::endl;
 
     // Call service request
+    logger_.logServiceCall(state_->getStringFromState(), opts_->watchdog_start_service_name);
     if (watchdog_start_service_client_.call(watchdog_start)) {
 
       // Check responce
       if(watchdog_start.response.successful) {
 
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->watchdog_start_service_name, "watchdog started successfully");
         std::cout << BOLD(GREEN(" >>> Watchdog is running\n")) << std::endl;
 
         // Subscriber to watchdog (system status) heartbeat
@@ -912,6 +930,7 @@ namespace autonomy {
 
       } else {
 
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->watchdog_start_service_name, "failed to start watchdog");
         std::cout << BOLD(RED(" >>> FAILED TO START WATCHDOG --- Please perform a system hard restart <<< \n")) << std::endl;
 
         // Define status to get debug info
@@ -970,8 +989,10 @@ namespace autonomy {
       }
 
       // Get ID of mission being executed
+      logger_.logInfo(state_->getStringFromState(), "asking user to select mission");
       std::cout << "\n" << BOLD(GREEN(" >>> Mission ID: ")) << std::flush;
       std::cin >> mission_id_;
+      logger_.logUserInput(state_->getStringFromState(), std::to_string(mission_id_));
 
       // Check validity of mission id
       if (mission_id_ < 1 || mission_id_ > static_cast<int>(missions_.size())) {
@@ -982,6 +1003,7 @@ namespace autonomy {
       }
 
     } else {
+      logger_.logInfo(state_->getStringFromState(), "UI disabled --> choosing mission with ID " + std::to_string(opts_->mission_id_no_ui));
 
       // Load mission from parameter
       mission_id_ = opts_->mission_id_no_ui;
@@ -999,6 +1021,7 @@ namespace autonomy {
   bool Autonomy::preFlightChecks() {
 
     std::cout << BOLD(GREEN(" >>> Starting Pre-Flight Checks...\n")) << std::endl;
+    logger_.logInfo(state_->getStringFromState(), "starting pre-flight checks");
 
     if (opts_->perform_takeoff_check && !takeoffChecks()) {
       return false;
@@ -1014,6 +1037,7 @@ namespace autonomy {
     }
 
     std::cout << BOLD(GREEN(" >>> Pre-Flight checks succeeded\n")) << std::endl;
+    logger_.logInfo(state_->getStringFromState(), "suceeded pre-flight checks -> ARMING");
     return true;
 
   }
@@ -1024,19 +1048,23 @@ namespace autonomy {
     std_srvs::Trigger takeoff;
 
     // service call to check if we are ready to takeoff
+    logger_.logServiceCall(state_->getStringFromState(), opts_->takeoff_service_name);
     if (takeoff_service_client_.call(takeoff)) {
 
       // Check responce
       if(takeoff.response.success) {
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->takeoff_service_name, "takeoff checks succeeded");
         std::cout << BOLD(GREEN(" >>> Vehicle flat on the ground\n"));
         std::cout << BOLD(GREEN(" >>> Takeoff checks succeeded\n")) << std::endl;
       }
     } else {
       takeoff.response.success = false;
+      logger_.logServiceAnswer(state_->getStringFromState(), opts_->takeoff_service_name, "takeoff checks failed");
     }
 
     if (!takeoff.response.success) {
       std::cout << BOLD(RED(" >>> Takeoff checks failed\n")) << std::endl;
+      logger_.logInfo(state_->getStringFromState(), "failed takeoff checks -> TERMINATING");
       return false;
     }
 
@@ -1047,28 +1075,36 @@ namespace autonomy {
 
     std::cout << BOLD(YELLOW(" >>> Please, Initialize estimator now\n"));
     std::cout << BOLD(YELLOW(" >>> When done, press [SPACE] and then [ENTER] to start the experiment"));
+    logger_.logInfo(state_->getStringFromState(), "asking user start estimator initialization checks");
     std::cin.clear();
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
     std::cout << std::endl;
+    logger_.logUserInput(state_->getStringFromState(), "[SPACE]");
+    logger_.logUserInput(state_->getStringFromState(), "[ENTER]");
 
     // Define takeoff request
     std_srvs::Trigger superivsion;
 
     // service call to check if we are ready to takeoff
+    logger_.logServiceCall(state_->getStringFromState(), opts_->estimator_supervisor_service_name);
     if (estimator_supervisor_service_client_.call(superivsion)) {
 
       // Check responce
       if(superivsion.response.success) {
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks succeeded");
         std::cout << BOLD(GREEN(" >>> State estimator Correctly initilized\n")) << std::endl;
       } else {
         superivsion.response.success = false;
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks failed");
       }
     } else {
       superivsion.response.success = false;
+      logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks failed");
     }
 
     if (!superivsion.response.success) {
       std::cout << BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl;
+      logger_.logInfo(state_->getStringFromState(), "failed estimator checks -> TERMINATING");
       return false;
     }
 
@@ -1086,20 +1122,25 @@ namespace autonomy {
     std::cout << BOLD(GREEN(" >>> Initializing state estimator... Please wait\n"));
 
     // service call to check if we are ready to takeoff
+    logger_.logServiceCall(state_->getStringFromState(), opts_->estimator_init_service_name);
     if (estimator_init_service_client_.call(init)) {
 
       // Check responce
       if (init.response.success) {
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator correctly initialized");
         std::cout << BOLD(GREEN(" >>> State estimator initialized succesfully\n")) << std::endl;
       } else {
         init.response.success = false;
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator wrongly initialized");
       }
     } else {
       init.response.success = false;
+      logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator wrongly initialized");
     }
 
     if (!init.response.success) {
       std::cout << BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl;
+      logger_.logInfo(state_->getStringFromState(), "failed estimator initialization -> TERMINATING");
       return false;
     }
 
@@ -1120,9 +1161,13 @@ namespace autonomy {
       std::cout << BOLD(GREEN(" >>> Calling service: " + opts_->inflight_sensor_init_services_name.at(i) + "\n"));
 
       // service call to check if we are ready to takeoff
+      logger_.logServiceCall(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i));
       if (!inflight_sensor_init_service_client_.at(i).call(init)) {
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i), "failed in-flight init");
         return false;
       }
+      else
+        logger_.logServiceAnswer(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i), "succeeded in-flight init");
 
     }
 
@@ -1145,25 +1190,31 @@ namespace autonomy {
     if (!start_stop && !is_recording_) {
       std::cout << BOLD(RED(" >>> Data recording stop failure, cannot stop data recording if the recording is inactive\n")) << std::endl;
     } else {
+      logger_.logServiceCall(state_->getStringFromState(), opts_->data_recrding_service_name);
       if (data_recording_service_client_.call(data_rec)) {
 
         // Check responce
         if (data_rec.response.success) {
           if (data_rec.request.data) {
-            std::cout << BOLD(GREEN(" >>> Data recording started succesfully\n")) << std::endl;
+            std::cout << BOLD(GREEN(" >>> Data recording started successfully\n")) << std::endl;
+            logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "started recording successfully");
             is_recording_ = true;
           } else {
-            std::cout << BOLD(GREEN(" >>> Data recording stopped succesfully\n")) << std::endl;
+            std::cout << BOLD(GREEN(" >>> Data recording stopped successfully\n")) << std::endl;
+            logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "stoped recording successfully");
             is_recording_ = false;
           }
         } else {
           std::cout << BOLD(RED(" >>> Data recording service failure\n")) << std::endl;
+          logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while calling data recorder service");
         }
       } else {
         if (data_rec.request.data) {
           std::cout << BOLD(RED(" >>> Data recording start failure\n")) << std::endl;
+          logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while starting data recorder");
         } else {
           std::cout << BOLD(RED(" >>> Data recording stop failure\n")) << std::endl;
+          logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while stopping data recorder");
         }
       }
     }
@@ -1188,6 +1239,7 @@ namespace autonomy {
     state_->onExit(*this);
 
     // Execute state transition
+    logger_.logStateChange(state_->getStringFromState(), str);
     if (str.compare("undefined") == 0) {
       state_ = &Undefined::Instance();
     } else if (str.compare("initialization") == 0) {

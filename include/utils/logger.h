@@ -82,12 +82,12 @@ public:
 
   void logServiceCall(const std::string &cur_state, const std::string &service){
     const std::string msg = "called service: " + service;
-    publishLog(autonomy::LogMessage:SERVICE_CALLED, msg, cur_state);
+    publishLog(autonomy::LogMessage::SERVICE_CALLED, msg, cur_state);
   }
 
   void logServiceAnswer(const std::string &cur_state, const std::string &service, const std::string &answer){
-    const std::string msg = "service answered: [" + service + "] -- " << answer;
-    publishLog(autonomy::LogMessage:SERVICE_ANSWERED, msg, cur_state);
+    const std::string msg = "service answered: [" + service + "] -- " + answer;
+    publishLog(autonomy::LogMessage::SERVICE_ANSWERED, msg, cur_state);
   }
 
   void logMessage(const std::string &cur_state, const std::string &topic, const bool &received=false, const std::string &contents="_emtpy_"){
