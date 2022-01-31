@@ -18,6 +18,7 @@
   <build_depend>watchdog_msgs</build_depend>
   <build_depend>ros_watchdog</build_depend>
   <build_depend>mission_sequencer</build_depend>
+  <build_depend>message_generation</build_depend>
 
   <!-- Use build_export_depend for packages you need in order to build against this package: -->
 

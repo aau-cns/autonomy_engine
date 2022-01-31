@@ -41,7 +41,8 @@
     <arg name="hover_after_mission_completion"          default="false" />
 
     <!-- autonomy node -->
-    <node name="autonomy" pkg="autonomy" type="autonomy" output="screen" clear_params="true" required="true">
+    <!-- <node name="autonomy" pkg="autonomy" type="autonomy" output="screen" clear_params="true" required="true"> -->
+    <node name="autonomy" pkg="autonomy" type="autonomy" output="log" clear_params="true" required="true">
 
         <!-- topics -->
         <param name="watchdog_heartbeat_topic"          type="string"   value="$(arg watchdog_heartbeat_topic)" />

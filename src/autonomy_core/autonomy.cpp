@@ -32,7 +32,7 @@
 namespace autonomy {
 
   Autonomy::Autonomy(ros::NodeHandle &nh) :
-    nh_(nh) {
+    nh_(nh), logger_(nh_) {
 
     // Parse parameters and options
     if(!parseParams()) {

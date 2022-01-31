@@ -35,6 +35,7 @@ find_package(catkin REQUIRED COMPONENTS
   watchdog_msgs
   mission_sequencer
   std_msgs
+  message_generation
 )
 
 ## System dependencies are found with CMake's conventions
@@ -75,9 +76,10 @@ message(STATUS "BOOST VERSION: " ${Boost_VERSION})
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-#add_message_files(
-#  FILES
-#)
+add_message_files(
+  FILES
+  LogMessage.msg
+)
 
 ## Generate services in the 'srv' folder
 #add_service_files(
@@ -92,10 +94,10 @@ message(STATUS "BOOST VERSION: " ${Boost_VERSION})
 # )
 
 ## Generate added messages and services with any dependencies listed here
-#generate_messages(
-#  DEPENDENCIES
-#  std_msgs
-#)
+generate_messages(
+  DEPENDENCIES
+  std_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -189,5 +191,3 @@ add_executable(autonomy src/autonomy_node.cpp src/autonomy_core/autonomy.cpp)
 add_dependencies(autonomy ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(autonomy ${thirdparty_libraries} custom_libraries)
 set_property(TARGET autonomy PROPERTY COMPILE_DEFINITIONS POSE)
-
-

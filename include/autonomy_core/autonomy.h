@@ -245,6 +245,9 @@ namespace autonomy {
     ros::ServiceClient estimator_init_service_client_;
     std::vector<ros::ServiceClient> inflight_sensor_init_service_client_;
 
+    /// Loggers
+    Logger logger_;
+
     /// Timeout timers
     std::unique_ptr<Timer> watchdog_timer_;
     std::unique_ptr<Timer> flight_timer_;

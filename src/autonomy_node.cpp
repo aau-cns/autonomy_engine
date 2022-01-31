@@ -23,6 +23,16 @@ int main(int argc, char* argv[])
   ros::init(argc, argv, "cns_flight_autonomy");
   ros::NodeHandle nh("~");
 
+  // setup standard ros logging level
+  if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME,
+#ifdef NDEBUG
+                                     ros::console::levels::Info) ) {
+#else // DEBUG
+                                     ros::console::levels::Debug) ) {
+#endif // NDEBUG
+    ros::console::notifyLoggerLevelsChanged();
+  }
+
   // Load tcpNoDelay option (false by default)
   bool tcp_no_delay = false;
   nh.param<bool>("tcp_no_delay", tcp_no_delay, tcp_no_delay);
@@ -33,7 +43,7 @@ int main(int argc, char* argv[])
     ros::TransportHints().tcpNoDelay();
   }
 
-  ROS_INFO("\nStarting the CNS-FLIGHT Autonomy\n");
+  ROS_INFO_STREAM("Starting the CNS-FLIGHT Autonomy\n");
 
   // Start asynch (multi-threading) spinner
   ros::AsyncSpinner spinner(0);
@@ -44,9 +54,9 @@ int main(int argc, char* argv[])
     // Instanciate autonomy
     autonomy::Autonomy autonomy(nh);
 
-    std::cout << BOLD(GREEN(" >>> Press [ENTER] to start the CNS-FLIGHT Autonomy"));
+    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Press [ENTER] to start the CNS-FLIGHT Autonomy")));
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    std::cout << std::endl;
+    AUTONOMY_UI_STREAM(std::endl);
 
     // Start the autonomy
     autonomy.startAutonomy();
@@ -60,7 +70,7 @@ int main(int argc, char* argv[])
     spinner.stop();
 
     // Print info
-    std::cout << BOLD(RED(" >>> An error occured. Shutting down Autonomy <<<\n")) << std::endl;
+    AUTONOMY_UI_STREAM(BOLD(RED(" >>> An error occured. Shutting down Autonomy <<<\n")) << std::endl);
 
     // Shoutdown
     ros::shutdown();
