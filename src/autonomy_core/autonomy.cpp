@@ -892,21 +892,31 @@ namespace autonomy {
     // Check existence of subscribers
     if (pub_mission_sequencer_request_.getNumSubscribers() > 0) {
 
-      // Define request message to mission sequencer
-      mission_sequencer::MissionRequest req;
+      // Check to not be in failure state
+      if (state_->getStringFromState().compare("failure") != 0) {
 
-      // Set mission id and request
-      req.header.stamp = ros::Time::now();
-      req.id = uint8_t(mission_id_);
-      req.request = uint8_t(request);
+        // Define request message to mission sequencer
+        mission_sequencer::MissionRequest req;
+
+        // Set mission id and request
+        req.header.stamp = ros::Time::now();
+        req.id = uint8_t(mission_id_);
+        req.request = uint8_t(request);
 
       // publish mission start request
       logger_.logMessage(state_->getStringFromState(), opts_->mission_sequencer_request_topic,
                          false, "sequencer request: " + std::to_string(req.request));
       pub_mission_sequencer_request_.publish(req);
 
-      // Set flag
-      ms_request_pending_ = true;
+        // Set flag
+        ms_request_pending_ = true;
+
+      } else {
+
+        // Print info
+        std::cout << BOLD(RED(" >>> No communication allowed to Mission sequencer from FAILURE.\n")) << std::endl;
+
+      }
 
     } else {
 
@@ -1264,21 +1274,21 @@ namespace autonomy {
       state_ = &Undefined::Instance();
     } else if (str.compare("initialization") == 0) {
       state_ = &Initialization::Instance();
-    } else if (str.compare("nominal") == 0) {
+    } else if ((str.compare("nominal") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &Nominal::Instance();
-    } else if (str.compare("failure") == 0) {
+    } else if ((str.compare("failure") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &Failure::Instance();
-    } else if (str.compare("preflight") == 0) {
+    } else if ((str.compare("preflight") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &Preflight::Instance();
-    } else if (str.compare("start_mission") == 0) {
+    } else if ((str.compare("start_mission") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &StartMission::Instance();
-    } else if (str.compare("perform_mission") == 0) {
+    } else if ((str.compare("perform_mission") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &PerformMission::Instance();
-    } else if (str.compare("end_mission") == 0) {
+    } else if ((str.compare("end_mission") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &EndMission::Instance();
-    } else if (str.compare("land") == 0) {
+    } else if ((str.compare("land") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &Land::Instance();
-    } else if (str.compare("hold") == 0) {
+    } else if ((str.compare("hold") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
       state_ = &Hold::Instance();
     } else if (str.compare("termination") == 0) {
       state_ = &Termination::Instance();

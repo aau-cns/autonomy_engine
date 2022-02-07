@@ -96,7 +96,7 @@ namespace autonomy {
 
     // Check existence of subscribers, if not trigger a land command
     // Check if we have loaded waypoints, if so send waypoints to mission sequencer, otherwise trigger a land command
-    if (autonomy.waypoints_.size() > 0 && autonomy.pub_mission_sequencer_waypoints_.getNumSubscribers() > 0) {
+    if (autonomy.waypoints_.size() > 0 && autonomy.pub_mission_sequencer_waypoints_.getNumSubscribers() > 0 && autonomy.state_->getStringFromState().compare("failure") != 0) {
 
       // Print info
       AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl);
