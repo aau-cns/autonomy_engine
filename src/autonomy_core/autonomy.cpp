@@ -125,6 +125,8 @@ namespace autonomy {
     int watchdog_timeout_ms = 0;
     int flight_timeout_ms = 0;
     int fix_timeout_ms = 0;
+    int preflight_fix_timeout_s = 0;
+    int data_recording_delay_after_failure_s = 0;
     bool activate_user_interface;
     bool activate_watchdog;
     bool activate_data_recording;
@@ -289,6 +291,15 @@ namespace autonomy {
       AUTONOMY_UI_STREAM(BOLD(RED(" >>> [fix_timeout_ms] parameter not defined.\n")) << std::endl);
       return false;
     }
+    if (!nh_.getParam("preflight_fix_timeout_s", preflight_fix_timeout_s)) {
+      std::cout << BOLD(RED(" >>> [preflight_fix_timeout_s] parameter not defined.\n")) << std::endl;
+      return false;
+    }
+    if (!nh_.getParam("data_recording_delay_after_failure_s", data_recording_delay_after_failure_s)) {
+      std::cout << BOLD(RED(" >>> [data_recording_delay_after_failure_s] parameter not defined.\n")) << std::endl;
+      return false;
+    }
+
 
     // Check whether missions are defined and parse them
     if (XRV_missions.size() == 0) {
@@ -408,7 +419,9 @@ namespace autonomy {
                                                                watchdog_timeout_ms,
                                                                flight_timeout_ms,
                                                                fix_timeout_ms,
+                                                               preflight_fix_timeout_s,
                                                                watchdog_startup_time_s,
+                                                               data_recording_delay_after_failure_s,
                                                                activate_user_interface,
                                                                activate_watchdog,
                                                                activate_data_recording,
@@ -467,39 +480,44 @@ namespace autonomy {
     // Get event. Increase pending failure in case of failure,
     // reduce pending failures in case of fix
     if (msg.status == watchdog_msgs::Status::ERROR) {
+
       status.event = Event::ENTITY_FAILURE;
-      // Increase pending failures and start a timer
+
+      // Increase pending failures in case of hold and start a timer if we are fliying
       // if the error needs to be fixed in the specified mission
       if (missions_.at(mission_id_).getNextState(status.entity).compare("hold") == 0) {
         pending_failures_.emplace_back(std::make_pair(status, std::make_unique<Timer>(opts_->fix_timeout)));
         pending_failures_.back().second->sh_.connect(boost::bind(&Autonomy::failureTimerOverflowHandler, this));
-        pending_failures_.back().second->resetTimer();
+        if (in_flight_) {
+          pending_failures_.back().second->resetTimer();
+        }
+      // Increase pending failures in case of land only if we are not fliying
+      } else if (!in_flight_ && missions_.at(mission_id_).getNextState(status.entity).compare("land") == 0) {
+        pending_failures_.emplace_back(std::make_pair(status, std::make_unique<Timer>(opts_->fix_timeout)));
+        pending_failures_.back().second->sh_.connect(boost::bind(&Autonomy::failureTimerOverflowHandler, this));
       }
+
     } else if (msg.status == watchdog_msgs::Status::NOMINAL || msg.status == watchdog_msgs::Status::DEFECT) {
 //      AUTONOMY_UI_STREAM("[WATCHDOG] E-" << status.entity << ": received fix" << std::endl);
 //      AUTONOMY_UI_STREAM("[AUTONOMY] E-" << status.entity << ": need no of fixes = " << pending_failures_.size() << std::endl);
 
-      // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fiWxing
+      // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fixing
       // which can only be triggered if the hold status is requested. If for some reason we got a NOMINAL status without
       // requiring a specific action we set the event to OTHER
-//      const auto &it = std::remove_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
-      const auto &it = std::find_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isEqual(status);});
-//      for (size_t i=0; i < pending_failures_.size(); ++i)
-//        AUTONOMY_UI_STREAM("[AUTONOMY] E-" << status.entity << ": compare " << i << " = " << pending_failures_.at(i).first.isEqual(status) << "\n"
-//                  << "                entity --> " << pending_failures_.at(i).first.entity << "-" << status.entity << "\n"
-//                  << "                type   --> " << pending_failures_.at(i).first.type << "-" << status.type << "\n"
-//                  << "                it=end? -> " << (it != pending_failures_.end()) << std::endl);
+      const auto &it = std::find_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isSame(status);});
 
       if (it != pending_failures_.end()) {
         it->second->stopTimer();
-//        pending_failures_.erase(it, pending_failures_.end());
         pending_failures_.erase(it);
         status.event = Event::ENTITY_FIX;
       } else {
         status.event = Event::ENTITY_OTHER;
       }
+
     } else {
+
       status.event = Event::ENTITY_OTHER;
+
     }
 
     return true;
@@ -585,13 +603,13 @@ namespace autonomy {
             AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")) << std::endl);
 
             // Failure -- search an action (next state) on specific mission (mission id) [Next states strings can be: continue, hold, land, failure]
-            // If the state string is not continue then, if in_flight_, call state transition otherwise, trigger a failure
-            if (missions_.at(mission_id_).getNextState(status.entity).compare("continue") != 0) {
-              if (!in_flight_ && !in_takeoff_) {
-                stateTransition("failure");
-              } else {
+            // If the state string is not failure and we are not armed yet then do not perform any state transition
+            if (missions_.at(mission_id_).getNextState(status.entity).compare("failure") != 0) {
+              if (in_flight_) {
                 stateTransition(missions_.at(mission_id_).getNextState(status.entity));
               }
+            } else {
+              stateTransition("failure");
             }
 
             // Always perform an action to react to the failure (the action can be NOTHING)
@@ -619,8 +637,8 @@ namespace autonomy {
             // Check if pending failure size == 0 then stop holding and resulme the mission otherwise keep holding
             if (pending_failures_.size() == 0) {
 
-              // Redundant check, check if we are flying (we should not be here if we are not flying)
-              if (in_flight_ || in_takeoff_) {
+              // Check if we are in mission (we could have a fix before taking off)
+              if (in_mission_) {
 
                 // Call state transition to PERFORM_MISSION
                 stateTransition("perform_mission");
@@ -743,6 +761,9 @@ namespace autonomy {
 
           case mission_sequencer::MissionRequest::TAKEOFF:
 
+            // Set in_flight_ and reset last_waypoint_reached_ flag
+            in_flight_ = true;
+
             break;
 
           case mission_sequencer::MissionRequest::HOLD:
@@ -849,9 +870,8 @@ namespace autonomy {
 
       } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::TAKEOFF) {
 
-        // Set in_flight_ and reset last_waypoint_reached_ flag
-        in_flight_ = true;
-        in_takeoff_ = false;
+        // Set in_mission_ and last_waypoint_reached_ flag
+        in_mission_ = true;
         last_waypoint_reached_ = false;
 
         // Subscribe to landing after taking off if detection if active

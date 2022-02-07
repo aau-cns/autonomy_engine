@@ -27,6 +27,8 @@
     <arg name="watchdog_heartbeat_timeout_multiplier"	default="2.0" />
     <arg name="maximum_flight_time_min"                 default="10" />
     <arg name="fix_timeout_ms"                          default="1500" />
+    <arg name="preflight_fix_timeout_s"                 default="10" />
+    <arg name="data_recording_delay_after_failure_s"    default ="5" />
     <arg name="mission_id_no_ui"                        default="1" />
 
     <!-- arguments flags -->
@@ -36,8 +38,8 @@
     <arg name="estimator_init_service"                  default="false" />
     <arg name="perform_takeoff_check"                   default="false" />
     <arg name="perform_estimator_check"                 default="false" />
-    <arg name="activate_landing_detection"              default="true" />
-    <arg name="inflight_sensors_init_service"           default="true" />
+    <arg name="activate_landing_detection"              default="false" />
+    <arg name="inflight_sensors_init_service"           default="false" />
     <arg name="hover_after_mission_completion"          default="false" />
 
     <!-- autonomy node -->
@@ -71,6 +73,8 @@
         <param name="maximum_flight_time_min"                   type="int"      value = "$(arg maximum_flight_time_min)" />
         <param name="fix_timeout_ms"                            type="int"      value = "$(arg fix_timeout_ms)" />
         <param name="mission_id_no_ui"                          type="int"      value = "$(arg mission_id_no_ui)" />
+        <param name="preflight_fix_timeout_s"                   type="int"      value = "$(arg preflight_fix_timeout_s)" />
+        <param name="data_recording_delay_after_failure_s"      type="int"      value = "$(arg data_recording_delay_after_failure_s)" />
 
         <!-- flags -->
         <param name="activate_user_interface"                   type="bool"   value = "$(arg activate_user_interface)" />

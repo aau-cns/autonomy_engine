@@ -17,6 +17,7 @@
 #define START_MISSION_H
 
 #include "state_machine/state.h"
+#include "timer/timer.h"
 
 namespace autonomy {
 

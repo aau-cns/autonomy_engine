@@ -31,7 +31,7 @@ namespace autonomy {
     AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> System state: MISSION (ENDING) <<< \n")));
     AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
 
-    // Set in_flight_ flag
+    // Reset in_flight_ flag
     autonomy.in_flight_ = false;
 
     // Assume the disarm will happen automatically if we do not activate the landing detection thus set the armed_ flag

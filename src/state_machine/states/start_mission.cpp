@@ -35,8 +35,19 @@ namespace autonomy {
     // Print info
     AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Arming...\n")) << std::endl);
 
-    // Request arming to the mission sequencer if not armed
+    // Request arming to the mission sequencer if not armed, check that there are no pending failures before issuing an arming request
     if (!autonomy.armed_) {
+      if (autonomy.pending_failures_.size() != 0) {
+        std::cout << BOLD(YELLOW(" >>> Trying to fix pending failure before arming... (waiting time: " + std::to_string(autonomy.opts_->preflight_fix_timeout) + " s)\n")) << std::endl;
+        for (int cnt = 0; cnt <= 100*autonomy.opts_->preflight_fix_timeout; ++cnt) {
+          autonomy.polling(10);
+        }
+        if (autonomy.pending_failures_.size() != 0) {
+          std::cout << BOLD(RED(" >>> Failed to fix pending failure before arming\n")) << std::endl;
+          autonomy.stateTransition("failure");
+        }
+      }
+      std::cout << BOLD(GREEN(" >>> Arming...\n")) << std::endl;
       autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::ARM);
     } else {
       AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already armed, skipped ARM request\n")) << std::endl);
@@ -53,13 +64,24 @@ namespace autonomy {
 
     // Takeoff, if not already in flight and if armed
     if (!autonomy.in_flight_ && autonomy.armed_) {
+      if (autonomy.pending_failures_.size() != 0) {
+        std::cout << BOLD(YELLOW(" >>> Trying to fix pending failure before taking off... (waiting time: " + std::to_string(autonomy.opts_->preflight_fix_timeout) + " s)\n")) << std::endl;
+        for (int cnt = 0; cnt <= 100*autonomy.opts_->preflight_fix_timeout; ++cnt) {
+          autonomy.polling(10);
+        }
+        if (autonomy.pending_failures_.size() != 0) {
+          std::cout << BOLD(RED(" >>> Failed to fix pending failure before taking off\n")) << std::endl;
+          autonomy.stateTransition("failure");
+        }
+      }
+      std::cout << BOLD(GREEN(" >>> Taking off...\n")) << std::endl;
       autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::TAKEOFF);
     } else {
       AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already flying, skipped TAKEOFF request\n")) << std::endl);
     }
 
-    // Wait until the platform is flying
-    while (!autonomy.in_flight_) {
+    // Wait until the platform is ready for the mission
+    while (!autonomy.in_mission_) {
       autonomy.polling(10);
     }
 

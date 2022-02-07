@@ -35,8 +35,9 @@ namespace autonomy {
     AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Landing...\n")) << std::endl);
 
     // Request landing to the mission sequencer if flying
-    if(autonomy.in_flight_) {
+    if(autonomy.in_flight_ && autonomy.in_mission_) {
       autonomy.land_expected_ = true;
+      autonomy.in_mission_ = false;
       autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::LAND);
     } else {
       AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is not flying, skipped LAND request\n")) << std::endl);

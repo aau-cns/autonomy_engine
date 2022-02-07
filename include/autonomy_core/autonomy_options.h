@@ -60,9 +60,13 @@ namespace autonomy {
 
     /// Timeout in milliseconds for the maximum time to wait for a sensor fix
     const int fix_timeout;
+    const int preflight_fix_timeout;
 
     /// Watchdog startup time in seconds needed to check entities
     const int watchdog_startup_time;
+
+    /// Time waited before stopping data recording after failure
+    const int data_recording_delay_after_failure_s;
 
     /// Booleans, setup of the autonomy
     const bool activate_user_interface;
@@ -84,67 +88,69 @@ namespace autonomy {
     /// Print function
     inline void printAutonomyOptions() {
 
-      std::cout << BOLD(YELLOW("--------------- LOADED PARAMETERS ---------------\n\n"));
+      std::cout << BOLD(YELLOW("--------------------------- LOADED PARAMETERS ---------------------------\n\n"));
 
-      std::cout << BOLD(YELLOW(" - User Interface:                        " + getStringfromBool(activate_user_interface) + "\n"));
-      std::cout << BOLD(YELLOW(" - Watchdog:                              " + getStringfromBool(activate_watchdog) + "\n"));
-      std::cout << BOLD(YELLOW(" - Data recording:                        " + getStringfromBool(activate_data_recording) + "\n"));
-      std::cout << BOLD(YELLOW(" - Service call to initilize estimator:   " + getStringfromBool(estimator_init_service) + "\n"));
-      std::cout << BOLD(YELLOW(" - Takeoff checks:                        " + getStringfromBool(perform_takeoff_check) + "\n"));
-      std::cout << BOLD(YELLOW(" - Estimation quality checks:             " + getStringfromBool(perform_estimator_check) + "\n"));
-      std::cout << BOLD(YELLOW(" - Landing detection:                     " + getStringfromBool(activate_landing_detection) + "\n"));
-      std::cout << BOLD(YELLOW(" - Inflight sensors init:                 " + getStringfromBool(inflight_sensors_init_service) + "\n"));
-      std::cout << BOLD(YELLOW(" - Hover after mission completion:        " + getStringfromBool(hover_after_mission_completion) + "\n\n"));
+      std::cout << BOLD(YELLOW(" - User Interface:                                           " + getStringfromBool(activate_user_interface) + "\n"));
+      std::cout << BOLD(YELLOW(" - Watchdog:                                                 " + getStringfromBool(activate_watchdog) + "\n"));
+      std::cout << BOLD(YELLOW(" - Data recording:                                           " + getStringfromBool(activate_data_recording) + "\n"));
+      std::cout << BOLD(YELLOW(" - Service call to initilize estimator:                      " + getStringfromBool(estimator_init_service) + "\n"));
+      std::cout << BOLD(YELLOW(" - Takeoff checks:                                           " + getStringfromBool(perform_takeoff_check) + "\n"));
+      std::cout << BOLD(YELLOW(" - Estimation quality checks:                                " + getStringfromBool(perform_estimator_check) + "\n"));
+      std::cout << BOLD(YELLOW(" - Landing detection:                                        " + getStringfromBool(activate_landing_detection) + "\n"));
+      std::cout << BOLD(YELLOW(" - Inflight sensors init:                                    " + getStringfromBool(inflight_sensors_init_service) + "\n"));
+      std::cout << BOLD(YELLOW(" - Hover after mission completion:                           " + getStringfromBool(hover_after_mission_completion) + "\n\n"));
 
       if (!activate_user_interface) {
-        std::cout << BOLD(YELLOW(" - Loaded mission iwth ID:              " + std::to_string(mission_id_no_ui) + "\n\n"));
+        std::cout << BOLD(YELLOW(" - Loaded mission iwth ID:                                 " + std::to_string(mission_id_no_ui) + "\n\n"));
       }
 
       if (activate_watchdog) {
-        std::cout << BOLD(YELLOW(" - Subscribed to:                         " + watchdog_heartbeat_topic + "\n"));
-        std::cout << BOLD(YELLOW(" - Subscribed to:                         " + watchdog_status_topic + "\n"));
-        std::cout << BOLD(YELLOW(" - Publishing on:                         " + watchdog_action_topic + "\n"));
-        std::cout << BOLD(YELLOW(" - Service available at:                  " + watchdog_start_service_name + "\n"));
-        std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout:            " + std::to_string(watchdog_timeout) + " ms\n"));
-        std::cout << BOLD(YELLOW(" - Watchdog startup time:                 " + std::to_string(watchdog_startup_time) + " s\n\n"));
+        std::cout << BOLD(YELLOW(" - Subscribed to:                                          " + watchdog_heartbeat_topic + "\n"));
+        std::cout << BOLD(YELLOW(" - Subscribed to:                                          " + watchdog_status_topic + "\n"));
+        std::cout << BOLD(YELLOW(" - Publishing on:                                          " + watchdog_action_topic + "\n"));
+        std::cout << BOLD(YELLOW(" - Service available at:                                   " + watchdog_start_service_name + "\n"));
+        std::cout << BOLD(YELLOW(" - Watchdog heartbeat timeout:                             " + std::to_string(watchdog_timeout) + " ms\n"));
+        std::cout << BOLD(YELLOW(" - Watchdog startup time:                                  " + std::to_string(watchdog_startup_time) + " s\n\n"));
       }
 
       if (estimator_init_service) {
-        std::cout << BOLD(YELLOW(" - Service available at:                  " + estimator_init_service_name + "\n\n"));
+        std::cout << BOLD(YELLOW(" - Service available at:                                   " + estimator_init_service_name + "\n\n"));
       }
 
       if (perform_estimator_check) {
-        std::cout << BOLD(YELLOW(" - Service available at:                  " + estimator_supervisor_service_name + "\n\n"));
+        std::cout << BOLD(YELLOW(" - Service available at:                                   " + estimator_supervisor_service_name + "\n\n"));
       }
 
       if (perform_takeoff_check) {
-        std::cout << BOLD(YELLOW(" - Service available at:                  " + takeoff_service_name + "\n\n"));
+        std::cout << BOLD(YELLOW(" - Service available at:                                   " + takeoff_service_name + "\n\n"));
       }
 
       if (activate_data_recording) {
-        std::cout << BOLD(YELLOW(" - Service available at:                  " + data_recrding_service_name + "\n\n"));
+        std::cout << BOLD(YELLOW(" - Service available at:                                   " + data_recrding_service_name + "\n"));
+        std::cout << BOLD(YELLOW(" - Delay after failure:                                    " + std::to_string(data_recording_delay_after_failure_s) + " s\n\n"));
       }
 
       if (inflight_sensors_init_service) {
         for (const auto &it : inflight_sensor_init_services_name) {
-          std::cout << BOLD(YELLOW(" - Service available at:                  " + it + "\n"));
+          std::cout << BOLD(YELLOW(" - Service available at:                                 " + it + "\n"));
         }
         std::cout << "\n";
       }
 
       if (activate_landing_detection) {
-        std::cout << BOLD(YELLOW(" - Subscribed to:                         " + landing_detection_topic + "\n\n"));
+        std::cout << BOLD(YELLOW(" - Subscribed to:                                          " + landing_detection_topic + "\n\n"));
       }
 
-      std::cout << BOLD(YELLOW(" - Subscribed to:                         " + mission_sequencer_request_topic + "\n"));
-      std::cout << BOLD(YELLOW(" - Publishing on:                         " + mission_sequencer_responce_topic + "\n"));
-      std::cout << BOLD(YELLOW(" - Publishing on:                         " + mission_sequencer_waypoints_topic + "\n\n"));
+      std::cout << BOLD(YELLOW(" - Subscribed to:                                            " + mission_sequencer_request_topic + "\n"));
+      std::cout << BOLD(YELLOW(" - Publishing on:                                            " + mission_sequencer_responce_topic + "\n"));
+      std::cout << BOLD(YELLOW(" - Publishing on:                                            " + mission_sequencer_waypoints_topic + "\n\n"));
 
-      std::cout << BOLD(YELLOW(" - Maximum flight time:                   " + std::to_string(flight_timeout/60000) + " min\n\n"));
+      std::cout << BOLD(YELLOW(" - Maximum flight time:                                      " + std::to_string(flight_timeout/60000) + " min\n\n"));
 
-      std::cout << BOLD(YELLOW(" - Maximum waiting time for a sensor fix: " + std::to_string(fix_timeout) + " ms\n\n"));
+      std::cout << BOLD(YELLOW(" - Maximum waiting time for a sensor fix                   : " + std::to_string(fix_timeout) + " ms\n"));
+      std::cout << BOLD(YELLOW(" - Maximum waiting time for a sensor fix in preflight stage: " + std::to_string(preflight_fix_timeout) + " s\n\n"));
 
-      std::cout << BOLD(YELLOW("-------------------------------------------------\n")) << std::endl;
+      std::cout << BOLD(YELLOW("--------------------------------------------------------------\n")) << std::endl;
     }
 
     inline const std::string getStringfromBool(const bool& flag) const {

@@ -31,8 +31,11 @@ namespace autonomy {
     AUTONOMY_UI_STREAM(BOLD(RED(" >>> System state: FAILURE <<< \n")));
     AUTONOMY_UI_STREAM(BOLD(RED("-------------------------------------------------\n")) << std::endl);
 
-    // Stop data recording if data is getting recorded
+    // Stop data recording if data is getting recorded after waiting autonomy.opts_->data_recording_delay_after_failure_s s
     if (autonomy.opts_->activate_data_recording && autonomy.is_recording_) {
+      for (int cnt = 0; cnt <= 100*autonomy.opts_->data_recording_delay_after_failure_s; ++cnt) {
+        autonomy.polling(10);
+      }
       autonomy.DataRecording(false);
     }
 
