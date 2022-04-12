@@ -188,6 +188,6 @@ add_library(custom_libraries SHARED ${custom_libraries_sources})
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
 add_executable(autonomy src/autonomy_node.cpp src/autonomy_core/autonomy.cpp)
-add_dependencies(autonomy ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(autonomy ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} autonomy_msgs_generate_messages_cpp)
 target_link_libraries(autonomy ${thirdparty_libraries} custom_libraries)
 set_property(TARGET autonomy PROPERTY COMPILE_DEFINITIONS POSE)
