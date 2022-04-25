@@ -788,9 +788,9 @@ namespace autonomy {
             }
 
             // Check if landing detection is active, if not transit to END_MISSION
-            if (!opts_->activate_landing_detection && land_expected_) {
-              stateTransition("end_mission");
-            }
+//            if (!opts_->activate_landing_detection && land_expected_) {
+//              stateTransition("end_mission");
+//            }
 
             break;
 
@@ -877,6 +877,13 @@ namespace autonomy {
         // Subscribe to landing after taking off if detection if active
         if (opts_->activate_landing_detection) {
           sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &Autonomy::landingDetectionCallback, this);
+        }
+
+      } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::LAND) {
+
+        // Check if landing detection is active, if not transit to END_MISSION
+        if (!opts_->activate_landing_detection && land_expected_) {
+          stateTransition("end_mission");
         }
 
       } else {
