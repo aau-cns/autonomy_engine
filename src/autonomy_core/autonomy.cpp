@@ -135,6 +135,7 @@ namespace autonomy {
     bool perform_estimator_check;
     bool activate_landing_detection;
     bool hover_after_mission_completion;
+    bool sequence_multiple_in_flight;
     bool inflight_sensors_init_service;
     int mission_id_no_ui = -1;
 
@@ -169,6 +170,10 @@ namespace autonomy {
     }
     if (!nh_.getParam("hover_after_mission_completion", hover_after_mission_completion)) {
       AUTONOMY_UI_STREAM(BOLD(RED(" >>> [hover_after_mission_completion] parameter not defined.\n")) << std::endl);
+      return false;
+    }
+    if (!nh_.getParam("sequence_multiple_in_flight", sequence_multiple_in_flight)) {
+      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [sequence_multiple_in_flight] parameter not defined.\n")) << std::endl);
       return false;
     }
     if (!nh_.getParam("inflight_sensors_init_service", inflight_sensors_init_service)) {
@@ -431,6 +436,7 @@ namespace autonomy {
                                                                activate_landing_detection,
                                                                inflight_sensors_init_service,
                                                                hover_after_mission_completion,
+                                                               sequence_multiple_in_flight,
                                                                mission_id_no_ui}));
 
     // Success
@@ -830,30 +836,96 @@ namespace autonomy {
         // set last_waypoint_reached_ flag
         last_waypoint_reached_ = true;
 
-        // Check parameter server
-        bool hover_after_mission_completion;
-        nh_.getParam("hover_after_mission_completion", hover_after_mission_completion);
-
-        // Check if the parameter has changed from previously assigned value
-        if (hover_after_mission_completion != opts_->hover_after_mission_completion) {
-          // Assign new flag
-          opts_->hover_after_mission_completion = hover_after_mission_completion;
+        // Check if sequencing of multiple in-air files happens
+        if (multiple_touchdowns_ && opts_->sequence_multiple_in_flight_ && (filepaths_cnt_ < static_cast<int>(missions_.at(mission_id_).getTouchdowns()))) {
           // Print info
-          AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Changed behaviour at mission completion: Hover is now " + opts_->getStringfromBool(opts_->hover_after_mission_completion) + "\n")) << std::endl);
-        }
+          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Iteration " + std::to_string(filepaths_cnt_) + " of mission ID: " + std::to_string(mission_id_) + " succesfully completed.\n\n")));
+          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Continuing with next iteration ...\n")) << std::endl);
 
-        // Call state transition to LAND or request HOVER to mission sequencer based on param
-        if (!opts_->hover_after_mission_completion) {
-          stateTransition("land");
-        } else {
-          // Print info
-          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Hovering...\n")) << std::endl);
+          // Unset mission
+          in_mission_ = false;
 
-          // Request hovering to the mission sequencer if not hovering
-          if (!hovering_) {
-            missionSequencerRequest(mission_sequencer::MissionRequest::HOVER);
+          // Increment the filepaths counter
+          ++filepaths_cnt_;
+
+          // Set filename to waypoint parser
+          waypoints_parser_->setFilename(missions_.at(mission_id_).getFilepaths().at(static_cast<size_t>(filepaths_cnt_)));
+
+          // Parse waypoint file
+          waypoints_parser_->readParseCsv();
+
+          // Get the data
+          waypoints_ = waypoints_parser_->getData();
+
+          // Check existence of subscribers, if not trigger a land command
+          // Check if we have loaded waypoints, if so send waypoints to mission sequencer, otherwise trigger a land command
+          if (waypoints_.size() > 0 && pub_mission_sequencer_waypoints_.getNumSubscribers() > 0) {
+
+            // Print info
+            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl);
+
+            // Define waypoints message to mission sequencer
+            mission_sequencer::MissionWaypoint wp;
+            mission_sequencer::MissionWaypointArray wps;
+
+            // Set header and clear buffer action
+            wps.header.stamp = ros::Time::now();
+            wps.action = mission_sequencer::MissionWaypointArray::CLEAR;
+
+            // Assign waypoints TODO
+            for (const auto &it : waypoints_) {
+              wp.x = it.x;
+              wp.y = it.y;
+              wp.z = it.z;
+              wp.yaw = it.yaw;
+              wp.holdtime = it.holdtime;
+              wps.waypoints.emplace_back(wp);
+            }
+
+            // publish mission waypoints
+            pub_mission_sequencer_waypoints_.publish(wps);
+
+            // set flags
+            in_mission_ = true;
+            last_waypoint_reached_ = false;
+
+            // Setting state to PERFORM_MISSION
+            stateTransition("perform_mission");
+
           } else {
-            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already hovering, skipped HOVER request\n")) << std::endl);
+
+            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Impossible to communicate waypoints to mission sequencer.\n")) << std::endl);
+
+            // Call state transition to LAND
+            stateTransition("land");
+          }
+
+        } else {
+          // Check parameter server
+          bool hover_after_mission_completion;
+          nh_.getParam("hover_after_mission_completion", hover_after_mission_completion);
+
+          // Check if the parameter has changed from previously assigned value
+          if (hover_after_mission_completion != opts_->hover_after_mission_completion) {
+            // Assign new flag
+            opts_->hover_after_mission_completion = hover_after_mission_completion;
+            // Print info
+            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Changed behaviour at mission completion: Hover is now " + opts_->getStringfromBool(opts_->hover_after_mission_completion) + "\n")) << std::endl);
+          }
+
+          // Call state transition to LAND or request HOVER to mission sequencer based on param
+          if (!opts_->hover_after_mission_completion) {
+            stateTransition("land");
+          } else {
+            // Print info
+            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Hovering...\n")) << std::endl);
+
+            // Request hovering to the mission sequencer if not hovering
+            if (!hovering_) {
+              missionSequencerRequest(mission_sequencer::MissionRequest::HOVER);
+            } else {
+              AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already hovering, skipped HOVER request\n")) << std::endl);
+            }
           }
         }
 

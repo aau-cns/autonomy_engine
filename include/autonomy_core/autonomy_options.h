@@ -82,6 +82,9 @@ namespace autonomy {
     /// Note: This is not const because it can be overwritten during runtime
     bool hover_after_mission_completion;
 
+    /// Bollean to decide if multiple files are sequenced in-flight
+    bool sequence_multiple_in_flight_;
+
     /// Mission to be loaded in case of no user interface
     const int mission_id_no_ui;
 
@@ -99,6 +102,7 @@ namespace autonomy {
       std::cout << BOLD(YELLOW(" - Landing detection:                                        " + getStringfromBool(activate_landing_detection) + "\n"));
       std::cout << BOLD(YELLOW(" - Inflight sensors init:                                    " + getStringfromBool(inflight_sensors_init_service) + "\n"));
       std::cout << BOLD(YELLOW(" - Hover after mission completion:                           " + getStringfromBool(hover_after_mission_completion) + "\n\n"));
+      std::cout << BOLD(YELLOW(" - Sequence multiple in-flight:                              " + getStringfromBool(sequence_multiple_in_flight_) + "\n\n"));
 
       if (!activate_user_interface) {
         std::cout << BOLD(YELLOW(" - Loaded mission iwth ID:                                 " + std::to_string(mission_id_no_ui) + "\n\n"));
