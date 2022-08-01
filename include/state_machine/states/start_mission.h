@@ -1,17 +1,13 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
 #ifndef START_MISSION_H
 #define START_MISSION_H
@@ -19,54 +15,53 @@
 #include "state_machine/state.h"
 #include "timer/timer.h"
 
-namespace autonomy {
+namespace autonomy
+{
+/**
+ * @brief Land state.
+ */
+class StartMission : public State
+{
+public:
+  /**
+   * @brief Instance of State (Singleton)
+   */
+  static State& Instance();
 
   /**
-   * @brief Land state.
+   * @brief Action to be performed when exiting a state
+   * @param Reference to Autonomy
    */
-  class StartMission : public State {
+  void onExit(Autonomy& autonomy) override;
 
-  public:
+  /**
+   * @brief Action to be performed when entering a state
+   * @param  Reference to Autonomy
+   */
+  void onEntry(Autonomy& autonomy) override;
 
-    /**
-     * @brief Instance of State (Singleton)
-     */
-    static State& Instance();
+  /**
+   * @brief Return a String relative to the state
+   */
+  const std::string getStringFromState() override
+  {
+    return "start_mission";
+  }
 
-    /**
-     * @brief Action to be performed when exiting a state
-     * @param Reference to Autonomy
-     */
-    void onExit(Autonomy& autonomy) override;
+private:
+  /**
+   * @brief Private constructor and copy-constructor
+   */
+  StartMission();
+  StartMission(const StartMission& other);
 
-    /**
-     * @brief Action to be performed when entering a state
-     * @param  Reference to Autonomy
-     */
-    void onEntry(Autonomy& autonomy) override;
+  /**
+   * @brief Assognment operator
+   */
+  StartMission& operator=(const StartMission& other);
 
-    /**
-     * @brief Return a String relative to the state
-     */
-    const std::string getStringFromState() override {
-      return "start_mission";
-    }
+};  // calss StartMission
 
-  private:
-
-    /**
-     * @brief Private constructor and copy-constructor
-     */
-    StartMission();
-    StartMission(const StartMission& other);
-
-    /**
-     * @brief Assognment operator
-     */
-    StartMission& operator=(const StartMission& other);
-
-  }; // calss StartMission
-
-} // namespace autonomy
+}  // namespace autonomy
 
 #endif  // START_MISSION_H

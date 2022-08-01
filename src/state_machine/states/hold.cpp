@@ -1,48 +1,46 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
 #include "state_machine/states/hold.h"
 
-namespace autonomy {
+namespace autonomy
+{
+Hold::Hold(){};
 
-  Hold::Hold() {};
-
-  State& Hold::Instance() {
-    static Hold singleton;
-    return singleton;
-  }
-
-  void Hold::onEntry(Autonomy& autonomy) {
-
-    // print info
-    AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")));
-    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> System state: HOLD <<< \n")));
-    AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")) << std::endl);
-
-    // Print info
-    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Holding...\n")) << std::endl);
-
-    // Request holding to the mission sequencer if not holding
-    if(!autonomy.holding_) {
-      autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::HOLD);
-    } else {
-      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already holding, skipped HOLD request\n")) << std::endl);
-    }
-
-  }
-
-  void Hold::onExit(Autonomy&) {}
-
+State& Hold::Instance()
+{
+  static Hold singleton;
+  return singleton;
 }
+
+void Hold::onEntry(Autonomy& autonomy)
+{
+  // print info
+  autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), formatStateEntry("HOLD"));
+  autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), formatMsg("Holding...", 2));
+
+  // Request holding to the mission sequencer if not holding
+  if (!autonomy.holding_)
+  {
+    autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::HOLD);
+  }
+  else
+  {
+    autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                           formatMsg("The platform is already holding, skipped HOLD request", 2));
+  }
+}
+
+void Hold::onExit(Autonomy&)
+{
+}
+
+}  // namespace autonomy

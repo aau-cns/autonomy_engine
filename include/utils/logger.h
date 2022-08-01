@@ -1,44 +1,52 @@
-// Copyright (C) 2021 Martin Scheiber, Control of Networked Systems, University of Klagenfurt, Austria.
-// 
+// Copyright (C) 2021 Martin Scheiber and Alessandro Fornasier.
+// Control of Networked Systems, University of Klagenfurt, Austria.
+//
 // All rights reserved.
-// 
+//
 // This software is licensed under the terms of the BSD-2-Clause-License with
 // no commercial use allowed, the full terms of which are made available
 // in the LICENSE file. No license in patents is granted.
-// 
+//
 // You can contact the author at <martin.scheiber@aau.at>
+// and <alessandro.fornasier@aau.at>
 
 #ifndef AUTONOMY_LOGGER_H_
 #define AUTONOMY_LOGGER_H_
 
-#include <ros/node_handle.h>
-#include <ros/console.h>
+#define PAD 1
 
 #include <autonomy/LogMessage.h>
+#include <ros/console.h>
+#include <ros/node_handle.h>
+#include <regex>
 
-#define BKG_DEBUG_STREAM_NAMED(name, args) ROS_DEBUG_STREAM_NAMED(name, "* AUT_BKG: " << args)
-#define BKG_INFO_STREAM_NAMED(name, args) ROS_INFO_STREAM_NAMED(name, "* AUT_BKG: " << args)
-#define BKG_WARN_STREAM_NAMED(name, args) ROS_WARN_STREAM_NAMED(name, "* AUT_BKG: " << args)
-#define BKG_ERROR_STREAM_NAMED(name, args) ROS_ERROR_STREAM_NAMED(name, "* AUT_BKG: " << args)
-#define BKG_FATAL_STREAM_NAMED(name, args) ROS_FATAL_STREAM_NAMED(name, "* AUT_BKG: " << args)
+#include "spdlog/sinks/basic_file_sink.h"
+#include "spdlog/sinks/stdout_color_sinks.h"
+#include "spdlog/spdlog.h"
+#include "utils/colors.h"
+#include "utils/format.h"
 
-#define AUTONOMY_UI_STREAM(args) do{std::cerr << args; ROS_INFO_STREAM(args);} while (false)
-
-namespace autonomy {
-
-class Logger {
+namespace autonomy
+{
+class Logger
+{
 private:
-  const std::string C_LOGGER_NAME_ { "background_logger" };
+  // Loggers
+  std::shared_ptr<spdlog::logger> console_ui_logger_ = nullptr;
+  std::shared_ptr<spdlog::logger> file_logger_ = nullptr;
 
   // Ros Nodehandle
   ros::NodeHandle nh_;
 
   // Publishers
   ros::Publisher pub_log_;
-  uint pub_seq_ {0};
+  uint pub_seq_{ 0 };
 
-  // publish functions
-  void publishLog(const autonomy::LogMessage::_type_type &type, const std::string &msg, const std::string &state, const std::string &next_state = "undef")
+  /**
+   * @brief Publish log message as a ros message and log to file if file logger is initialized
+   */
+  inline void publishLog(const autonomy::LogMessage::_type_type& type, const std::string& msg, const std::string& state,
+                         const std::string& next_state)
   {
     // setup pub msg
     autonomy::LogMessage pub_msg;
@@ -51,69 +59,184 @@ private:
     pub_msg.state = state;
     pub_msg.next_state = next_state;
 
-    // log to file and publish ROS message
-    BKG_INFO_STREAM_NAMED(C_LOGGER_NAME_, msg);
+    // publish ROS message and try to log to file
+    if (file_logger_ != nullptr)
+    {
+      file_logger_->trace(msg + '\n');
+      file_logger_->flush();
+    }
     pub_log_.publish(pub_msg);
   }
 
 public:
-  Logger(ros::NodeHandle &nh) : nh_(nh) {
-
-    // setup logger level to FATAL for the background logger (except for DEBUG builds)
-    if( ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME + std::string(".") + C_LOGGER_NAME_,
-#ifdef NDEBUG
-                                       ros::console::levels::Info) ) {
-#else // DEBUG
-                                       ros::console::levels::Debug) ) {
-#endif // NDEBUG
-      ros::console::notifyLoggerLevelsChanged();
+  /**
+   * @brief Autonomy constructor
+   * @param Ros NodeHandle
+   */
+  Logger(ros::NodeHandle& nh) : nh_(nh)
+  {
+    // Loggers
+    try
+    {
+      console_ui_logger_ = spdlog::stdout_color_mt("console_ui_logger");
+      console_ui_logger_->set_level(spdlog::level::trace);
+    }
+    catch (const spdlog::spdlog_ex&)
+    {
+      std::cout << BOLD(RED("Autonomy console_ui_logger initialization failed")) << std::endl;
+      exit(EXIT_FAILURE);
     }
 
-    BKG_INFO_STREAM_NAMED(C_LOGGER_NAME_, "started background logging");
+    // Format loggers
+    console_ui_logger_->set_pattern("%v");
 
     // setup publishers
     pub_log_ = nh_.advertise<autonomy::LogMessage>("logger", 1);
   }
 
-  void logStateChange(const std::string &cur_state, const std::string &next_state) {
-    const std::string msg = "state transition: " + cur_state + "->" + next_state;
+  /**
+   * @brief Autonomy constructor
+   * @param Ros NodeHandle
+   * @param Filepath for file logger
+   */
+  Logger(ros::NodeHandle& nh, const std::string& filepath) : nh_(nh)
+  {
+    // Loggers
+    try
+    {
+      console_ui_logger_ = spdlog::stdout_color_mt("console_ui_logger");
+      console_ui_logger_->set_level(spdlog::level::trace);
+      file_logger_ = spdlog::basic_logger_mt("file_logger", filepath);
+      file_logger_->set_level(spdlog::level::trace);
+    }
+    catch (const spdlog::spdlog_ex&)
+    {
+      std::cout << BOLD(RED("Autonomy loggers initialization failed")) << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
+    // Format loggers
+    console_ui_logger_->set_pattern("%v");
+    file_logger_->set_pattern("[%Y-%m-%d %T.%e] | %-0v");
+
+    // setup publishers
+    pub_log_ = nh_.advertise<autonomy::LogMessage>("logger", 1);
+  }
+
+  /**
+   * @brief Initialize file for file logger
+   */
+  bool initFileLogger(const std::string& filepath)
+  {
+    try
+    {
+      file_logger_ = spdlog::basic_logger_mt("file_logger", filepath);
+      file_logger_->set_level(spdlog::level::trace);
+    }
+    catch (const spdlog::spdlog_ex&)
+    {
+      std::cout << BOLD(RED("Autonomy file_logger initialization failed")) << std::endl;
+      exit(EXIT_FAILURE);
+    }
+
+    // Format logger
+    file_logger_->set_pattern("[%Y-%m-%d %T.%e] | %-0v");
+
+    return (file_logger_ != nullptr);
+  }
+
+  /**
+   * @brief Format a state change and publish log
+   */
+  inline void logStateChange(const std::string& cur_state, const std::string& next_state)
+  {
+    const std::string msg = padRight("[STATE TRANSITION] ", PAD) + "[" + cur_state + "] -> [" + next_state + "]";
     publishLog(autonomy::LogMessage::STATE_CHANGE, msg, cur_state, next_state);
-  } // void logStateChange()
-
-  void logServiceCall(const std::string &cur_state, const std::string &service){
-    const std::string msg = "called service: " + service;
-    publishLog(autonomy::LogMessage::SERVICE_CALLED, msg, cur_state);
   }
 
-  void logServiceAnswer(const std::string &cur_state, const std::string &service, const std::string &answer){
-    const std::string msg = "service answered: [" + service + "] -- " + answer;
-    publishLog(autonomy::LogMessage::SERVICE_ANSWERED, msg, cur_state);
+  /**
+   * @brief Format a service call and publish log
+   */
+  inline void logServiceCall(const std::string& cur_state, const std::string& service,
+                             const std::string& next_state = "")
+  {
+    const std::string msg = padRight("[CALLED SERVICE] ", PAD) + service;
+    publishLog(autonomy::LogMessage::SERVICE_CALLED, msg, cur_state, next_state);
   }
 
-  void logMessage(const std::string &cur_state, const std::string &topic, const bool &received=false, const std::string &contents="_emtpy_"){
+  /**
+   * @brief Format a service response and publish log
+   */
+  inline void logServiceResponse(const std::string& cur_state, const std::string& service, const std::string& response,
+                                 const std::string& next_state = "")
+  {
+    const std::string msg = padRight("[SERVICE: " + service + " RESPONSE] ", PAD) + response;
+    publishLog(autonomy::LogMessage::SERVICE_RESPONSE, msg, cur_state, next_state);
+  }
+
+  /**
+   * @brief Format a message and publish log
+   */
+  inline void logMessage(const std::string& cur_state, const std::string& topic, const bool& received = false,
+                         const std::string& contents = "_emtpy_", const std::string& next_state = "")
+  {
     if (received)
     {
-      const std::string msg = "message received on [" + topic + "] -- " + contents;
-      publishLog(autonomy::LogMessage::MESSAGE_RECEIVED, msg, cur_state);
+      const std::string msg = padRight("[MESSAGE RECEIVED ON: " + topic + "] ", PAD) + contents;
+      publishLog(autonomy::LogMessage::MESSAGE_RECEIVED, msg, cur_state, next_state);
     }
     else
     {
-      const std::string msg = "message sent on [" + topic + "] -- " + contents;
-      publishLog(autonomy::LogMessage::MESSAGE_SENT, msg, cur_state);
+      const std::string msg = padRight("[MESSAGE SENT ON " + topic + "] ", PAD) + contents;
+      publishLog(autonomy::LogMessage::MESSAGE_SENT, msg, cur_state, next_state);
     }
   }
 
-  void logUserInput(const std::string &cur_state, const std::string &input){
-    const std::string msg = "user input: " + input;
-    publishLog(autonomy::LogMessage::USER_INPUT, msg, cur_state);
+  /**
+   * @brief Format a user input and publish log
+   */
+  inline void logUserInput(const std::string& cur_state, const std::string& input, const std::string& next_state = "")
+  {
+    const std::string msg = padRight("[USER INPUT] ", PAD) + input;
+    publishLog(autonomy::LogMessage::USER_INPUT, msg, cur_state, next_state);
   }
 
-  void logInfo(const std::string &cur_state, const std::string &info){
-    publishLog(autonomy::LogMessage::INFO, info, cur_state);
+  /**
+   * @brief Format user interface and publish log
+   */
+  inline void logUserInterface(const std::string& cur_state, const std::string& ui, const std::string& next_state = "")
+  {
+    const std::string msg = padRight("[USER INTERFACE] ", PAD) + ui;
+    publishLog(autonomy::LogMessage::USER_INTERFACE, msg, cur_state, next_state);
   }
 
-}; // class Logger
+  /**
+   * @brief Format info and publish log
+   */
+  inline void logInfo(const std::string& cur_state, const std::string& info, const std::string& next_state = "")
+  {
+    const std::string msg = padRight("[INFO] ", PAD) + info;
+    publishLog(autonomy::LogMessage::INFO, msg, cur_state, next_state);
+  }
 
-} // namespace autonomy
+  /**
+   * @brief Print UI and log user interface
+   */
+  inline void logUI(const std::string& cur_state, const std::string& escape_str, const std::string& ui)
+  {
+    // Try to log to console (UI)
+    if (console_ui_logger_ != nullptr)
+    {
+      console_ui_logger_->trace(escape_str + ui + RESET);
+      console_ui_logger_->flush();
+    }
 
-#endif // AUTONOMY_LOGGER_H_
+    // Log to file and publish
+    logUserInterface(cur_state, removeFormat(ui));
+  }
+
+};  // class Logger
+
+}  // namespace autonomy
+
+#endif  // AUTONOMY_LOGGER_H_

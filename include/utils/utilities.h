@@ -1,25 +1,26 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
-#include <iterator>
-#include <iostream>
-#include <vector>
+#define VARIABLE_TO_STRING(Variable) (void(Variable), #Variable)
+#define FUNCTION_TO_STRING(Function) (void(&Function), #Function)
+#define METHOD_TO_STRING(ClassName, Method) (void(&ClassName::Method), #Method)
+#define TYPE_TO_STRING(Type) (void(sizeof(Type)), #Type)
+
 #include <exception>
+#include <iostream>
+#include <iterator>
+#include <vector>
 
 /**
  * @brief Function to print a vector
@@ -27,13 +28,13 @@
  * @param vector to be printed (elements of vector must be printable)
  */
 template <typename T>
-std::ostream& operator<< (std::ostream& out, const std::vector<T>& v) {
-
+std::ostream& operator<<(std::ostream& out, const std::vector<T>& v)
+{
   // Check vector is not empty
-  if (!v.empty()) {
-
+  if (!v.empty())
+  {
     // Copy element of vector into output stream
-    std::copy (v.begin(), v.end(), std::ostream_iterator<T>(out, ", "));
+    std::copy(v.begin(), v.end(), std::ostream_iterator<T>(out, ", "));
   }
   return out;
 }

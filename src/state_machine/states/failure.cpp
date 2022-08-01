@@ -1,74 +1,74 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
 #include "state_machine/states/failure.h"
 
-namespace autonomy {
+namespace autonomy
+{
+Failure::Failure(){};
 
-  Failure::Failure() {};
+State& Failure::Instance()
+{
+  static Failure singleton;
+  return singleton;
+}
 
-  State& Failure::Instance() {
-    static Failure singleton;
-    return singleton;
+void Failure::onEntry(Autonomy& autonomy)
+{
+  // Print info
+  autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE), formatStateEntry("FAILURE"));
+
+  // Stop data recording if data is getting recorded after waiting autonomy.opts_->data_recording_delay_after_failure_s
+  // seconds
+  if (autonomy.opts_->activate_data_recording && autonomy.is_recording_)
+  {
+    for (int cnt = 0; cnt <= std::ceil(autonomy.opts_->data_recording_delay_after_failure_s / 10); ++cnt)
+    {
+      autonomy.polling(10);
+    }
+    autonomy.DataRecording(false);
   }
 
-  void Failure::onEntry(Autonomy& autonomy) {
-
-    // Print info
-    AUTONOMY_UI_STREAM(BOLD(RED("-------------------------------------------------\n")));
-    AUTONOMY_UI_STREAM(BOLD(RED(" >>> System state: FAILURE <<< \n")));
-    AUTONOMY_UI_STREAM(BOLD(RED("-------------------------------------------------\n")) << std::endl);
-
-    // Stop data recording if data is getting recorded after waiting autonomy.opts_->data_recording_delay_after_failure_s s
-    if (autonomy.opts_->activate_data_recording && autonomy.is_recording_) {
-      for (int cnt = 0; cnt <= 100*autonomy.opts_->data_recording_delay_after_failure_s; ++cnt) {
-        autonomy.polling(10);
-      }
-      autonomy.DataRecording(false);
-    }
-
-    // Stop any timer
-    autonomy.watchdog_timer_->stopTimer();
-    autonomy.flight_timer_->stopTimer();
-    for (const auto& it : autonomy.pending_failures_) {
-      it.second->stopTimer();
-    }
-
-    // Clear panding failure
-    autonomy.pending_failures_.clear();
-
-    // Clear waypoints
-    autonomy.waypoints_.clear();
-
-    // If flying send an abort request to mission sequencer
-    if (autonomy.in_flight_) {
-      autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::ABORT);
-    }
-
-    // Unsubscribe from all the subscribed topics
-    autonomy.sub_watchdog_heartbeat_.shutdown();
-    autonomy.sub_watchdog_status_.shutdown();
-    autonomy.sub_landing_detection_.shutdown();
-    autonomy.sub_mission_sequencer_responce_.shutdown();
-
-    // Call state transition to TERMINATION
-    autonomy.stateTransition("termination");
-
+  // Stop any timer
+  autonomy.watchdog_timer_->stopTimer();
+  autonomy.flight_timer_->stopTimer();
+  for (const auto& it : autonomy.pending_failures_)
+  {
+    it.second->stopTimer();
   }
 
-  void Failure::onExit(Autonomy&) {}
+  // Clear panding failure
+  autonomy.pending_failures_.clear();
 
-} // namespace autonomy
+  // Clear waypoints
+  autonomy.waypoints_.clear();
 
+  // If flying send an abort request to mission sequencer
+  if (autonomy.in_flight_)
+  {
+    autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::ABORT);
+  }
+
+  // Unsubscribe from all the subscribed topics
+  autonomy.sub_watchdog_heartbeat_.shutdown();
+  autonomy.sub_watchdog_status_.shutdown();
+  autonomy.sub_landing_detection_.shutdown();
+  autonomy.sub_mission_sequencer_response_.shutdown();
+
+  // Call state transition to TERMINATION
+  autonomy.stateTransition("termination");
+}
+
+void Failure::onExit(Autonomy&)
+{
+}
+
+}  // namespace autonomy

@@ -1,32 +1,29 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
 #ifndef _COLORS_
 #define _COLORS_
 
-#define RESET              "\033[0m"
-#define BLACK_ESCAPE       "\033[30m"
-#define RED_ESCAPE         "\033[31m"
-#define GREEN_ESCAPE       "\033[32m"
-#define YELLOW_ESCAPE      "\033[33m"
-#define BLUE_ESCAPE        "\033[34m"
-#define MAGENTA_ESCAPE     "\033[35m"
-#define CYAN_ESCAPE        "\033[36m"
-#define WHITE_ESCAPE       "\033[37m"
-#define REDPURPLE_ESCAPE   "\033[95m"
-
+#define RESET "\033[0m"
+#define BLACK_ESCAPE "\033[30m"
+#define RED_ESCAPE "\033[31m"
+#define GREEN_ESCAPE "\033[32m"
+#define YELLOW_ESCAPE "\033[33m"
+#define BLUE_ESCAPE "\033[34m"
+#define MAGENTA_ESCAPE "\033[35m"
+#define CYAN_ESCAPE "\033[36m"
+#define WHITE_ESCAPE "\033[37m"
+#define REDPURPLE_ESCAPE "\033[95m"
+#define BOLD_ESCAPE "\x1B[1m"
+#define UNDERLINE_ESCAPE "\x1B[4m"
 
 #define BLACK(x) BLACK_ESCAPE x RESET
 #define RED(x) RED_ESCAPE x RESET
@@ -38,7 +35,9 @@
 #define WHITE(x) WHITE_ESCAPE x RESET
 #define REDPURPLE(x) REDPURPLE_ESCAPE x RESET
 
-#define BOLD(x) "\x1B[1m" x RESET
-#define UNDERLINE(x) "\x1B[4m" x RESET
+#define BOLD(x) BOLD_ESCAPE x RESET
+#define UNDERLINE(x) UNDERLINE_ESCAPE x RESET
 
-#endif  /* _COLORS_ */
+#define ESCAPE(x, y) x y
+
+#endif /* _COLORS_ */

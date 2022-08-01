@@ -1,71 +1,66 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
 #ifndef UNDEFINED_H
 #define UNDEFINED_H
 
 #include "state_machine/state.h"
 
-namespace autonomy {
+namespace autonomy
+{
+/**
+ * @brief Undefined state at initialization
+ */
+class Undefined : public State
+{
+public:
+  /**
+   * @brief Instance of State (Singleton)
+   */
+  static State& Instance();
 
   /**
-   * @brief Undefined state at initialization
+   * @brief Action to be performed when exiting a state
+   * @param Reference to Autonomy
    */
-  class Undefined : public State {
+  void onExit(Autonomy& autonomy) override;
 
-  public:
+  /**
+   * @brief Action to be performed when entering a state
+   * @param  Reference to Autonomy
+   */
+  void onEntry(Autonomy& autonomy) override;
 
-    /**
-     * @brief Instance of State (Singleton)
-     */
-    static State& Instance();
+  /**
+   * @brief Return a String relative to the state
+   */
+  const std::string getStringFromState() override
+  {
+    return "undefined";
+  }
 
-    /**
-     * @brief Action to be performed when exiting a state
-     * @param Reference to Autonomy
-     */
-    void onExit(Autonomy& autonomy) override;
+private:
+  /**
+   * @brief Private constructor and copy-constructor
+   */
+  Undefined();
+  Undefined(const Undefined& other);
 
-    /**
-     * @brief Action to be performed when entering a state
-     * @param  Reference to Autonomy
-     */
-    void onEntry(Autonomy& autonomy) override;
+  /**
+   * @brief Assognment operator
+   */
+  Undefined& operator=(const Undefined& other);
 
-    /**
-     * @brief Return a String relative to the state
-     */
-    const std::string getStringFromState() override {
-      return "undefined";
-    }
+};  // calss Undefined
 
-  private:
-
-    /**
-     * @brief Private constructor and copy-constructor
-     */
-    Undefined();
-    Undefined(const Undefined& other);
-
-    /**
-     * @brief Assognment operator
-     */
-    Undefined& operator=(const Undefined& other);
-
-  }; // calss Undefined
-
-} // namepsace autonomy
+}  // namespace autonomy
 
 #endif  // UNDEFINED_H

@@ -4,17 +4,16 @@ project(autonomy)
 
 ## Try to compile with newer versions of C++
 include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++20" COMPILER_SUPPORTS_CXX20)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
-CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
-CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX17)
+if(COMPILER_SUPPORTS_CXX20)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
+    set(CMAKE_CXX_STANDARD 20)
+elseif(COMPILER_SUPPORTS_CXX17)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-elseif(COMPILER_SUPPORTS_CXX11)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-elseif(COMPILER_SUPPORTS_CXX0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+    set(CMAKE_CXX_STANDARD 17)
 else()
-    message(WARNING "The compiler ${CMAKE_CXX_COMPILER} has no C++0x support. Please use a different C++ compiler.")
+    message(WARNING "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
 endif()
 
 ## enforcing cleaner code by adding -Wall and -Werror, the compiler will not ignore warnings anymore
@@ -40,10 +39,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## System dependencies are found with CMake's conventions
 find_package(Boost REQUIRED)
-find_package(Eigen3 REQUIRED)
 
 ## Display packages version
-message(STATUS "EIGEN VERSION: " ${EIGEN3_VERSION})
 message(STATUS "BOOST VERSION: " ${Boost_VERSION})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -157,7 +154,7 @@ list(
 
 ## List custom libraries inside lib folder
 list(
-  APPEND custom_libraries_sources
+  APPEND lib_sources
   src/waypoints_parser/waypoints_parser.cpp
   src/timer/timer.cpp
   src/state_machine/state.cpp
@@ -171,13 +168,14 @@ list(
   src/state_machine/states/preflight.cpp
   src/state_machine/states/start_mission.cpp
   src/state_machine/states/perform_mission.cpp
+  src/state_machine/states/mission_iterator.cpp
   src/state_machine/states/end_mission.cpp
   src/autonomy_core/autonomy.cpp
   src/autonomy_core/mission.cpp
 )
 
 ## Declare a C++ library
-add_library(custom_libraries SHARED ${custom_libraries_sources})
+add_library(custom_libraries SHARED ${lib_sources})
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -190,4 +188,3 @@ add_library(custom_libraries SHARED ${custom_libraries_sources})
 add_executable(autonomy src/autonomy_node.cpp src/autonomy_core/autonomy.cpp)
 add_dependencies(autonomy ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 target_link_libraries(autonomy ${thirdparty_libraries} custom_libraries)
-set_property(TARGET autonomy PROPERTY COMPILE_DEFINITIONS POSE)

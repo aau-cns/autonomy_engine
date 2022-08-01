@@ -9,7 +9,7 @@
     <arg name="watchdog_status_topic"     		default="/watchdog/log" />
     <arg name="watchdog_action_topic"     		default="/watchdog/action" />
     <arg name="mission_sequencer_request_topic"		default="/missionsequencer/request" />
-    <arg name="mission_sequencer_responce_topic"	default="/missionsequencer/response" />
+    <arg name="mission_sequencer_response_topic"	default="/missionsequencer/response" />
     <arg name="landing_detection_topic"			default="/toland/is_landed" />
     <arg name="mission_sequencer_waypoints_topic"	default="/missionsequencer/waypoints" />
 
@@ -30,6 +30,7 @@
     <arg name="preflight_fix_timeout_s"                 default="10" />
     <arg name="data_recording_delay_after_failure_s"    default ="5" />
     <arg name="mission_id_no_ui"                        default="1" />
+    <arg name="logger_filepath"                         default="/home/alfornasier/tmp/log/" />
 
     <!-- arguments flags -->
     <arg name="activate_user_interface"                 default="true" />
@@ -44,15 +45,14 @@
     <arg name="sequence_multiple_in_flight"             default="false" />
 
     <!-- autonomy node -->
-    <!-- <node name="autonomy" pkg="autonomy" type="autonomy" output="screen" clear_params="true" required="true"> -->
-    <node name="autonomy" pkg="autonomy" type="autonomy" output="log" clear_params="true" required="true">
+    <node name="autonomy" pkg="autonomy" type="autonomy" output="screen" clear_params="true" required="true">
 
         <!-- topics -->
         <param name="watchdog_heartbeat_topic"          type="string"   value="$(arg watchdog_heartbeat_topic)" />
         <param name="watchdog_status_topic"             type="string"   value="$(arg watchdog_status_topic)" />
         <param name="watchdog_action_topic"             type="string"   value="$(arg watchdog_action_topic)" />
         <param name="mission_sequencer_request_topic"   type="string"   value="$(arg mission_sequencer_request_topic)" />
-        <param name="mission_sequencer_responce_topic"  type="string"   value="$(arg mission_sequencer_responce_topic)" />
+        <param name="mission_sequencer_response_topic"  type="string"   value="$(arg mission_sequencer_response_topic)" />
         <param name="landing_detection_topic"           type="string"   value="$(arg landing_detection_topic)" />
         <param name="mission_sequencer_waypoints_topic" type="string"   value="$(arg mission_sequencer_waypoints_topic)" />
 
@@ -76,6 +76,7 @@
         <param name="mission_id_no_ui"                          type="int"      value = "$(arg mission_id_no_ui)" />
         <param name="preflight_fix_timeout_s"                   type="int"      value = "$(arg preflight_fix_timeout_s)" />
         <param name="data_recording_delay_after_failure_s"      type="int"      value = "$(arg data_recording_delay_after_failure_s)" />
+        <param name="logger_filepath"                           type="string"   value = "$(arg logger_filepath)" />
 
         <!-- flags -->
         <param name="activate_user_interface"                   type="bool"   value = "$(arg activate_user_interface)" />

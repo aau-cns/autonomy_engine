@@ -1,184 +1,186 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
-
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
 #ifndef WAYPOINTPARSER_H
 #define WAYPOINTPARSER_H
 
+#include <stdlib.h>
+#include <algorithm>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
-#include <stdlib.h>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include <stdexcept>
-#include <sstream>
-#include <algorithm>
 
-namespace autonomy {
+namespace autonomy
+{
+/**
+ * @brief Input data parser forwaypoints.
+ *
+ * This class has a series of functions that allows to generate
+ * data starting from a waypoint file for which convention is that
+ * the first row contains the header defining what data is at each column.
+ * Default convention --> x,y,z,yaw
+ *
+ */
+
+class WaypointsParser
+{
+public:
+  /**
+   * @brief Input struct to parse a single line of a .csv file
+   *
+   * x
+   * y
+   * z
+   * yaw
+   */
+  struct Waypoint
+  {
+    double x;
+    double y;
+    double z;
+    double yaw;
+    double holdtime;
+  };
 
   /**
-  * @brief Input data parser forwaypoints.
-  *
-  * This class has a series of functions that allows to generate
-  * data starting from a waypoint file for which convention is that
-  * the first row contains the header defining what data is at each column.
-  * Default convention --> x,y,z,yaw
-  *
-  */
+   * @brief constructor
+   */
+  WaypointsParser();
 
-  class WaypointsParser {
+  /**
+   * @brief constructor
+   */
+  WaypointsParser(std::string& filename, std::vector<std::string>& categories);
 
-  public:
+  /**
+   * @brief set the filename
+   */
+  inline void setFilename(const std::string& filename)
+  {
+    filename_ = filename;
+  }
 
-    /**
-    * @brief Input struct to parse a single line of a .csv file
-    *
-    * x
-    * y
-    * z
-    * yaw
-    */
-    struct Waypoint {
-      double x;
-      double y;
-      double z;
-      double yaw;
-      double holdtime;
-    };
+  /**
+   * @brief set the categoreis
+   */
+  inline void setCategories(const std::vector<std::string>& categories)
+  {
+    categories_ = categories;
+  }
 
-    /**
-    * @brief constructor
-    */
-    WaypointsParser();
+  /**
+   * @brief Clear actual data, read a new .csv file and convert to a matrix (vector of vectors)
+   */
+  void readParseCsv();
 
-    /**
-    * @brief constructor
-    */
-    WaypointsParser(std::string &filename, std::vector<std::string> &categories);
-
-    /**
-    * @brief set the filename
-    */
-    inline void setFilename(const std::string& filename) {
-      filename_ = filename;
+  /**
+   * @brief Get Data red from data structure
+   */
+  inline const std::vector<Waypoint>& getData() const
+  {
+    if (!data_.empty())
+    {
+      return data_;
     }
-
-    /**
-    * @brief set the categoreis
-    */
-    inline void setCategories(const std::vector<std::string>& categories) {
-      categories_ = categories;
+    else
+    {
+      throw std::runtime_error("Trying to get data from empty structure, something went wrong when parsing .csv input "
+                               "file...");
     }
+  }
 
-    /**
-    * @brief Clear actual data, read a new .csv file and convert to a matrix (vector of vectors)
-    */
-    void readParseCsv();
+private:
+  /**
+   * @brief Filename of file containing waypoints
+   */
+  std::string filename_;
 
-    /**
-    * @brief Get Data red from data structure
-    */
-    inline const std::vector<Waypoint> &getData() const {
-      if(!data_.empty()) {
-        return data_;
-      } else {
-        throw std::runtime_error("Trying to get data from empty structure, something went wrong when parsing .csv input file...");
-      }
+  /**
+   * @brief Raw data from a .csv file converted to a matrix (vector of inputs)
+   */
+  std::vector<Waypoint> data_;
+
+  /**
+   * @brief vector of strings in header ordered based on defined convention -- x,y,z,yaw,holdtime --
+   */
+  std::vector<std::string> categories_ = { "x", "y", "z", "yaw", "holdtime" };
+
+  /**
+   * @brief Parse a single line of the .csv file
+   *
+   * overloaded function to parse a single line of a .csv
+   * file with a comma as delimeter.
+   * This function is overloaded to include either string values
+   * (usually the case for headers) or numerical values
+   */
+  void parseLine(std::string& line, std::vector<std::string>& data);
+
+  template <typename T>
+  void parseLine(std::string& line, std::vector<T>& data)
+  {
+    // Create a stringstream of the current line
+    std::stringstream ss(line);
+
+    // Temporary value
+    T tmp;
+
+    // Extract each cell
+    while (ss >> tmp)
+    {
+      data.push_back(tmp);
+
+      // skip commas
+      if (ss.peek() == ',')
+        ss.ignore();
     }
+  }
 
-  private:
+  /**
+   * @brief Find association between input file and defined convention
+   *
+   * The defined convention of the Input structure is -- x,y,z,yaw,holdtime --
+   * This function find the indices of the columns of the input file based
+   * on its header in order to correctly associate input data with the
+   * Input structure allowing inpput files with shuffled columns or even
+   * more columns than the onse that are necessary
+   */
+  void getIndices(const std::vector<std::string>& header, std::vector<int>& indices);
 
-    /**
-    * @brief Filename of file containing waypoints
-    */
-    std::string filename_;
+  /**
+   * @brief Find the index of token within the given vector
+   */
+  template <typename T>
+  void getIndex(const std::vector<T>& data, const T& token, int& index)
+  {
+    // Iterator
+    auto it = find(data.begin(), data.end(), token);
 
-    /**
-    * @brief Raw data from a .csv file converted to a matrix (vector of inputs)
-    */
-    std::vector<Waypoint> data_;
-
-    /**
-    * @brief vector of strings in header ordered based on defined convention -- x,y,z,yaw,holdtime --
-    */
-    std::vector<std::string> categories_ = {"x", "y", "z", "yaw", "holdtime"};
-
-    /**
-    * @brief Parse a single line of the .csv file
-    *
-    * overloaded function to parse a single line of a .csv
-    * file with a comma as delimeter.
-    * This function is overloaded to include either string values
-    * (usually the case for headers) or numerical values
-    */
-    void parseLine(std::string &line, std::vector<std::string> &data);
-
-    template <typename T>
-    void parseLine(std::string &line, std::vector<T> &data) {
-
-      // Create a stringstream of the current line
-      std::stringstream ss(line);
-
-      // Temporary value
-      T tmp;
-
-      // Extract each cell
-      while (ss >> tmp) {
-        data.push_back(tmp);
-
-        // skip commas
-        if(ss.peek() == ',') ss.ignore();
-      }
+    // Check if element was found
+    if (it != data.end())
+    {
+      // Get the index
+      index = it - data.begin();
     }
-
-    /**
-    * @brief Find association between input file and defined convention
-    *
-    * The defined convention of the Input structure is -- x,y,z,yaw,holdtime --
-    * This function find the indices of the columns of the input file based
-    * on its header in order to correctly associate input data with the
-    * Input structure allowing inpput files with shuffled columns or even
-    * more columns than the onse that are necessary
-    */
-    void getIndices(const std::vector<std::string> &header, std::vector<int> &indices);
-
-    /**
-    * @brief Find the index of token within the given vector
-    */
-    template <typename T>
-    void getIndex(const std::vector<T> &data, const T &token, int &index) {
-
-      // Iterator
-      auto it = find(data.begin(), data.end(), token);
-
-      // Check if element was found
-      if (it != data.end())
-      {
-        // Get the index
-        index = it - data.begin();
-      }
-      else {
-        throw std::runtime_error("Required data missing. Exit programm.");
-      }
+    else
+    {
+      throw std::runtime_error("Required data missing. Exit programm.");
     }
+  }
 
+};  // class WaypointsParser
 
-  }; // class WaypointsParser
-
-} // namespace autonomy
-#endif //WAYPOINTPARSER_H
-
+}  // namespace autonomy
+#endif  // WAYPOINTPARSER_H

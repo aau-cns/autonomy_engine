@@ -1,462 +1,472 @@
 // Copyright (C) 2021 Alessandro Fornasier,
-// Control of Networked Systems, Universitaet Klagenfurt, Austria
-//
-// You can contact the author at <alessandro.fornasier@ieee.org>
+// Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
 //
-// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-// THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-// FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-// DEALINGS IN THE SOFTWARE.
+// This software is licensed under the terms of the BSD-2-Clause-License with
+// no commercial use allowed, the full terms of which are made available
+// in the LICENSE file. No license in patents is granted.
+//
+// You can contact the author at <alessandro.fornasier@ieee.org>
 
+#include <ctime>
 #include <limits>
 
 #include "autonomy_core/autonomy.h"
+#include "state_machine/states/end_mission.h"
 #include "state_machine/states/failure.h"
 #include "state_machine/states/hold.h"
 #include "state_machine/states/initialization.h"
 #include "state_machine/states/land.h"
+#include "state_machine/states/mission_iterator.h"
 #include "state_machine/states/nominal.h"
-#include "state_machine/states/undefined.h"
+#include "state_machine/states/perform_mission.h"
 #include "state_machine/states/preflight.h"
 #include "state_machine/states/start_mission.h"
-#include "state_machine/states/perform_mission.h"
-#include "state_machine/states/end_mission.h"
 #include "state_machine/states/termination.h"
+#include "state_machine/states/undefined.h"
 #include "utils/colors.h"
+#include "utils/format.h"
 
-namespace autonomy {
+namespace autonomy
+{
+Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
+{
+  // Setting state to UNDEFINED
+  state_ = &Undefined::Instance();
 
-  Autonomy::Autonomy(ros::NodeHandle &nh) :
-    nh_(nh), logger_(nh_) {
+  // Init message
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatInitMsg());
 
-    // Parse parameters and options
-    if(!parseParams()) {
-        throw FailureException();
-    }
+  // Parse parameters and options
+  parseParams();
 
-    // Print option
-    opts_->printAutonomyOptions();
+  // Get actual time
+  time_t now = time(nullptr);
+  tm* ltm = localtime(&now);
 
-    // Advertise watchdog service and action topic and instanciate timer
-    if (opts_->activate_watchdog) {
-      watchdog_start_service_client_ = nh_.serviceClient<watchdog_msgs::Start>(opts_->watchdog_start_service_name);
-      pub_watchdog_action_ = nh.advertise<watchdog_msgs::ActionStamped>(opts_->watchdog_action_topic, 10);
-      watchdog_timer_ = std::make_unique<Timer>(opts_->watchdog_timeout);
-      watchdog_timer_->sh_.connect(boost::bind(&Autonomy::watchdogTimerOverflowHandler, this));
-    }
+  // Initialize file logger setting filename to yyyy-mm-dd-hh-mm-ss-log
+  std::string filename = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(1 + ltm->tm_mon) + "-" +
+                         std::to_string(ltm->tm_mday) + "-" + std::to_string(ltm->tm_hour) + "-" +
+                         std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec) + "-" + "log";
+  logger_.initFileLogger(opts_->logger_filepath + filename);
 
-    // Advertise estimator init service
-    if (opts_->estimator_init_service) {
-      estimator_init_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->estimator_init_service_name);
-    }
+  // Print option
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), opts_->printAutonomyOptions());
 
-    // Advertise in flight sensor init service
-    if (opts_->inflight_sensors_init_service) {
-      for (size_t i = 0; i < opts_->inflight_sensor_init_services_name.size(); ++i) {
-        inflight_sensor_init_service_client_.emplace_back(nh_.serviceClient<std_srvs::Empty>(opts_->inflight_sensor_init_services_name.at(i)));
-      }
-    }
-
-    // Advertise estimator supervisor service
-    if (opts_->perform_estimator_check) {
-      estimator_supervisor_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->estimator_supervisor_service_name);
-    }
-
-    // Advertise takeoff service
-    if (opts_->perform_takeoff_check) {
-      takeoff_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->takeoff_service_name);
-    }
-
-    // Advertise data recording service
-    if (opts_->activate_data_recording) {
-      data_recording_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->data_recrding_service_name);
-    }
-
-    // Advertise mission sequencer request topic
-    pub_mission_sequencer_request_ = nh.advertise<mission_sequencer::MissionRequest>(opts_->mission_sequencer_request_topic, 10);
-
-    // Advertise mission sequencer waypoints topic
-    pub_mission_sequencer_waypoints_ = nh.advertise<mission_sequencer::MissionWaypointArray>(opts_->mission_sequencer_waypoints_topic, 10);
-
-    // Subscribe to mission sequencer responce
-    sub_mission_sequencer_responce_ = nh_.subscribe(opts_->mission_sequencer_responce_topic, 100, &Autonomy::missionSequencerResponceCallback, this);
-
-    // Instanciate flight timer and connect signal
-    flight_timer_ = std::make_unique<Timer>(opts_->flight_timeout);
-    flight_timer_->sh_.connect(boost::bind(&Autonomy::flightTimerOverflowHandler, this));
-
-    // Instanciate waypoints_parser_ with categories {"x", "y", "z", "yaw", "holdtime"}
-    waypoints_parser_ = std::make_unique<WaypointsParser>();
-
-    // Setting state to UNDEFINED
-    state_ = &Undefined::Instance();
-
-    logger_.logInfo(state_->getStringFromState(), "started autonomy");
+  // Advertise watchdog service and action topic and instanciate timer
+  if (opts_->activate_watchdog)
+  {
+    watchdog_start_service_client_ = nh_.serviceClient<watchdog_msgs::Start>(opts_->watchdog_start_service_name);
+    pub_watchdog_action_ = nh.advertise<watchdog_msgs::ActionStamped>(opts_->watchdog_action_topic, 10);
+    watchdog_timer_ = std::make_unique<Timer>(opts_->watchdog_timeout);
+    watchdog_timer_->sh_.connect(boost::bind(&Autonomy::watchdogTimerOverflowHandler, this));
   }
 
-  bool Autonomy::parseParams() {
-
-    // Define auxilliary variables
-    std::string estimator_supervisor_service_name;
-    std::string watchdog_start_service_name;
-    std::string watchdog_heartbeat_topic;
-    std::string watchdog_status_topic;
-    std::string watchdog_action_topic;
-    std::string mission_sequencer_request_topic;
-    std::string mission_sequencer_responce_topic;
-    std::string data_recrding_service_name;
-    std::string takeoff_service_name;
-    std::string landing_detection_topic;
-    std::string estimator_init_service_name;
-    std::string mission_sequencer_waypoints_topic;
-    std::vector<std::string> inflight_sensor_init_services_name;
-    std::vector<Mission> missions;
-    XmlRpc::XmlRpcValue XRV_missions;
-    XmlRpc::XmlRpcValue XRV_filepaths;
-    XmlRpc::XmlRpcValue XRV_entities_states;
-    float watchdog_rate = 0.0;
-    float watchdog_heartbeat_timeout_multiplier = 0.0;
-    int watchdog_startup_time_s = 0;
-    int watchdog_timeout_ms = 0;
-    int flight_timeout_ms = 0;
-    int fix_timeout_ms = 0;
-    int preflight_fix_timeout_s = 0;
-    int data_recording_delay_after_failure_s = 0;
-    bool activate_user_interface;
-    bool activate_watchdog;
-    bool activate_data_recording;
-    bool estimator_init_service;
-    bool perform_takeoff_check;
-    bool perform_estimator_check;
-    bool activate_landing_detection;
-    bool hover_after_mission_completion;
-    bool sequence_multiple_in_flight;
-    bool inflight_sensors_init_service;
-    int mission_id_no_ui = -1;
-
-    // Get Parmaters from ros param server
-    if (!nh_.getParam("activate_user_interface", activate_user_interface)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_user_interface] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("activate_watchdog", activate_watchdog)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_watchdog] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("activate_data_recording", activate_data_recording)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_data_recording] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("estimator_init_service", estimator_init_service)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [estimator_init_service] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("perform_takeoff_check", perform_takeoff_check)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [perform_takeoff_check] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("perform_estimator_check", perform_estimator_check)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [perform_estimator_check] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("activate_landing_detection", activate_landing_detection)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [activate_takeoff_landing_detection] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("hover_after_mission_completion", hover_after_mission_completion)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [hover_after_mission_completion] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("sequence_multiple_in_flight", sequence_multiple_in_flight)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [sequence_multiple_in_flight] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("inflight_sensors_init_service", inflight_sensors_init_service)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [inflight_sensors_init_service] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!activate_user_interface) {
-      if (!nh_.getParam("mission_id_no_ui", mission_id_no_ui)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_id_no_ui] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-    }
-    if (activate_watchdog) {
-      if (!nh_.getParam("watchdog_start_service_name", watchdog_start_service_name)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_start_service_name] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-      if (!nh_.getParam("watchdog_heartbeat_topic", watchdog_heartbeat_topic)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_heartbeat_topic] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-      if (!nh_.getParam("watchdog_status_topic", watchdog_status_topic)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_status_topic] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-      if (!nh_.getParam("watchdog_action_topic", watchdog_action_topic)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_action_topic] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-      if (!nh_.getParam("watchdog_rate_Hz", watchdog_rate)) {
-         AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_rate_Hz] parameter not defined.\n")) << std::endl);
-         return false;
-      }
-      if (!nh_.getParam("watchdog_heartbeat_timeout_multiplier", watchdog_heartbeat_timeout_multiplier)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_heartbeat_timeot_multiplier] paramter not defined. This set the heartbeat timer timeout to be a scaled version of the period of the watchdog rate. Please set it higher than 1.0.\n")) << std::endl);
-        return false;
-      } else {
-        if (watchdog_heartbeat_timeout_multiplier >= 1) {
-          // Set watchdog timer timeout to be n/watchdog_rate ms (n >= 1)
-          watchdog_timeout_ms = static_cast<int>(std::ceil((1000*watchdog_heartbeat_timeout_multiplier)/watchdog_rate));
-        } else {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_heartbeat_timeot_multiplier] paramter smaller than 1.0. Please set it higher than 1.0.\n")) << std::endl);
-          return false;
-        }
-      }
-      if (!nh_.getParam("watchdog_startup_time_s", watchdog_startup_time_s)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [watchdog_startup_time_s] paramter not defined. Please set it higher than 10.\n")) << std::endl);
-        return false;
-      }
-    }
-    if (!nh_.getParam("mission_sequencer_request_topic", mission_sequencer_request_topic)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_sequencer_request_topic] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("mission_sequencer_responce_topic", mission_sequencer_responce_topic)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_sequencer_responce_topic] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("mission_sequencer_waypoints_topic", mission_sequencer_waypoints_topic)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [mission_sequencer_waypoints_topic] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (activate_data_recording) {
-      if (!nh_.getParam("data_recrding_service_name", data_recrding_service_name)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [data_recrding_service_name] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-    }
-    if (estimator_init_service) {
-      if (!nh_.getParam("estimator_init_service_name", estimator_init_service_name)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [estimator_init_service_name] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-    } 
-    if (inflight_sensors_init_service) {
-      nh_.param<std::vector<std::string>>("inflight_sensor_init_services_name", inflight_sensor_init_services_name, std::vector<std::string>{""});
-      for (const auto &it : inflight_sensor_init_services_name) {
-        if (it == "") {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> [inflight_sensor_init_service_name] parameter not defined.\n")) << std::endl);
-          return false;
-        }
-      }
-    }
-    if (perform_takeoff_check) {
-      if (!nh_.getParam("takeoff_service_name", takeoff_service_name)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [takeoff_service_name] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-    }
-    if (perform_estimator_check) {
-      if (!nh_.getParam("estimator_supervisor_service_name", estimator_supervisor_service_name)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [estimator_supervisor_service_name] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-    }
-    if (activate_landing_detection) {
-      if (!nh_.getParam("landing_detection_topic", landing_detection_topic)) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [landing_detection_topic] parameter not defined.\n")) << std::endl);
-        return false;
-      }
-    }
-    if (!nh_.getParam("missions", XRV_missions)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [missions] paramter not defined. Please specify/load correctly a mission config file.\n")) << std::endl);
-      return false;
-    } else {
-      // Check type
-      if (XRV_missions.getType() != XmlRpc::XmlRpcValue::TypeStruct) {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> [missions] paramter not correctly defined. Please check/correct the specified mission config file.\n")) << std::endl);
-        return false;
-      }
-    }
-    if (!nh_.getParam("maximum_flight_time_min", flight_timeout_ms)) {
-       AUTONOMY_UI_STREAM(BOLD(RED(" >>> [maximum_flight_time] parameter not defined.\n")) << std::endl);
-       return false;
-    } else {
-      // Convert given time from minutes to milliseconds
-      flight_timeout_ms *= 60000;
-    }
-    if (!nh_.getParam("fix_timeout_ms", fix_timeout_ms)) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> [fix_timeout_ms] parameter not defined.\n")) << std::endl);
-      return false;
-    }
-    if (!nh_.getParam("preflight_fix_timeout_s", preflight_fix_timeout_s)) {
-      std::cout << BOLD(RED(" >>> [preflight_fix_timeout_s] parameter not defined.\n")) << std::endl;
-      return false;
-    }
-    if (!nh_.getParam("data_recording_delay_after_failure_s", data_recording_delay_after_failure_s)) {
-      std::cout << BOLD(RED(" >>> [data_recording_delay_after_failure_s] parameter not defined.\n")) << std::endl;
-      return false;
-    }
-
-
-    // Check whether missions are defined and parse them
-    if (XRV_missions.size() == 0) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> No missions defined on the specified mission config file.\n")) << std::endl);
-      return false;
-    } else {
-
-      // Loop through missions
-      for (int i = 1; i <= XRV_missions.size(); ++i) {
-
-        // Declare mission specific variables
-        std::string description, state;
-        std::vector<std::string> filepaths;
-        Entity entity;
-        std::map<Entity, std::string> entity_state_map;
-
-        // Get mission description
-        if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/description", description)) {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [description] missing.\n")) << std::endl);
-          return false;
-        }
-
-        // Get filepaths
-        if (!nh_.getParam("/autonomy/missions/mission_" + std::to_string(i) + "/filepaths", XRV_filepaths)) {
-            AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepaths] missing.\n")) << std::endl);
-            return false;
-        }
-
-        // Check type to be array
-        if (XRV_filepaths.getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
-
-          // Loop through the filepaths
-          for (int j = 0; j < XRV_filepaths.size(); ++j) {
-
-            // Check type to be string
-            if (XRV_filepaths[j].getType() ==  XmlRpc::XmlRpcValue::TypeString) {
-
-              // assign filepath
-              filepaths.emplace_back(std::string(XRV_filepaths[j]));
-            } else {          
-              AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepath] wrongly defined in [filepaths] list.\n")) << std::endl);
-              return false;
-            }
-          }
-        } else {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [filepaths] wrongly defined, it must be a list.\n")) << std::endl);
-          return false;
-        }
-
-        // Get entities and next states
-        if (!nh_.getParam("missions/mission_" + std::to_string(i) + "/entities_actions", XRV_entities_states)) {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entities_actions] list missing.\n")) << std::endl);
-          return false;
-        }
-
-        // Check type to be array
-        if (XRV_entities_states.getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
-
-          // Loop through entities and actions
-          for (int k = 0; k < XRV_entities_states.size(); ++k) {
-
-            // Check type to be array
-            if (XRV_entities_states[k].getType() ==  XmlRpc::XmlRpcValue::TypeArray) {
-
-              // Check type to be string and get entity
-              if (XRV_entities_states[k][0].getType() == XmlRpc::XmlRpcValue::TypeString) {
-                if (!getEntityFromString(std::string(XRV_entities_states[k][0]), entity)) {
-                  AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entity] wrongly defined in [entities_actions] list.\n")) << std::endl);
-                  return false;
-                }
-              }
-
-              // Check type to be string and get action
-              if (XRV_entities_states[k][1].getType() == XmlRpc::XmlRpcValue::TypeString) {
-
-                // Check the existance of predefined state for the given string action
-                if (!checkStateFromString(std::string(XRV_entities_states[k][1]))) {
-                  AUTONOMY_UI_STREAM(std::endl << BOLD(RED(" >>> mission_" + std::to_string(i) + ": [action] wrongly defined in [entities_actions] list.\n")) << std::endl);
-                  return false;
-                } else {
-                  state = std::string(XRV_entities_states[k][1]);
-                }
-              }
-
-              // Build the entity_state_map
-              entity_state_map.try_emplace(entity, state);
-
-            } else {
-              AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entitiy_action] wrongly defined in [entities_actions] list.\n")) << std::endl);
-              return false;
-            }
-          }
-        } else {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> mission_" + std::to_string(i) + ": [entities_actions] wrongly defined.\n")) << std::endl);
-          return false;
-        }
-
-        // Build the mission
-        missions_.try_emplace(i, Mission(i, description, filepaths, entity_state_map));
-      }
-    }
-
-    // Make options
-    opts_ = std::make_unique<autonomyOptions>(autonomyOptions({watchdog_heartbeat_topic,
-                                                               watchdog_status_topic,
-                                                               watchdog_action_topic,
-                                                               mission_sequencer_request_topic,
-                                                               mission_sequencer_responce_topic,
-                                                               landing_detection_topic,
-                                                               mission_sequencer_waypoints_topic,
-                                                               watchdog_start_service_name,
-                                                               estimator_supervisor_service_name,
-                                                               data_recrding_service_name,
-                                                               takeoff_service_name,
-                                                               estimator_init_service_name,
-                                                               inflight_sensor_init_services_name,
-                                                               watchdog_timeout_ms,
-                                                               flight_timeout_ms,
-                                                               fix_timeout_ms,
-                                                               preflight_fix_timeout_s,
-                                                               watchdog_startup_time_s,
-                                                               data_recording_delay_after_failure_s,
-                                                               activate_user_interface,
-                                                               activate_watchdog,
-                                                               activate_data_recording,
-                                                               estimator_init_service,
-                                                               perform_takeoff_check,
-                                                               perform_estimator_check,
-                                                               activate_landing_detection,
-                                                               inflight_sensors_init_service,
-                                                               hover_after_mission_completion,
-                                                               sequence_multiple_in_flight,
-                                                               mission_id_no_ui}));
-
-    // Success
-    return true;
+  // Advertise estimator init service
+  if (opts_->estimator_init_service)
+  {
+    estimator_init_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->estimator_init_service_name);
   }
 
-  bool Autonomy::getSensorStatusFromMsg(const watchdog_msgs::Status& msg, SensorStatus& status) {
-
-    // Get debug infos
-    status.debug_name = msg.name;
-    status.debug_info = msg.info;
-
-    // Get entity
-    if (!getEntityFromString(msg.entity, status.entity)) {
-      return false;
+  // Advertise in flight sensor init service
+  if (opts_->inflight_sensors_init_service)
+  {
+    for (size_t i = 0; i < opts_->inflight_sensor_init_services_name.size(); ++i)
+    {
+      inflight_sensor_init_service_client_.emplace_back(
+          nh_.serviceClient<std_srvs::Empty>(opts_->inflight_sensor_init_services_name.at(i)));
     }
+  }
 
-    // Get type and action (based on type and mission specification)
-    // the action will be different from NOTHING only if a hold status is required
-    switch (msg.type) {
+  // Advertise estimator supervisor service
+  if (opts_->perform_estimator_check)
+  {
+    estimator_supervisor_service_client_ =
+        nh_.serviceClient<std_srvs::Trigger>(opts_->estimator_supervisor_service_name);
+  }
+
+  // Advertise takeoff service
+  if (opts_->perform_takeoff_check)
+  {
+    takeoff_service_client_ = nh_.serviceClient<std_srvs::Trigger>(opts_->takeoff_service_name);
+  }
+
+  // Advertise data recording service
+  if (opts_->activate_data_recording)
+  {
+    data_recording_service_client_ = nh_.serviceClient<std_srvs::SetBool>(opts_->data_recrding_service_name);
+  }
+
+  // Advertise mission sequencer request topic
+  pub_mission_sequencer_request_ =
+      nh.advertise<mission_sequencer::MissionRequest>(opts_->mission_sequencer_request_topic, 10);
+
+  // Advertise mission sequencer waypoints topic
+  pub_mission_sequencer_waypoints_ =
+      nh.advertise<mission_sequencer::MissionWaypointArray>(opts_->mission_sequencer_waypoints_topic, 10);
+
+  // Subscribe to mission sequencer response
+  sub_mission_sequencer_response_ =
+      nh_.subscribe(opts_->mission_sequencer_response_topic, 100, &Autonomy::missionSequencerResponceCallback, this);
+
+  // Instanciate flight timer and connect signal
+  flight_timer_ = std::make_unique<Timer>(opts_->flight_timeout);
+  flight_timer_->sh_.connect(boost::bind(&Autonomy::flightTimerOverflowHandler, this));
+
+  // Instanciate waypoints_parser_ with categories {"x", "y", "z", "yaw", "holdtime"}
+  waypoints_parser_ = std::make_unique<WaypointsParser>();
+
+  logger_.logInfo(state_->getStringFromState(), "Started autonomy");
+}
+
+template <typename T>
+void Autonomy::getParameter(T& param, const std::string& name, const std::string& msg)
+{
+  if (!nh_.getParam(name, param))
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE), formatParamNotFound(name, msg));
+    logger_.logInfo(state_->getStringFromState(), "[" + name + "] parameter not defined");
+    stateTransition("failure");
+  }
+}
+
+void Autonomy::getMissions()
+{
+  // Define auxilliary variables foreach paramter: XmlRpc::XmlRpcValue
+  XmlRpc::XmlRpcValue XRV_missions;
+  XmlRpc::XmlRpcValue XRV_filepaths;
+  XmlRpc::XmlRpcValue XRV_entities_states;
+
+  // Get specific parameter relative to the mission
+  getParameter(XRV_missions, "missions");
+
+  // Check mission type
+  if (XRV_missions.getType() != XmlRpc::XmlRpcValue::TypeStruct)
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatParamNotFound("missions", "Please check the specified mission config file"));
+    stateTransition("failure");
+  }
+
+  // Check whether missions are defined and parse them
+  if (XRV_missions.size() == 0)
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatParamWrong("missions", "No missions defined on the specified mission config file"));
+    stateTransition("failure");
+  }
+  else
+  {
+    // Loop through missions
+    for (int i = 1; i <= XRV_missions.size(); ++i)
+    {
+      // Declare mission specific variables
+      std::string description, state;
+      std::vector<std::string> filepaths;
+      Entity entity;
+      std::map<Entity, std::string> entity_state_map;
+
+      // Get mission parmaters
+      getParameter(description, "missions/mission_" + std::to_string(i) + "/description");
+      getParameter(XRV_filepaths, "/autonomy/missions/mission_" + std::to_string(i) + "/filepaths");
+
+      // Check type to be array
+      if (XRV_filepaths.getType() == XmlRpc::XmlRpcValue::TypeArray)
+      {
+        // Loop through the filepaths
+        for (int j = 0; j < XRV_filepaths.size(); ++j)
+        {
+          // Check type to be string
+          if (XRV_filepaths[j].getType() == XmlRpc::XmlRpcValue::TypeString)
+          {
+            // assign filepath
+            filepaths.emplace_back(std::string(XRV_filepaths[j]));
+          }
+          else
+          {
+            logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                          formatParamWrong("mission_" + std::to_string(i) + "/filepath", "wrongly defined in filepaths "
+                                                                                         "list"));
+            stateTransition("failure");
+          }
+        }
+      }
+      else
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatParamWrong("mission_" + std::to_string(i) + "/filepaths", "wrongly defined, it must be a "
+                                                                                      "list"));
+        stateTransition("failure");
+      }
+
+      // Get entities and next states
+      getParameter(XRV_entities_states, "missions/mission_" + std::to_string(i) + "/entities_actions");
+
+      // Check type to be array
+      if (XRV_entities_states.getType() == XmlRpc::XmlRpcValue::TypeArray)
+      {
+        // Loop through entities and actions
+        for (int k = 0; k < XRV_entities_states.size(); ++k)
+        {
+          // Check type to be array
+          if (XRV_entities_states[k].getType() == XmlRpc::XmlRpcValue::TypeArray)
+          {
+            // Check type to be string and get entity
+            if (XRV_entities_states[k][0].getType() == XmlRpc::XmlRpcValue::TypeString)
+            {
+              if (!getEntityFromString(std::string(XRV_entities_states[k][0]), entity))
+              {
+                logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                              formatParamWrong("mission_" + std::to_string(i) + "/entity", "wrongly defined in "
+                                                                                           "entities_actions list"));
+                stateTransition("failure");
+              }
+            }
+
+            // Check type to be string and get action
+            if (XRV_entities_states[k][1].getType() == XmlRpc::XmlRpcValue::TypeString)
+            {
+              // Check the existance of predefined state for the given string action
+              if (!checkStateFromString(std::string(XRV_entities_states[k][1])))
+              {
+                logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                              formatParamWrong("mission_" + std::to_string(i) + "/action", "wrongly defined in "
+                                                                                           "entities_actions list"));
+                stateTransition("failure");
+              }
+              else
+              {
+                state = std::string(XRV_entities_states[k][1]);
+              }
+            }
+
+            // Build the entity_state_map
+            entity_state_map.try_emplace(entity, state);
+          }
+          else
+          {
+            logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                          formatParamWrong("mission_" + std::to_string(i) + "/entitiy_action", "wrongly defined in "
+                                                                                               "entities_actions "
+                                                                                               "list"));
+            stateTransition("failure");
+          }
+        }
+      }
+      else
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatParamWrong("mission_" + std::to_string(i) + "/entities_actions", "wrongly defined"));
+        stateTransition("failure");
+      }
+
+      // Build the mission
+      missions_.try_emplace(i, Mission(i, description, filepaths, entity_state_map));
+    }
+  }
+}
+
+void Autonomy::parseParams()
+{
+  // Define auxilliary variables foreach paramter: std::String
+  std::string estimator_supervisor_service_name;
+  std::string watchdog_start_service_name;
+  std::string watchdog_heartbeat_topic;
+  std::string watchdog_status_topic;
+  std::string watchdog_action_topic;
+  std::string mission_sequencer_request_topic;
+  std::string mission_sequencer_response_topic;
+  std::string data_recrding_service_name;
+  std::string takeoff_service_name;
+  std::string landing_detection_topic;
+  std::string estimator_init_service_name;
+  std::string mission_sequencer_waypoints_topic;
+  std::string logger_filepath;
+
+  // Define auxilliary variables foreach paramter: std::vector
+  std::vector<std::string> inflight_sensor_init_services_name;
+
+  // Define auxilliary variables foreach paramter: float
+  float watchdog_rate = 0.0;
+  float watchdog_heartbeat_timeout_multiplier = 0.0;
+
+  // Define auxilliary variables foreach paramter: int
+  int watchdog_startup_time_s = 0;
+  int watchdog_timeout_ms = 0;
+  int flight_timeout_ms = 0;
+  int fix_timeout_ms = 0;
+  int preflight_fix_timeout_s = 0;
+  int data_recording_delay_after_failure_s = 0;
+  int mission_id_no_ui = -1;
+
+  // Define auxilliary variables foreach paramter: bool
+  bool activate_user_interface;
+  bool activate_watchdog;
+  bool activate_data_recording;
+  bool estimator_init_service;
+  bool perform_takeoff_check;
+  bool perform_estimator_check;
+  bool activate_landing_detection;
+  bool hover_after_mission_completion;
+  bool sequence_multiple_in_flight;
+  bool inflight_sensors_init_service;
+
+  // Get general parmaters from ros param server
+  getParameter(activate_user_interface, "activate_user_interface");
+  getParameter(activate_watchdog, "activate_watchdog");
+  getParameter(activate_data_recording, "activate_data_recording");
+  getParameter(estimator_init_service, "estimator_init_service");
+  getParameter(perform_takeoff_check, "perform_takeoff_check");
+  getParameter(perform_estimator_check, "perform_estimator_check");
+  getParameter(activate_landing_detection, "activate_landing_detection");
+  getParameter(hover_after_mission_completion, "hover_after_mission_completion");
+  getParameter(sequence_multiple_in_flight, "sequence_multiple_in_flight");
+  getParameter(inflight_sensors_init_service, "inflight_sensors_init_service");
+  getParameter(mission_sequencer_request_topic, "mission_sequencer_request_topic");
+  getParameter(mission_sequencer_response_topic, "mission_sequencer_response_topic");
+  getParameter(mission_sequencer_waypoints_topic, "mission_sequencer_waypoints_topic");
+  getParameter(logger_filepath, "logger_filepath");
+  getParameter(flight_timeout_ms, "maximum_flight_time_min");
+  getParameter(fix_timeout_ms, "fix_timeout_ms");
+  getParameter(preflight_fix_timeout_s, "preflight_fix_timeout_s");
+  getParameter(data_recording_delay_after_failure_s, "data_recording_delay_after_failure_s");
+
+  // Convert given flight time (in minutes) from minutes to milliseconds
+  flight_timeout_ms *= 60000;
+
+  // Get specific parameter if user interface is not active
+  if (!activate_user_interface)
+  {
+    getParameter(mission_id_no_ui, "mission_id_no_ui");
+  }
+
+  // Get specific parameter if watchdog is not active
+  if (activate_watchdog)
+  {
+    getParameter(watchdog_start_service_name, "watchdog_start_service_name");
+    getParameter(watchdog_heartbeat_topic, "watchdog_heartbeat_topic");
+    getParameter(watchdog_status_topic, "watchdog_status_topic");
+    getParameter(watchdog_action_topic, "watchdog_action_topic");
+    getParameter(watchdog_rate, "watchdog_rate");
+    getParameter(watchdog_heartbeat_timeout_multiplier, "watchdog_heartbeat_timeout_multiplier",
+                 "This set the heartbeat timer timeout to be a scaled version of the period of the watchdog rate. "
+                 "Please set it higher than 1.0");
+    if (watchdog_heartbeat_timeout_multiplier >= 1)
+    {
+      // Set watchdog timer timeout to be n/watchdog_rate ms (n >= 1)
+      watchdog_timeout_ms = static_cast<int>(std::ceil((1000 * watchdog_heartbeat_timeout_multiplier) / watchdog_rate));
+    }
+    else
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                    formatParamWrong("watchdog_heartbeat_timeot_multiplier", "paramter smaller than 1.0. Please set it "
+                                                                             "higher than 1.0"));
+      stateTransition("failure");
+    }
+    getParameter(watchdog_heartbeat_timeout_multiplier, "watchdog_heartbeat_timeout_multiplier");
+    getParameter(watchdog_startup_time_s, "watchdog_startup_time_s", "Please set it higher than 10");
+  }
+
+  // Get specific parameter if data recording is active
+  if (activate_data_recording)
+  {
+    getParameter(data_recrding_service_name, "data_recrding_service_name");
+  }
+
+  // Get specific parameter if estimator init is active
+  if (estimator_init_service)
+  {
+    getParameter(estimator_init_service_name, "estimator_init_service_name");
+  }
+
+  // Get specific parameter if in-flight sensor init is active
+  if (inflight_sensors_init_service)
+  {
+    nh_.param<std::vector<std::string>>("inflight_sensor_init_services_name", inflight_sensor_init_services_name,
+                                        std::vector<std::string>{ "" });
+    for (const auto& it : inflight_sensor_init_services_name)
+    {
+      if (it == "")
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatParamNotFound("inflight_sensor_init_service_name"));
+        stateTransition("failure");
+      }
+    }
+  }
+
+  // Get specific parameter if takeoff checks are active
+  if (perform_takeoff_check)
+  {
+    getParameter(takeoff_service_name, "takeoff_service_name");
+  }
+
+  // Get specific parameter if estimator check is active
+  if (perform_estimator_check)
+  {
+    getParameter(estimator_supervisor_service_name, "estimator_supervisor_service_name");
+  }
+
+  // Get specific parameter if landing detection is active
+  if (activate_landing_detection)
+  {
+    getParameter(landing_detection_topic, "landing_detection_topic");
+  }
+
+  // Get missions
+  getMissions();
+
+  // Make options
+  opts_ = std::make_unique<autonomyOptions>(autonomyOptions({ watchdog_heartbeat_topic,
+                                                              watchdog_status_topic,
+                                                              watchdog_action_topic,
+                                                              mission_sequencer_request_topic,
+                                                              mission_sequencer_response_topic,
+                                                              landing_detection_topic,
+                                                              mission_sequencer_waypoints_topic,
+                                                              watchdog_start_service_name,
+                                                              estimator_supervisor_service_name,
+                                                              data_recrding_service_name,
+                                                              takeoff_service_name,
+                                                              estimator_init_service_name,
+                                                              logger_filepath,
+                                                              inflight_sensor_init_services_name,
+                                                              watchdog_timeout_ms,
+                                                              flight_timeout_ms,
+                                                              fix_timeout_ms,
+                                                              preflight_fix_timeout_s,
+                                                              watchdog_startup_time_s,
+                                                              data_recording_delay_after_failure_s,
+                                                              activate_user_interface,
+                                                              activate_watchdog,
+                                                              activate_data_recording,
+                                                              estimator_init_service,
+                                                              perform_takeoff_check,
+                                                              perform_estimator_check,
+                                                              activate_landing_detection,
+                                                              inflight_sensors_init_service,
+                                                              hover_after_mission_completion,
+                                                              sequence_multiple_in_flight,
+                                                              mission_id_no_ui }));
+}
+
+bool Autonomy::getSensorStatusFromMsg(const watchdog_msgs::Status& msg, SensorStatus& status)
+{
+  // Get debug infos
+  status.debug_name = msg.name;
+  status.debug_info = msg.info;
+
+  // Get entity
+  if (!getEntityFromString(msg.entity, status.entity))
+  {
+    return false;
+  }
+
+  // Get type and action (based on type and mission specification)
+  // the action will be different from NOTHING only if a hold status is required
+  switch (msg.type)
+  {
     case watchdog_msgs::Status::GLOBAL:
       status.type = Type::GLOBAL;
       status.action = Action::NOTHING;
@@ -467,72 +477,86 @@ namespace autonomy {
       break;
     case watchdog_msgs::Status::NODE:
       status.type = Type::NODE;
-      if (missions_.at(mission_id_).getNextState(status.entity).compare("hold") == 0) {
+      if (missions_.at(mission_id_).getNextState(status.entity).compare("hold") == 0)
+      {
         status.action = Action::FIX_NODE;
-      } else {
+      }
+      else
+      {
         status.action = Action::NOTHING;
       }
       break;
     case watchdog_msgs::Status::DRIVER:
       status.type = Type::DRIVER;
-      if (missions_.at(mission_id_).getNextState(status.entity).compare("hold") == 0) {
+      if (missions_.at(mission_id_).getNextState(status.entity).compare("hold") == 0)
+      {
         status.action = Action::FIX_DRIVER;
-      } else {
+      }
+      else
+      {
         status.action = Action::NOTHING;
       }
       break;
-    }
-
-    // Get event. Increase pending failure in case of failure,
-    // reduce pending failures in case of fix
-    if (msg.status == watchdog_msgs::Status::ERROR) {
-
-      status.event = Event::ENTITY_FAILURE;
-
-      // Increase pending failures in case of hold and start a timer if we are fliying
-      // if the error needs to be fixed in the specified mission
-      if (missions_.at(mission_id_).getNextState(status.entity).compare("hold") == 0) {
-        pending_failures_.emplace_back(std::make_pair(status, std::make_unique<Timer>(opts_->fix_timeout)));
-        pending_failures_.back().second->sh_.connect(boost::bind(&Autonomy::failureTimerOverflowHandler, this));
-        if (in_flight_) {
-          pending_failures_.back().second->resetTimer();
-        }
-      // Increase pending failures in case of land only if we are not fliying
-      } else if (!in_flight_ && missions_.at(mission_id_).getNextState(status.entity).compare("land") == 0) {
-        pending_failures_.emplace_back(std::make_pair(status, std::make_unique<Timer>(opts_->fix_timeout)));
-        pending_failures_.back().second->sh_.connect(boost::bind(&Autonomy::failureTimerOverflowHandler, this));
-      }
-
-    } else if (msg.status == watchdog_msgs::Status::NOMINAL || msg.status == watchdog_msgs::Status::DEFECT) {
-//      AUTONOMY_UI_STREAM("[WATCHDOG] E-" << status.entity << ": received fix" << std::endl);
-//      AUTONOMY_UI_STREAM("[AUTONOMY] E-" << status.entity << ": need no of fixes = " << pending_failures_.size() << std::endl);
-
-      // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fixing
-      // which can only be triggered if the hold status is requested. If for some reason we got a NOMINAL status without
-      // requiring a specific action we set the event to OTHER
-      const auto &it = std::find_if(pending_failures_.begin(), pending_failures_.end(), [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure){return failure.first.isSame(status);});
-
-      if (it != pending_failures_.end()) {
-        it->second->stopTimer();
-        pending_failures_.erase(it);
-        status.event = Event::ENTITY_FIX;
-      } else {
-        status.event = Event::ENTITY_OTHER;
-      }
-
-    } else {
-
-      status.event = Event::ENTITY_OTHER;
-
-    }
-
-    return true;
   }
 
-  bool Autonomy::getRequestfromMsg(const mission_sequencer::MissionRequest& msg, std::string& request_str) {
+  // Get event. Increase pending failure in case of failure,
+  // reduce pending failures in case of fix
+  if (msg.status == watchdog_msgs::Status::ERROR)
+  {
+    status.event = Event::ENTITY_FAILURE;
 
-    // Get request
-    switch(msg.request) {
+    // Increase pending failures in case of hold and start a timer if we are fliying
+    // if the error needs to be fixed in the specified mission
+    if (missions_.at(mission_id_).getNextState(status.entity).compare("hold") == 0)
+    {
+      pending_failures_.emplace_back(std::make_pair(status, std::make_unique<Timer>(opts_->fix_timeout)));
+      pending_failures_.back().second->sh_.connect(boost::bind(&Autonomy::failureTimerOverflowHandler, this));
+      if (in_flight_)
+      {
+        pending_failures_.back().second->resetTimer();
+      }
+      // Increase pending failures in case of land only if we are not fliying
+    }
+    else if (!in_flight_ && missions_.at(mission_id_).getNextState(status.entity).compare("land") == 0)
+    {
+      pending_failures_.emplace_back(std::make_pair(status, std::make_unique<Timer>(opts_->fix_timeout)));
+      pending_failures_.back().second->sh_.connect(boost::bind(&Autonomy::failureTimerOverflowHandler, this));
+    }
+  }
+  else if (msg.status == watchdog_msgs::Status::NOMINAL || msg.status == watchdog_msgs::Status::DEFECT)
+  {
+    // search and remove fixed failure from pending failures, the fix must be the consequence of an action of fixing
+    // which can only be triggered if the hold status is requested. If for some reason we got a NOMINAL status without
+    // requiring a specific action we set the event to OTHER
+    const auto& it = std::find_if(pending_failures_.begin(), pending_failures_.end(),
+                                  [&status](const std::pair<SensorStatus, std::unique_ptr<Timer>>& failure) {
+                                    return failure.first.isSame(status);
+                                  });
+
+    if (it != pending_failures_.end())
+    {
+      it->second->stopTimer();
+      pending_failures_.erase(it);
+      status.event = Event::ENTITY_FIX;
+    }
+    else
+    {
+      status.event = Event::ENTITY_OTHER;
+    }
+  }
+  else
+  {
+    status.event = Event::ENTITY_OTHER;
+  }
+
+  return true;
+}
+
+bool Autonomy::getRequestfromMsg(const mission_sequencer::MissionRequest& msg, std::string& request_str)
+{
+  // Get request
+  switch (msg.request)
+  {
     case mission_sequencer::MissionRequest::ABORT:
       request_str = "abort";
       break;
@@ -562,124 +586,146 @@ namespace autonomy {
       break;
     default:
       return false;
-    }
-    return true;
   }
+  return true;
+}
 
-  void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStampedConstPtr& msg) {
+void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArrayStampedConstPtr& msg)
+{
+  // Loop through all the chenges with respect to last iteration
+  for (const auto& it : msg->data.changes)
+  {
+    // Define status
+    SensorStatus status;
 
-    // Loop through all the chenges with respect to last iteration
-    for (const auto &it : msg->data.changes) {
+    // Assign time information
+    status.timestamp = msg->header.stamp.toSec();
 
-      // Define status
-      SensorStatus status;
+    // Parse information of status changes
+    if (getSensorStatusFromMsg(it, status))
+    {
+      std::string code = std::to_string(status.entity) + std::to_string(status.type) + std::to_string(status.event);
+      logger_.logMessage(state_->getStringFromState(), opts_->watchdog_status_topic, true,
+                         "[watchdog status message] EntityTypeEvent code: " + code);
 
-      // Assign time information
-      status.timestamp = msg->header.stamp.toSec();
+      // Check event
+      if (status.event != Event::ENTITY_OTHER)
+      {
+        // Define auxilliary strings
+        std::string entity;
+        std::string type;
 
-      // Parse information of status changes
-      if (getSensorStatusFromMsg(it, status)) {
-        logger_.logMessage(state_->getStringFromState(), opts_->watchdog_status_topic,
-                           true, "status change: " + std::to_string(status.entity) + std::to_string(status.type) + std::to_string(status.event));
-
-        // Check event
-        if (status.event != Event::ENTITY_OTHER) { 
-
-          // Define auxilliary strings
-          std::string entity;
-          std::string type;
-
-          if (status.event == Event::ENTITY_FAILURE) {
-
-            // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromEntity
-            if (!getStringFromEntity(status.entity, entity)) {
-              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl);
-            }
-
-            // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
-            if (!getStringFromType(status.type, type)) {
-              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl);
-            }
-
-            AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")));
-            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Sensor failure reported by the watchdog <<< \n")));
-            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Error code:  " + std::to_string(status.entity) + std::to_string(status.type) + std::to_string(status.event) + "\n")));
-            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Entity:      " + entity + "\n")));
-            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Type:        " + type + "\n")));
-            AUTONOMY_UI_STREAM(BOLD(YELLOW("-------------------------------------------------\n")) << std::endl);
-
-            // Failure -- search an action (next state) on specific mission (mission id) [Next states strings can be: continue, hold, land, failure]
-            // If the state string is not failure and we are not armed yet then do not perform any state transition
-            if (missions_.at(mission_id_).getNextState(status.entity).compare("failure") != 0) {
-              if (in_flight_) {
-                stateTransition(missions_.at(mission_id_).getNextState(status.entity));
-              }
-            } else {
-              stateTransition("failure");
-            }
-
-            // Always perform an action to react to the failure (the action can be NOTHING)
-            watchdogActionRequest(status, it);
-
-          } else if (status.event == Event::ENTITY_FIX) {
-
-            // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromEntity
-            if (!getStringFromEntity(status.entity, entity)) {
-              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl);
-            }
-
-            // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
-            if (!getStringFromType(status.type, type)) {
-              AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl);
-            }
-
-            AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")));
-            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Sensor fix reported by the watchdog <<< \n")));
-            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Entity:      " + entity + "\n")));
-            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Type:        " + type + "\n")));
-            AUTONOMY_UI_STREAM(BOLD(GREEN("-------------------------------------------------\n")) << std::endl);
-
-            // Fix -- At this stage the pending failure relative to the fix has already been removed.
-            // Check if pending failure size == 0 then stop holding and resulme the mission otherwise keep holding
-            if (pending_failures_.size() == 0) {
-
-              // Check if we are in mission (we could have a fix before taking off)
-              if (in_mission_) {
-
-                // Call state transition to PERFORM_MISSION
-                stateTransition("perform_mission");
-
-                // Resume mission
-                missionSequencerRequest(mission_sequencer::MissionRequest::RESUME);
-
-              } else {
-                AUTONOMY_UI_STREAM(BOLD(RED(" >>> Received Fix while not flying.\n")) << std::endl);
-              }
-            }
+        if (status.event == Event::ENTITY_FAILURE)
+        {
+          // Redundant check, this should never fail.
+          // If a failure happend then not all the possible choices are covered by getStringFromEntity
+          if (!getStringFromEntity(status.entity, entity))
+          {
+            logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                          formatMsg("[watchdogStatusCallback][FAILURE] No string defined for required entity: " +
+                                    std::to_string(status.entity)));
           }
 
-        } else if (it.status == watchdog_msgs::Status::DEFECT) {
-            // TODO: Log the Defect
+          // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
+          if (!getStringFromType(status.type, type))
+          {
+            logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                          formatMsg("[watchdogStatusCallback][FAILURE] No string defined for required type: " +
+                                    std::to_string(status.type)));
+          }
+
+          // Print failure report
+          logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                        formatFailure(code, entity, type));
+
+          // Failure -- search an action (next state) on specific mission (mission id) [Next states strings can be:
+          // continue, hold, land, failure] If the state string is not failure and we are not armed yet then do not
+          // perform any state transition
+          if (missions_.at(mission_id_).getNextState(status.entity).compare("failure") != 0)
+          {
+            if (in_flight_)
+            {
+              stateTransition(missions_.at(mission_id_).getNextState(status.entity));
+            }
+          }
+          else
+          {
+            stateTransition("failure");
+          }
+
+          // Always perform an action to react to the failure (the action can be NOTHING)
+          watchdogActionRequest(status, it);
         }
-      } else {
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> Wrong message received from watchdog.\n")) << std::endl);
+        else if (status.event == Event::ENTITY_FIX)
+        {
+          // Redundant check, this should never fail, if so not all the possible choices are coverd by
+          // getStringFromEntity
+          if (!getStringFromEntity(status.entity, entity))
+          {
+            logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                          formatMsg("[watchdogStatusCallback][FIX] No string defined for required entity: " +
+                                    std::to_string(status.entity)));
+          }
+
+          // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
+          if (!getStringFromType(status.type, type))
+          {
+            logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                          formatMsg("[watchdogStatusCallback][FIX] No string defined for required type: " +
+                                    std::to_string(status.type)));
+          }
+
+          // Print fix report
+          logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatFix(entity, type));
+
+          // Fix -- At this stage the pending failure relative to the fix has already been removed.
+          // Check if pending failure size == 0 then stop holding and resulme the mission otherwise keep holding
+          if (pending_failures_.size() == 0)
+          {
+            // Check if we are in mission (we could have a fix before taking off)
+            if (in_mission_)
+            {
+              // Call state transition to PERFORM_MISSION
+              stateTransition("perform_mission");
+
+              // Resume mission
+              missionSequencerRequest(mission_sequencer::MissionRequest::RESUME);
+            }
+            else
+            {
+              logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                            formatMsg("[watchdogStatusCallback][FIX] Received Fix while not flying"));
+            }
+          }
+        }
+      }
+      else if (it.status == watchdog_msgs::Status::DEFECT)
+      {
+        // TODO: Log the Defect
       }
     }
+    else
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                    formatMsg("[watchdogStatusCallback] Wrong message received from watchdog"));
+    }
   }
+}
 
-  void Autonomy::watchdogActionRequest(SensorStatus& status, const watchdog_msgs::Status& status_msg) {
+void Autonomy::watchdogActionRequest(SensorStatus& status, const watchdog_msgs::Status& status_msg)
+{
+  // Check existence of subscribers
+  if (pub_watchdog_action_.getNumSubscribers() > 0)
+  {
+    // Define action and action message
+    watchdog_msgs::ActionStamped action_msg;
 
-    // Check existence of subscribers
-    if (pub_watchdog_action_.getNumSubscribers() > 0) {
+    // Fill action message
+    action_msg.header.stamp = ros::Time::now();
+    action_msg.action.entity = status_msg;
 
-      // Define action and action message
-      watchdog_msgs::ActionStamped action_msg;
-
-      // Fill action message
-      action_msg.header.stamp = ros::Time::now();
-      action_msg.action.entity = status_msg;
-
-      switch (status.action) {
+    switch (status.action)
+    {
       case Action::NOTHING:
         action_msg.action.action = watchdog_msgs::Action::NOTHING;
         break;
@@ -689,85 +735,97 @@ namespace autonomy {
       case Action::FIX_DRIVER:
         action_msg.action.action = watchdog_msgs::Action::FIX_DRIVER;
         break;
-      }
-
-      // Publish action message
-      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Action communicated to the watchdog.\n")) << std::endl);
-      logger_.logMessage(state_->getStringFromState(), opts_->watchdog_action_topic,
-                         false, "watchdog action: " + std::to_string(action_msg.action.action));
-      pub_watchdog_action_.publish(action_msg);
-
-    } else {
-
-      // Print info
-      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> No subscribers for watchdog action. Action will be ignored.\n")) << std::endl);
-
     }
 
+    // UI print
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                  formatMsg("Action communicated to the watchdog"));
+
+    // Log action message
+    logger_.logMessage(state_->getStringFromState(), opts_->watchdog_action_topic, false,
+                       "[watchdog action message] Action: " + std::to_string(action_msg.action.action));
+
+    // Publish action
+    pub_watchdog_action_.publish(action_msg);
+  }
+  else
+  {
+    // Print info
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                  formatMsg("No subscribers for watchdog action. Action will be ignored", 2));
+  }
+}
+
+void Autonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg)
+{
+  if (msg)
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Flat land detected"));
+    //    logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic, true,
+    //                       "[Landing detection message] Flat land detected");
+  }
+  else
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), " >>> Non flat land detected");
+    //    logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic, true,
+    //                       "[Landing detection message] Non-flat land detected");
   }
 
-  void Autonomy::landingDetectionCallback(const std_msgs::BoolConstPtr& msg) {
+  // Stop data recording after landing in case mission has been succesfully completed
+  if (land_expected_)
+  {
+    // Reset in_flight_ and land_expected_ flag
+    in_flight_ = false;
+    land_expected_ = false;
 
-
-    if (msg) {
-      AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Flat land detected.\n")) << std::endl);
-      logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic,
-                         true, "flat land detected");
-    } else {
-      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Non flat land detected.\n")) << std::endl);
-      logger_.logMessage(state_->getStringFromState(), opts_->landing_detection_topic,
-                         true, "non-flat land detected");
-    }
-
-    // Stop data recording after landing in case mission has been succesfully completed
-    if (land_expected_) {
-
-      // Call state transition to END MISSION
-      stateTransition("end_mission");
-
-    } else {
-
-      // Print info
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Unexpected land detected <<<\n")) << std::endl);
-      logger_.logInfo(state_->getStringFromState(), "landing was UNEXPECTED: initiating landing");
-
-      // Call state transition to LAND
-      stateTransition("land");
-    }
-
+    // Call state transition to END MISSION
+    stateTransition("end_mission");
   }
+  else
+  {
+    // Print info
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatMsg("Unexpected touchdown detected"));
 
-  void Autonomy::missionSequencerResponceCallback(const mission_sequencer::MissionResponseConstPtr& msg) {
+    // Call state transition to LAND
+    stateTransition("land");
+  }
+}
 
-    // Define request
-    std::string req;
+void Autonomy::missionSequencerResponceCallback(const mission_sequencer::MissionResponseConstPtr& msg)
+{
+  // Define request
+  std::string req;
 
-    // Get request and check
-    if (getRequestfromMsg(msg->request, req)) {
-      logger_.logMessage(state_->getStringFromState(), opts_->mission_sequencer_responce_topic,
-                         true, "sequencer: " + std::to_string(msg->request.request) + " -- " +
-                                   std::to_string(msg->response) + ", " + std::to_string(msg->completed));
+  // Get request and check
+  if (getRequestfromMsg(msg->request, req))
+  {
+    logger_.logMessage(state_->getStringFromState(), opts_->mission_sequencer_response_topic, true,
+                       "[mission sequencer message] Request: " + std::to_string(msg->request.request) + ", Response: " +
+                           std::to_string(msg->response) + ", Completed: " + std::to_string(msg->completed));
 
-      // Check pending request flag
-      if (ms_request_pending_) {
+    // Check pending request flag
+    if (ms_request_pending_)
+    {
+      // Reset pending request flag
+      ms_request_pending_ = false;
 
-        // Reset pending request flag
-        ms_request_pending_ = false;
+      // Check if mission sequencer request has been accepted
+      if (msg->response && msg->request.request != mission_sequencer::MissionRequest::UNDEF)
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                      formatMsg("Request [" + req + "] accepted from Mission Sequencer", 2));
 
-        // Check if mission sequencer request has been accepted
-        if (msg->response && msg->request.request != mission_sequencer::MissionRequest::UNDEF) {
-          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Request [" + req + "] accepted from Mission Sequencer.\n")) << std::endl);
-
-          // Acts specifically based on the request
-          switch (msg->request.request) {
-
+        // Acts specifically based on the request
+        switch (msg->request.request)
+        {
           case mission_sequencer::MissionRequest::ARM:
 
             break;
 
           case mission_sequencer::MissionRequest::TAKEOFF:
 
-            // Set in_flight_ and reset last_waypoint_reached_ flag
+            // Set in_flight_ flag
             in_flight_ = true;
 
             break;
@@ -788,15 +846,11 @@ namespace autonomy {
 
           case mission_sequencer::MissionRequest::LAND:
 
-            // If we are hovering and a lend is requested then set hovering_ flag
-            if (hovering_) {
+            // If we are hovering and a land is requested then reset hovering_ flag
+            if (hovering_)
+            {
               hovering_ = false;
             }
-
-            // Check if landing detection is active, if not transit to END_MISSION
-//            if (!opts_->activate_landing_detection && land_expected_) {
-//              stateTransition("end_mission");
-//            }
 
             break;
 
@@ -813,573 +867,694 @@ namespace autonomy {
             armed_ = false;
 
             // Stop flight timer
-            if (!multiple_touchdowns_ || (filepaths_cnt_ == static_cast<int>(missions_.at(mission_id_).getTouchdowns()))) {
+            if (!multiple_touchdowns_ ||
+                (filepaths_cnt_ == static_cast<int>(missions_.at(mission_id_).getTouchdowns())))
+            {
               flight_timer_->stopTimer();
             }
 
             break;
-
-          }
         }
-
-        // Check if mission sequencer request has been rejected
-        if (!msg->response && !msg->completed) {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Request [" + req + "] for mission ID: " + std::to_string(msg->request.id) + "  rejected from Mission Sequencer.\n")) << std::endl);
-          stateTransition("failure");
-        }
-
-        // Check if mission has been compoleted (last waypoint reached)
-      } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::UNDEF) {
-
-        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Mission ID: " + std::to_string(msg->request.id) + " succesfully reached last waypoint.\n")) << std::endl);
-
-        // set last_waypoint_reached_ flag
-        last_waypoint_reached_ = true;
-
-        // Check if sequencing of multiple in-air files happens
-        if (multiple_touchdowns_ && opts_->sequence_multiple_in_flight_ && (filepaths_cnt_ < static_cast<int>(missions_.at(mission_id_).getTouchdowns()))) {
-          // Print info
-          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Iteration " + std::to_string(filepaths_cnt_) + " of mission ID: " + std::to_string(mission_id_) + " succesfully completed.\n\n")));
-          AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Continuing with next iteration ...\n")) << std::endl);
-
-          // Unset mission
-          in_mission_ = false;
-
-          // Increment the filepaths counter
-          ++filepaths_cnt_;
-
-          // Set filename to waypoint parser
-          waypoints_parser_->setFilename(missions_.at(mission_id_).getFilepaths().at(static_cast<size_t>(filepaths_cnt_)));
-
-          // Parse waypoint file
-          waypoints_parser_->readParseCsv();
-
-          // Get the data
-          waypoints_ = waypoints_parser_->getData();
-
-          // Check existence of subscribers, if not trigger a land command
-          // Check if we have loaded waypoints, if so send waypoints to mission sequencer, otherwise trigger a land command
-          if (waypoints_.size() > 0 && pub_mission_sequencer_waypoints_.getNumSubscribers() > 0) {
-
-            // Print info
-            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Communicating waypoints to the mission sequencer...\n")) << std::endl);
-
-            // Define waypoints message to mission sequencer
-            mission_sequencer::MissionWaypoint wp;
-            mission_sequencer::MissionWaypointArray wps;
-
-            // Set header and clear buffer action
-            wps.header.stamp = ros::Time::now();
-            wps.action = mission_sequencer::MissionWaypointArray::CLEAR;
-
-            // Assign waypoints TODO
-            for (const auto &it : waypoints_) {
-              wp.x = it.x;
-              wp.y = it.y;
-              wp.z = it.z;
-              wp.yaw = it.yaw;
-              wp.holdtime = it.holdtime;
-              wps.waypoints.emplace_back(wp);
-            }
-
-            // publish mission waypoints
-            pub_mission_sequencer_waypoints_.publish(wps);
-
-            // set flags
-            in_mission_ = true;
-            last_waypoint_reached_ = false;
-
-            // Setting state to PERFORM_MISSION
-            stateTransition("perform_mission");
-
-          } else {
-
-            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Impossible to communicate waypoints to mission sequencer.\n")) << std::endl);
-
-            // Call state transition to LAND
-            stateTransition("land");
-          }
-
-        } else {
-          // Check parameter server
-          bool hover_after_mission_completion;
-          nh_.getParam("hover_after_mission_completion", hover_after_mission_completion);
-
-          // Check if the parameter has changed from previously assigned value
-          if (hover_after_mission_completion != opts_->hover_after_mission_completion) {
-            // Assign new flag
-            opts_->hover_after_mission_completion = hover_after_mission_completion;
-            // Print info
-            AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Changed behaviour at mission completion: Hover is now " + opts_->getStringfromBool(opts_->hover_after_mission_completion) + "\n")) << std::endl);
-          }
-
-          // Call state transition to LAND or request HOVER to mission sequencer based on param
-          if (!opts_->hover_after_mission_completion) {
-            stateTransition("land");
-          } else {
-            // Print info
-            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Hovering...\n")) << std::endl);
-
-            // Request hovering to the mission sequencer if not hovering
-            if (!hovering_) {
-              missionSequencerRequest(mission_sequencer::MissionRequest::HOVER);
-            } else {
-              AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> the platform is already hovering, skipped HOVER request\n")) << std::endl);
-            }
-          }
-        }
-
-        // Check if arm request has been completed
-      } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::ARM) {
-
-        // Set armed_ flag
-        armed_ = true;
-
-        // Reset flight_timer only at first arming (if not active)
-        if (!flight_timer_->isActive()) {
-          flight_timer_->resetTimer();
-        }
-
-      } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::TAKEOFF) {
-
-        // Set in_mission_ and last_waypoint_reached_ flag
-        in_mission_ = true;
-        last_waypoint_reached_ = false;
-
-        // Subscribe to landing after taking off if detection if active
-        if (opts_->activate_landing_detection) {
-          sub_landing_detection_ = nh_.subscribe(opts_->landing_detection_topic, 1, &Autonomy::landingDetectionCallback, this);
-        }
-
-      } else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::LAND) {
-
-        // Check if landing detection is active, if not transit to END_MISSION
-        if (!opts_->activate_landing_detection && land_expected_) {
-          stateTransition("end_mission");
-        }
-
-      } else {
-        AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Received responce from mission sequencer without a prior request. Ignoring it.\n")) << std::endl);
       }
-    } else {
-      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Received responce from mission sequencer to a unknown request. Ignoring it.\n")) << std::endl);
+
+      // Check if mission sequencer request has been rejected
+      if (!msg->response && !msg->completed)
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatMsg("Request [" + req + "] for mission ID: " + std::to_string(msg->request.id) +
+                                    "  rejected from Mission Sequencer",
+                                2));
+        stateTransition("failure");
+      }
+
+      // Check if mission has been compoleted (last waypoint reached)
+    }
+    else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::UNDEF)
+    {
+      logger_.logUI(
+          state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+          formatMsg("Mission ID: " + std::to_string(msg->request.id) + " succesfully reached last waypoint", 2));
+
+      // set last_waypoint_reached_ flag
+      last_waypoint_reached_ = true;
+
+      // Check if sequencing of multiple in-air files happens
+      if (multiple_touchdowns_ && opts_->sequence_multiple_in_flight_ &&
+          (filepaths_cnt_ < static_cast<int>(missions_.at(mission_id_).getTouchdowns())))
+      {
+        stateTransition("mission_iterator");
+      }
+      else
+      {
+        // Check parameter server (this parameter can be changed during runtime)
+        bool hover_after_mission_completion;
+        nh_.getParam("hover_after_mission_completion", hover_after_mission_completion);
+
+        // Check if the parameter has changed from previously assigned value
+        if (hover_after_mission_completion != opts_->hover_after_mission_completion)
+        {
+          // Assign new flag
+          opts_->hover_after_mission_completion = hover_after_mission_completion;
+          // Print info
+          logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                        formatMsg("Changed behaviour at mission completion: Hover is now " +
+                                  opts_->getStringfromBool(opts_->hover_after_mission_completion)));
+        }
+
+        // Call state transition to LAND or request HOVER to mission sequencer based on param
+        if (!opts_->hover_after_mission_completion)
+        {
+          stateTransition("land");
+        }
+        else
+        {
+          // Print info
+          logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Hovering..."));
+
+          // Request hovering to the mission sequencer if not hovering
+          if (!hovering_)
+          {
+            missionSequencerRequest(mission_sequencer::MissionRequest::HOVER);
+          }
+          else
+          {
+            logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                          formatMsg("the platform is already hovering, skipped HOVER request"));
+          }
+        }
+      }
+    }
+    else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::ARM)
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Arming completed", 2));
+
+      // Set armed_ flag
+      armed_ = true;
+
+      // Reset flight_timer only at first arming (if not active)
+      if (!flight_timer_->isActive())
+      {
+        flight_timer_->resetTimer();
+      }
+    }
+    else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::TAKEOFF)
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Takeoff completed", 2));
+
+      // Set in_mission_ and last_waypoint_reached_ flag
+      in_mission_ = true;
+      last_waypoint_reached_ = false;
+
+      // Subscribe to landing after taking off if detection if active
+      if (opts_->activate_landing_detection)
+      {
+        sub_landing_detection_ =
+            nh_.subscribe(opts_->landing_detection_topic, 1, &Autonomy::landingDetectionCallback, this);
+      }
+    }
+    else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::LAND)
+    {
+      // Check if landing detection is active, if not transit to END_MISSION
+      if (!opts_->activate_landing_detection && land_expected_)
+      {
+        // reset land_expected_ flag
+        land_expected_ = false;
+
+        // Call state transition to END MISSION
+        stateTransition("end_mission");
+      }
+    }
+    else
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                    formatMsg("Received response from mission sequencer without a prior request. Ignoring it", 2));
     }
   }
+  else
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                  formatMsg("Received response from mission sequencer to a unknown request. Ignoring it", 2));
+  }
+}
 
-  void Autonomy::missionSequencerRequest(const int& request) {
+void Autonomy::missionSequencerRequest(const int& request)
+{
+  // Check existence of subscribers
+  if (pub_mission_sequencer_request_.getNumSubscribers() > 0)
+  {
+    // Check to not be in failure state
+    if (state_->getStringFromState().compare("failure") != 0)
+    {
+      // Define request message to mission sequencer
+      mission_sequencer::MissionRequest req;
 
-    // Check existence of subscribers
-    if (pub_mission_sequencer_request_.getNumSubscribers() > 0) {
-
-      // Check to not be in failure state
-      if (state_->getStringFromState().compare("failure") != 0) {
-
-        // Define request message to mission sequencer
-        mission_sequencer::MissionRequest req;
-
-        // Set mission id and request
-        req.header.stamp = ros::Time::now();
-        req.id = uint8_t(mission_id_);
-        req.request = uint8_t(request);
+      // Set mission id and request
+      req.header.stamp = ros::Time::now();
+      req.id = uint8_t(mission_id_);
+      req.request = uint8_t(request);
 
       // publish mission start request
-      logger_.logMessage(state_->getStringFromState(), opts_->mission_sequencer_request_topic,
-                         false, "sequencer request: " + std::to_string(req.request));
+      logger_.logMessage(state_->getStringFromState(), opts_->mission_sequencer_request_topic, false,
+                         "[mission sequencer message] Request: " + std::to_string(req.request));
       pub_mission_sequencer_request_.publish(req);
 
-        // Set flag
-        ms_request_pending_ = true;
-
-      } else {
-
-        // Print info
-        std::cout << BOLD(RED(" >>> No communication allowed to Mission sequencer from FAILURE.\n")) << std::endl;
-
-      }
-
-    } else {
-
-      // Print info
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> No subscribers for mission sequencer request.\n")) << std::endl);
-
-      // At this stage we are not flying yet, state transition to FAILURE
-      stateTransition("failure");
-
+      // Set flag
+      ms_request_pending_ = true;
     }
-
+    else
+    {
+      // Print info
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                    formatMsg("No communication allowed to Mission sequencer from FAILURE"));
+    }
   }
+  else
+  {
+    // Print info
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatMsg("No subscribers for mission sequencer request", 2));
 
-  bool Autonomy::startWatchdog() {
+    // At this stage we are not flying yet, state transition to FAILURE
+    stateTransition("failure");
+  }
+}
 
-    // Define service request
-    watchdog_msgs::Start watchdog_start;
-    watchdog_start.request.header.stamp = ros::Time::now();
-    watchdog_start.request.startup_time = opts_->watchdog_startup_time;
+bool Autonomy::startWatchdog()
+{
+  // Define service request
+  watchdog_msgs::Start watchdog_start;
+  watchdog_start.request.header.stamp = ros::Time::now();
+  watchdog_start.request.startup_time = opts_->watchdog_startup_time;
 
-    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Starting Watchdog... Please wait\n")) << std::endl);
+  // UI and log
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Starting Watchdog... Please wait", 2));
 
-    // Call service request
-    logger_.logServiceCall(state_->getStringFromState(), opts_->watchdog_start_service_name);
-    if (watchdog_start_service_client_.call(watchdog_start)) {
+  // Call service request
+  logger_.logServiceCall(state_->getStringFromState(), opts_->watchdog_start_service_name);
+  if (watchdog_start_service_client_.call(watchdog_start))
+  {
+    // Check response
+    if (watchdog_start.response.successful)
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                    formatMsg("Watchdog is running", 2));
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->watchdog_start_service_name,
+                                 "Watchdog started successfully");
+      // Subscriber to watchdog (system status) heartbeat
+      sub_watchdog_heartbeat_ =
+          nh_.subscribe(opts_->watchdog_heartbeat_topic, 1, &Autonomy::watchdogHeartBeatCallback, this);
 
-      // Check responce
-      if(watchdog_start.response.successful) {
+      // Subscribe to watchdog status changes
+      sub_watchdog_status_ = nh_.subscribe(opts_->watchdog_status_topic, 1, &Autonomy::watchdogStatusCallback, this);
 
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->watchdog_start_service_name, "watchdog started successfully");
-        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Watchdog is running\n")) << std::endl);
+      // Success
+      return true;
+    }
+    else
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                    formatMsg("FAILED TO START WATCHDOG - Please perform a system hard restart", 2));
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->watchdog_start_service_name,
+                                 "Failed to start watchdog");
 
-        // Subscriber to watchdog (system status) heartbeat
-        sub_watchdog_heartbeat_ = nh_.subscribe(opts_->watchdog_heartbeat_topic, 1, &Autonomy::watchdogHeartBeatCallback, this);
+      // Define status to get debug info
+      SensorStatus status;
 
-        // Subscribe to watchdog status changes
-        sub_watchdog_status_ = nh_.subscribe(opts_->watchdog_status_topic, 1, &Autonomy::watchdogStatusCallback, this);
+      // Get timestamp
+      status.timestamp = watchdog_start.response.header.stamp.toSec();
 
-        // Success
-        return true;
+      // Log debug info
+      if (getSensorStatusFromMsg(watchdog_start.response.status, status))
+      {
+        // Define auxilliary strings
+        std::string entity;
+        std::string type;
 
-      } else {
-
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->watchdog_start_service_name, "failed to start watchdog");
-        AUTONOMY_UI_STREAM(BOLD(RED(" >>> FAILED TO START WATCHDOG --- Please perform a system hard restart <<< \n")) << std::endl);
-
-        // Define status to get debug info
-        SensorStatus status;
-
-        // Get timestamp
-        status.timestamp = watchdog_start.response.header.stamp.toSec();
-
-        // print debug info
-        if (getSensorStatusFromMsg(watchdog_start.response.status, status)) {
-
-          // Define auxilliary strings
-          std::string entity;
-          std::string type;
-
-          // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromEntity
-          if (!getStringFromEntity(status.entity, entity)) {
-            AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required entity: " + std::to_string(status.entity) + "\n")) << std::endl);
-          }
-
-          // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
-          if (!getStringFromType(status.type, type)) {
-            AUTONOMY_UI_STREAM(BOLD(RED(" >>> No string defined for required type: " + std::to_string(status.type) + "\n")) << std::endl);
-          }
-
-          AUTONOMY_UI_STREAM(BOLD(RED("------------------------------------------------\n")));
-          AUTONOMY_UI_STREAM(BOLD(RED(" DEBUG INFORMATION\n")));
-          AUTONOMY_UI_STREAM(BOLD(RED(" - Entity:      " + entity + "\n")));
-          AUTONOMY_UI_STREAM(BOLD(RED(" - Type:        " + type + "\n")));
-          AUTONOMY_UI_STREAM(BOLD(RED(" - Debug name : " + status.debug_name + "\n")));
-          AUTONOMY_UI_STREAM(BOLD(RED(" - Debug info : " + status.debug_info + "\n")));
-          AUTONOMY_UI_STREAM(BOLD(RED("-------------------------------------------------\n")) << std::endl);
+        // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromEntity
+        if (!getStringFromEntity(status.entity, entity))
+        {
+          logger_.logInfo(state_->getStringFromState(), "[watchdog start failure] getStringFromEntity: no string "
+                                                        "deifined for required entity: " +
+                                                            std::to_string(status.entity));
         }
 
-        // Failure
-        return false;
+        // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
+        if (!getStringFromType(status.type, type))
+        {
+          logger_.logInfo(state_->getStringFromState(), "[watchdog start failure] getStringFromType: no string defined "
+                                                        "for required type: " +
+                                                            std::to_string(status.type));
+        }
+
+        logger_.logInfo(state_->getStringFromState(), "[watchdog start failure] debug name: " + status.debug_name);
+        logger_.logInfo(state_->getStringFromState(), "[watchdog start failure] debug info: " + status.debug_info);
       }
-    } else {
 
       // Failure
       return false;
     }
-
-
   }
+  else
+  {
+    // Failure
+    return false;
+  }
+}
 
-  void Autonomy::missionSelection() {
-
-    // If using the user interface
-    if (opts_->activate_user_interface) {
-
-      // Print missions
-      AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Please select one of the following mission by inserting the mission ID\n\n")));
-      for (auto &it : missions_) {
-        AUTONOMY_UI_STREAM(BOLD(GREEN("      - ID: ")) << it.first << BOLD(GREEN(" DESCRIPTION: ")) << it.second.getDescription() << "\n");
-      }
-
-      // Get ID of mission being executed
-      logger_.logInfo(state_->getStringFromState(), "asking user to select mission");
-      AUTONOMY_UI_STREAM("\n" << BOLD(GREEN(" >>> Mission ID: ")) << std::flush);
-      std::cin >> mission_id_;
-      logger_.logUserInput(state_->getStringFromState(), std::to_string(mission_id_));
-
-      // Check validity of mission id
-      if (mission_id_ < 1 || mission_id_ > static_cast<int>(missions_.size())) {
-        AUTONOMY_UI_STREAM("\n" << BOLD(RED(" >>> Wrong mission ID chosen\n")) << std::endl);
-
-        // Call recursively mission selection
-        missionSelection();
-      }
-
-    } else {
-      logger_.logInfo(state_->getStringFromState(), "UI disabled --> choosing mission with ID " + std::to_string(opts_->mission_id_no_ui));
-
-      // Load mission from parameter
-      mission_id_ = opts_->mission_id_no_ui;
-
+void Autonomy::missionSelection()
+{
+  // If using the user interface
+  if (opts_->activate_user_interface)
+  {
+    // UI Missions selection
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                  formatMsg("Please select one of the following mission by inserting the mission ID", 2));
+    for (auto& it : missions_)
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                    formatMsg("\t - ID: " + std::to_string(it.first) + '\t' + it.second.getDescription()));
     }
 
-    AUTONOMY_UI_STREAM(BOLD(GREEN("\n >>> Loaded mission with ID: " << std::to_string(mission_id_) << "\n")) << std::endl);
+    // Get ID of mission being executed
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), "\n >>> Mission ID: ");
+    std::cin >> mission_id_;
+    logger_.logUserInput(state_->getStringFromState(), std::to_string(mission_id_));
+  }
+  else
+  {
+    // Log
+    logger_.logInfo(state_->getStringFromState(),
+                    "[UI disabled] Choosing mission with ID " + std::to_string(opts_->mission_id_no_ui));
 
-    if (missions_.at(mission_id_).getTouchdowns() > 0) {
-      AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Mission with Multiple touchdowns: " << std::to_string(missions_.at(mission_id_).getTouchdowns()) << " touchdown(s)\n")) << std::endl);
+    // Load mission from parameter
+    mission_id_ = opts_->mission_id_no_ui;
+  }
+
+  // Check validity of mission id
+  if (mission_id_ < 1 || mission_id_ > static_cast<int>(missions_.size()))
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE), "\n >>> Wrong mission ID chosen\n\n");
+
+    // Call recursively mission selection
+    missionSelection();
+  }
+  else
+  {
+    // UI
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                  formatMsg("Loaded mission with ID: " + std::to_string(mission_id_), 2));
+
+    // If mission has multiple touchdowns then print a message
+    if (missions_.at(mission_id_).getTouchdowns() > 0)
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                    formatMsg("Mission with Multiple touchdowns: " +
+                                  std::to_string(missions_.at(mission_id_).getTouchdowns()) + " touchdown(s)",
+                              2));
       multiple_touchdowns_ = true;
     }
   }
+}
 
-  bool Autonomy::preFlightChecks() {
+bool Autonomy::preFlightChecks()
+{
+  // UI and log
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Starting Pre-Flight Checks..."));
 
-    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Starting Pre-Flight Checks...\n")) << std::endl);
-    logger_.logInfo(state_->getStringFromState(), "starting pre-flight checks");
-
-    if (opts_->perform_takeoff_check && !takeoffChecks()) {
-      return false;
-    }
-
-    if (opts_->perform_estimator_check && !estimatorCheck()) {
-      return false;
-    }
-
-    // Trigger State estimation initialization if a cascade of estimators are used
-    if (opts_->estimator_init_service && !initializeStateEstimation()) {
-      return false;
-    }
-
-    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Pre-Flight checks succeeded\n")) << std::endl);
-    logger_.logInfo(state_->getStringFromState(), "suceeded pre-flight checks -> ARMING");
-    return true;
-
+  if (opts_->perform_takeoff_check && !takeoffChecks())
+  {
+    return false;
   }
 
-  bool Autonomy::takeoffChecks() {
+  if (opts_->perform_estimator_check && !estimatorCheck())
+  {
+    return false;
+  }
 
-    // Define takeoff request
-    std_srvs::Trigger takeoff;
+  // Trigger State estimation initialization
+  if (opts_->estimator_init_service && !initializeStateEstimation())
+  {
+    return false;
+  }
 
-    // service call to check if we are ready to takeoff
+  // UI and log
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Pre-Flight checks succeeded", 2));
+
+  return true;
+}
+
+bool Autonomy::takeoffChecks()
+{
+  // Define takeoff request
+  std_srvs::Trigger takeoff;
+
+  // UI and Log
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Starting Takeoff Checks..."));
+
+  // service call to check if we are ready to takeoff
+  if (takeoff_service_client_.call(takeoff))
+  {
     logger_.logServiceCall(state_->getStringFromState(), opts_->takeoff_service_name);
-    if (takeoff_service_client_.call(takeoff)) {
 
-      // Check responce
-      if(takeoff.response.success) {
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->takeoff_service_name, "takeoff checks succeeded");
-        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Vehicle flat on the ground\n")));
-        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Takeoff checks succeeded\n")) << std::endl);
-      }
-    } else {
+    // Check response
+    if (takeoff.response.success)
+    {
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->takeoff_service_name, "takeoff checks succeeded");
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                    formatMsg("Takeoff checks succeeded", 2));
+    }
+    else
+    {
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->takeoff_service_name, "Takeoff checks failed");
       takeoff.response.success = false;
-      logger_.logServiceAnswer(state_->getStringFromState(), opts_->takeoff_service_name, "takeoff checks failed");
     }
-
-    if (!takeoff.response.success) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Takeoff checks failed\n")) << std::endl);
-      logger_.logInfo(state_->getStringFromState(), "failed takeoff checks -> TERMINATING");
-      return false;
-    }
-
-    return true;
+  }
+  else
+  {
+    takeoff.response.success = false;
+    logger_.logInfo(state_->getStringFromState(), "[Takeoff checks] Failed to call service");
   }
 
-  bool Autonomy::estimatorCheck() {
+  if (!takeoff.response.success)
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE), formatMsg("Takeoff checks failed", 2));
+    return false;
+  }
 
-    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> Please, Initialize estimator now\n")));
-    AUTONOMY_UI_STREAM(BOLD(YELLOW(" >>> When done, press [SPACE] and then [ENTER] to start the experiment")));
-    logger_.logInfo(state_->getStringFromState(), "asking user start estimator initialization checks");
-    std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
-    AUTONOMY_UI_STREAM(std::endl);
-    logger_.logUserInput(state_->getStringFromState(), "[SPACE]");
-    logger_.logUserInput(state_->getStringFromState(), "[ENTER]");
+  return true;
+}
 
-    // Define takeoff request
-    std_srvs::Trigger superivsion;
+bool Autonomy::estimatorCheck()
+{
+  // Estimator init UI
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Please, Initialize estimator now"));
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("When done, press [SPACE] and then [ENTER] to start the experiment", 0));
+  std::cin.clear();
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
+  logger_.logUserInput(state_->getStringFromState(), "[SPACE]");
+  logger_.logUserInput(state_->getStringFromState(), "[ENTER]");
 
-    // service call to check if we are ready to takeoff
+  // Define takeoff request
+  std_srvs::Trigger superivsion;
+
+  // service call to check if we are ready to takeoff
+  if (estimator_supervisor_service_client_.call(superivsion))
+  {
     logger_.logServiceCall(state_->getStringFromState(), opts_->estimator_supervisor_service_name);
-    if (estimator_supervisor_service_client_.call(superivsion)) {
 
-      // Check responce
-      if(superivsion.response.success) {
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks succeeded");
-        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> State estimator Correctly initilized\n")) << std::endl);
-      } else {
-        superivsion.response.success = false;
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks failed");
-      }
-    } else {
+    // Check response
+    if (superivsion.response.success)
+    {
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->estimator_supervisor_service_name,
+                                 "State estimator checks succeeded");
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                    formatMsg("State estimator Correctly initilized", 2));
+    }
+    else
+    {
       superivsion.response.success = false;
-      logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_supervisor_service_name, "state estimator checks failed");
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->estimator_supervisor_service_name,
+                                 "State estimator checks failed");
     }
-
-    if (!superivsion.response.success) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl);
-      logger_.logInfo(state_->getStringFromState(), "failed estimator checks -> TERMINATING");
-      return false;
-    }
-
-    return true;
+  }
+  else
+  {
+    superivsion.response.success = false;
+    logger_.logInfo(state_->getStringFromState(), "[Estimator checks] Failed to call service");
   }
 
-  bool Autonomy::initializeStateEstimation() {
+  if (!superivsion.response.success)
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatMsg("State estimator initialization failed", 2));
+    return false;
+  }
 
-    // Define init service
-    std_srvs::SetBool init;
+  return true;
+}
 
-    // Set data recording start request
-    init.request.data = true;
+bool Autonomy::initializeStateEstimation()
+{
+  // Define init service
+  std_srvs::SetBool init;
 
-    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Initializing state estimator... Please wait\n")));
+  // Set data recording start request
+  init.request.data = true;
+
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Initializing state estimator... Please wait"));
+
+  // service call to check if we are ready to takeoff
+  if (estimator_init_service_client_.call(init))
+  {
+    logger_.logServiceCall(state_->getStringFromState(), opts_->estimator_init_service_name);
+
+    // Check response
+    if (init.response.success)
+    {
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->estimator_init_service_name,
+                                 "State estimator intialization succeed");
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                    formatMsg("State estimator intialization succeeded", 2));
+    }
+    else
+    {
+      init.response.success = false;
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->estimator_init_service_name,
+                                 "State estimator initialization failed");
+    }
+  }
+  else
+  {
+    init.response.success = false;
+    logger_.logInfo(state_->getStringFromState(), "[State estimator initialization] Failed to call service");
+  }
+
+  if (!init.response.success)
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatMsg("State estimator initialization failed", 2));
+    return false;
+  }
+
+  return true;
+}
+
+bool Autonomy::InFlightSensorInit()
+{
+  // Define init service
+  std_srvs::Empty init;
+
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Starting in-flight initialization..."));
+
+  // Loop trough all the service call
+  for (size_t i = 0; i < inflight_sensor_init_service_client_.size(); ++i)
+  {
+    // Print info
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                  formatMsg("Calling service: " + opts_->inflight_sensor_init_services_name.at(i)));
 
     // service call to check if we are ready to takeoff
-    logger_.logServiceCall(state_->getStringFromState(), opts_->estimator_init_service_name);
-    if (estimator_init_service_client_.call(init)) {
-
-      // Check responce
-      if (init.response.success) {
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator correctly initialized");
-        AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> State estimator initialized succesfully\n")) << std::endl);
-      } else {
-        init.response.success = false;
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator wrongly initialized");
-      }
-    } else {
-      init.response.success = false;
-      logger_.logServiceAnswer(state_->getStringFromState(), opts_->estimator_init_service_name, "state estimator wrongly initialized");
-    }
-
-    if (!init.response.success) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> State estimator initialization failed\n")) << std::endl);
-      logger_.logInfo(state_->getStringFromState(), "failed estimator initialization -> TERMINATING");
+    logger_.logServiceCall(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i));
+    if (!inflight_sensor_init_service_client_.at(i).call(init))
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                    formatMsg(opts_->inflight_sensor_init_services_name.at(i) + " failed"));
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i),
+                                 "Failed in-flight init");
       return false;
     }
-
-    return true;
+    else
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                    formatMsg(opts_->inflight_sensor_init_services_name.at(i) + " succeeded"));
+      logger_.logServiceResponse(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i),
+                                 "Succeeded in-flight init");
+    }
   }
 
-  bool Autonomy::InFlightSensorInit() {
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                formatMsg("All the sensors have been correctly initialized", 2));
+  return true;
+}
 
-    // Define init service
-    std_srvs::Empty init;
+void Autonomy::DataRecording(const bool& start_stop)
+{
+  // Define data recording
+  std_srvs::SetBool data_rec;
 
-    AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Starting in flight initialization...\n\n")));
+  // Set data recording start/stop request
+  data_rec.request.data = start_stop;
 
-    // Loop trough all the service call
-    for (size_t i = 0; i < inflight_sensor_init_service_client_.size(); ++i) {
+  // service call (before stopping check if we are recording)
+  if (!start_stop && !is_recording_)
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatMsg("Data recording stop failure, cannot stop data recording if the recording is inactive", 2));
+  }
+  else
+  {
+    if (data_recording_service_client_.call(data_rec))
+    {
+      logger_.logServiceCall(state_->getStringFromState(), opts_->data_recrding_service_name);
 
-      // Print info
-      AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Calling service: " + opts_->inflight_sensor_init_services_name.at(i) + "\n")));
-
-      // service call to check if we are ready to takeoff
-      logger_.logServiceCall(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i));
-      if (!inflight_sensor_init_service_client_.at(i).call(init)) {
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i), "failed in-flight init");
-        return false;
+      // Check response
+      if (data_rec.response.success)
+      {
+        if (data_rec.request.data)
+        {
+          logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                        formatMsg("Data recording started successfully", 2));
+          logger_.logServiceResponse(state_->getStringFromState(), opts_->data_recrding_service_name,
+                                     "Started recording successfully");
+          is_recording_ = true;
+        }
+        else
+        {
+          logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                        formatMsg("Data recording stopped successfully", 2));
+          logger_.logServiceResponse(state_->getStringFromState(), opts_->data_recrding_service_name,
+                                     "Stoped recording successfully");
+          is_recording_ = false;
+        }
       }
       else
-        logger_.logServiceAnswer(state_->getStringFromState(), opts_->inflight_sensor_init_services_name.at(i), "succeeded in-flight init");
-
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatMsg("Data recording service failure", 2));
+        logger_.logServiceResponse(state_->getStringFromState(), opts_->data_recrding_service_name,
+                                   "Failure while calling data recorder service");
+      }
     }
-
-    // Newline and flish
-    AUTONOMY_UI_STREAM(std::endl);
-
-    return true;
-
-  }
-
-  void Autonomy::DataRecording(const bool& start_stop) {
-
-    // Define data recording
-    std_srvs::SetBool data_rec;
-
-    // Set data recording start/stop request
-    data_rec.request.data = start_stop;
-
-    // service call (before stopping check if we are recording)
-    if (!start_stop && !is_recording_) {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording stop failure, cannot stop data recording if the recording is inactive\n")) << std::endl);
-    } else {
-      logger_.logServiceCall(state_->getStringFromState(), opts_->data_recrding_service_name);
-      if (data_recording_service_client_.call(data_rec)) {
-
-        // Check responce
-        if (data_rec.response.success) {
-          if (data_rec.request.data) {
-            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Data recording started successfully\n")) << std::endl);
-            logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "started recording successfully");
-            is_recording_ = true;
-          } else {
-            AUTONOMY_UI_STREAM(BOLD(GREEN(" >>> Data recording stopped successfully\n")) << std::endl);
-            logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "stoped recording successfully");
-            is_recording_ = false;
-          }
-        } else {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording service failure\n")) << std::endl);
-          logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while calling data recorder service");
-        }
-      } else {
-        if (data_rec.request.data) {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording start failure\n")) << std::endl);
-          logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while starting data recorder");
-        } else {
-          AUTONOMY_UI_STREAM(BOLD(RED(" >>> Data recording stop failure\n")) << std::endl);
-          logger_.logServiceAnswer(state_->getStringFromState(), opts_->data_recrding_service_name, "failure while stopping data recorder");
-        }
+    else
+    {
+      if (data_rec.request.data)
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatMsg("Data recording start failure", 2));
+        logger_.logServiceResponse(state_->getStringFromState(), opts_->data_recrding_service_name,
+                                   "Failure while starting data recorder");
+      }
+      else
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatMsg("Data recording stop failure", 2));
+        logger_.logServiceResponse(state_->getStringFromState(), opts_->data_recrding_service_name,
+                                   "Failure while stopping data recorder");
       }
     }
   }
+}
 
-  void Autonomy::startAutonomy() {
+void Autonomy::startAutonomy()
+{
+  // Mission selection
+  missionSelection();
 
-    // Mission selection
-    missionSelection();
+  // Setting state to INITIALIZATION and initialize the system (watchdog)
+  // This will trigger a state transition to either NOMINAL or FAILURE
+  // depending by the result of the initialization
+  // If the state is set to NOMINAL after succesfull initialization the data
+  // recording will start if enabled and the waypoints for the selected mission will be loaded
+  stateTransition("initialization");
+}
 
-    // Setting state to INITIALIZATION and initialize the system (watchdog)
-    // This will trigger a state transition to either NOMINAL or FAILURE
-    // depending by the result of the initialization
-    // If the state is set to NOMINAL after succesfull initialization the data
-    // recording will start if enabled and the waypoints for the selected mission will be loaded
-    stateTransition("initialization");
+void Autonomy::stateTransition(std::string str)
+{
+  // Execute predefined behavior on Exiting old state
+  state_->onExit(*this);
+
+  // Execute state transition
+  logger_.logStateChange(state_->getStringFromState(), str);
+  if (str.compare("undefined") == 0)
+  {
+    state_ = &Undefined::Instance();
+  }
+  else if (str.compare("initialization") == 0)
+  {
+    state_ = &Initialization::Instance();
+  }
+  else if ((str.compare("nominal") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &Nominal::Instance();
+  }
+  else if ((str.compare("failure") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &Failure::Instance();
+  }
+  else if ((str.compare("preflight") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &Preflight::Instance();
+  }
+  else if ((str.compare("start_mission") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &StartMission::Instance();
+  }
+  else if ((str.compare("perform_mission") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &PerformMission::Instance();
+  }
+  else if ((str.compare("mission_iterator") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &MissionIterator::Instance();
+  }
+  else if ((str.compare("end_mission") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &EndMission::Instance();
+  }
+  else if ((str.compare("land") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &Land::Instance();
+  }
+  else if ((str.compare("hold") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  {
+    state_ = &Hold::Instance();
+  }
+  else if (str.compare("termination") == 0)
+  {
+    state_ = &Termination::Instance();
+  }
+  else
+  {
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                  formatMsg("Wrong state transition required", 2));
+    state_ = &Failure::Instance();
   }
 
-  void Autonomy::stateTransition(std::string str) {
+  // Execute predefined behavior on Entering new state
+  state_->onEntry(*this);
+}
 
-    // Execute predefined behavior on Exiting old state
-    state_->onExit(*this);
+void Autonomy::watchdogTimerOverflowHandler()
+{
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                formatMsg("Timeout overflow -- no heartbeat from system watchdog", 2));
+  sub_watchdog_heartbeat_.shutdown();
+  sub_watchdog_status_.shutdown();
+  stateTransition("land");
+}
 
-    // Execute state transition
-    logger_.logStateChange(state_->getStringFromState(), str);
-    if (str.compare("undefined") == 0) {
-      state_ = &Undefined::Instance();
-    } else if (str.compare("initialization") == 0) {
-      state_ = &Initialization::Instance();
-    } else if ((str.compare("nominal") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &Nominal::Instance();
-    } else if ((str.compare("failure") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &Failure::Instance();
-    } else if ((str.compare("preflight") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &Preflight::Instance();
-    } else if ((str.compare("start_mission") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &StartMission::Instance();
-    } else if ((str.compare("perform_mission") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &PerformMission::Instance();
-    } else if ((str.compare("end_mission") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &EndMission::Instance();
-    } else if ((str.compare("land") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &Land::Instance();
-    } else if ((str.compare("hold") == 0) && (state_->getStringFromState().compare("failure") != 0)) {
-      state_ = &Hold::Instance();
-    } else if (str.compare("termination") == 0) {
-      state_ = &Termination::Instance();
-    } else {
-      AUTONOMY_UI_STREAM(BOLD(RED(" >>> Wrong state transition required.\n")) << std::endl);
-      state_ = &Failure::Instance();
-    }
+void Autonomy::flightTimerOverflowHandler()
+{
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                formatMsg("Timeout overflow -- maximum flight time achieved -- the platform will land.", 2));
+  stateTransition("land");
+}
 
-    // Execute predefined behavior on Entering new state
-    state_->onEntry(*this);
-  }
+void Autonomy::failureTimerOverflowHandler()
+{
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                formatMsg("Timeout overflow -- maximum waiting time for a sensor fix achieved -- the platform "
+                          "will land",
+                          2));
+  stateTransition("land");
+}
 
-} // namespace autonomy
-
-// TODOS:
+}  // namespace autonomy
