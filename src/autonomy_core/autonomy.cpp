@@ -1557,4 +1557,18 @@ void Autonomy::failureTimerOverflowHandler()
   stateTransition("land");
 }
 
+bool Autonomy::missionFilesSanityCheck()
+{
+  for (const auto& filename : missions_.at(mission_id_).getFilepaths())
+  {
+    waypoints_parser_->setFilename(filename);
+    if (!waypoints_parser_->fileSanityCheck())
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                    formatMsg("Failed file checks on: " + filename, 2));
+      return false;
+    }
+  }
+  return true;
+}
 }  // namespace autonomy

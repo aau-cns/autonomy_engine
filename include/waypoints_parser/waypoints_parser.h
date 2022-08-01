@@ -18,6 +18,7 @@
 #include <cstring>
 #include <fstream>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -102,6 +103,14 @@ public:
     }
   }
 
+  /**
+   * @brief Sanity check for filename_. This method checks that the given filename_ is indeed a file.
+   * Moreover it checks that it contains all the fileds related to categories_, and that at least N
+   * values are given per line, where N is the number of categories.
+   * Finally it checks if each value is a number (either int or float) via regex
+   */
+  [[nodiscard]] bool fileSanityCheck();
+
 private:
   /**
    * @brief Filename of file containing waypoints
@@ -157,13 +166,13 @@ private:
    * Input structure allowing inpput files with shuffled columns or even
    * more columns than the onse that are necessary
    */
-  void getIndices(const std::vector<std::string>& header, std::vector<int>& indices);
+  [[nodiscard]] bool getIndices(const std::vector<std::string>& header, std::vector<int>& indices);
 
   /**
    * @brief Find the index of token within the given vector
    */
   template <typename T>
-  void getIndex(const std::vector<T>& data, const T& token, int& index)
+  bool getIndex(const std::vector<T>& data, const T& token, int& index)
   {
     // Iterator
     auto it = find(data.begin(), data.end(), token);
@@ -176,8 +185,10 @@ private:
     }
     else
     {
-      throw std::runtime_error("Required data missing. Exit programm.");
+      return false;
     }
+
+    return true;
   }
 
 };  // class WaypointsParser

@@ -26,15 +26,18 @@ void Preflight::onEntry(Autonomy& autonomy)
   // print info
   autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatStateEntry("PREFLIGHT"));
 
-  // Perform preflight checks and state transition
-  if (autonomy.preFlightChecks())
-  {
-    autonomy.stateTransition("start_mission");
-  }
-  else
+  // Chek that provided mission exists
+  if (!autonomy.missionFilesSanityCheck())
   {
     autonomy.stateTransition("failure");
   }
+
+  // Perform preflight checks and state transition
+  if (!autonomy.preFlightChecks())
+  {
+    autonomy.stateTransition("failure");
+  }
+  autonomy.stateTransition("start_mission");
 }
 
 void Preflight::onExit(Autonomy&)

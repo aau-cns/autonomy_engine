@@ -221,6 +221,12 @@ private:
    */
   void getMissions();
 
+  /**
+   * @brief Sanity check for mission files. This method checks the existance of the given files
+   * and the correctness of the header and the data
+   */
+  [[nodiscard]] bool missionFilesSanityCheck();
+
   /// Nodehandler
   ros::NodeHandle nh_;
 

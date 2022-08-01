@@ -22,7 +22,7 @@ WaypointsParser::WaypointsParser(std::string& filename, std::vector<std::string>
 {
 }
 
-void WaypointsParser::getIndices(const std::vector<std::string>& header, std::vector<int>& indices)
+bool WaypointsParser::getIndices(const std::vector<std::string>& header, std::vector<int>& indices)
 {
   // Temporary index
   int idx;
@@ -31,9 +31,14 @@ void WaypointsParser::getIndices(const std::vector<std::string>& header, std::ve
   for (const auto& it : categories_)
   {
     // Get index
-    getIndex(header, it, idx);
+    if (!getIndex(header, it, idx))
+    {
+      return false;
+    }
     indices.push_back(idx);
   }
+
+  return true;
 }
 
 void WaypointsParser::parseLine(std::string& line, std::vector<std::string>& data)
@@ -92,7 +97,10 @@ void WaypointsParser::readParseCsv()
     }
 
     // Get association (indices) based on the defined convention
-    getIndices(header, indices);
+    if (!getIndices(header, indices))
+    {
+      throw std::runtime_error("Required data missing. Exit programm.");
+    }
 
     // clear data structure from previous data
     data_.clear();
@@ -103,8 +111,8 @@ void WaypointsParser::readParseCsv()
       // Temporary waypoint data structure
       Waypoint tmp;
 
-      // Fill out temporary waypoint data structure, if x,y,z,yaw are mandatory data while waiting_time not.
-      // If waiting time is not present then set it to 0
+      // Fill out temporary waypoint data structure. If holdtime is not defined
+      // within the categories then and if a fifth index is not present then set it to 0
       tmp.x = it.at(indices.at(0));
       tmp.y = it.at(indices.at(1));
       tmp.z = it.at(indices.at(2));
@@ -125,4 +133,46 @@ void WaypointsParser::readParseCsv()
   // std::cout << "File read successfully.\n----------------------------------------\n" << std::endl;
 }
 
+bool WaypointsParser::fileSanityCheck()
+{
+  // Check filename_ is a file
+  std::ifstream file(filename_);
+  if (!file)
+  {
+    return false;
+  }
+
+  // Check filname header and data
+  std::regex regex("(-?)(\\d+)(\\.\\d+)?");
+  std::vector<int> indices;
+  std::string line;
+  std::vector<std::string> header;
+  if (file.good())
+  {
+    std::getline(file, line);
+    parseLine(line, header);
+    if (!getIndices(header, indices))
+    {
+      return false;
+    }
+    while (std::getline(file, line))
+    {
+      std::vector<std::string> tmp;
+      parseLine(line, tmp);
+      if (tmp.size() != indices.size())
+      {
+        return false;
+      }
+      for (const auto& it : tmp)
+      {
+        if (!std::regex_match(it, regex))
+        {
+          return false;
+        }
+      }
+    }
+  }
+
+  return true;
+}
 }  // namespace autonomy
