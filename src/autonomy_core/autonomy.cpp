@@ -1133,7 +1133,8 @@ void Autonomy::missionSelection()
     for (auto& it : missions_)
     {
       logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
-                    formatMsg("\t - ID: " + std::to_string(it.first) + '\t' + it.second.getDescription()));
+                    formatMsg("\t - ID: " + (RESET + std::to_string(it.first) + ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE)) +
+                              '\t' + (RESET + it.second.getDescription())));
     }
 
     // Get ID of mission being executed
@@ -1557,7 +1558,7 @@ void Autonomy::failureTimerOverflowHandler()
   stateTransition("land");
 }
 
-bool Autonomy::missionFilesSanityCheck()
+bool Autonomy::missionFileSanityCheck()
 {
   for (const auto& filename : missions_.at(mission_id_).getFilepaths())
   {

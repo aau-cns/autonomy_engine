@@ -10,8 +10,17 @@
 // You can contact the author at <alessandro.fornasier@ieee.org>
 
 #include <ros/ros.h>
+#include <signal.h>
+#include <functional>
 #include <limits>
+
 #include "autonomy_core/autonomy.h"
+
+std::function<void(void)> sigintHandler;
+void sigHandler(int)
+{
+  sigintHandler();
+}
 
 int main(int argc, char* argv[])
 {
@@ -42,6 +51,15 @@ int main(int argc, char* argv[])
     autonomy.logger_.logUI("undefined", ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
                            " >>> Press [ENTER] to start the CNS-FLIGHT Autonomy\n");
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+    // Sigaction to handle CTRL-C
+    //    sigintHandler = std::bind(&autonomy::Autonomy::sigintHandler, &autonomy);
+    sigintHandler = [&autonomy]() { autonomy.sigintHandler(); };
+    struct sigaction sigIntHandler;
+    sigIntHandler.sa_handler = sigHandler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, nullptr);
 
     // Start the autonomy
     autonomy.startAutonomy();

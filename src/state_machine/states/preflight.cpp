@@ -27,7 +27,7 @@ void Preflight::onEntry(Autonomy& autonomy)
   autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatStateEntry("PREFLIGHT"));
 
   // Chek that provided mission exists
-  if (!autonomy.missionFilesSanityCheck())
+  if (!autonomy.missionFileSanityCheck())
   {
     autonomy.stateTransition("failure");
   }

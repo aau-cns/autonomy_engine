@@ -107,7 +107,9 @@ struct SensorStatus
     return false;
   }
 
-  /// Equal operator, that checks for everything except timestamps
+  /// IsSame (kind) is very similar to a == comparison
+  /// except isSame does not check if the timestamp
+  /// is equal
   bool isSame(const SensorStatus& ss) const
   {
     if (entity == ss.entity && type == ss.type)

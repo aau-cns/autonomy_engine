@@ -63,6 +63,14 @@ public:
   /// Autonomy options
   std::unique_ptr<autonomyOptions> opts_;
 
+  /**
+   * @brief Handler for CTRL-C signal
+   */
+  void sigintHandler()
+  {
+    stateTransition("termination");
+  }
+
 private:
   /**
    * @brief Selection of the mission form the user
@@ -225,7 +233,7 @@ private:
    * @brief Sanity check for mission files. This method checks the existance of the given files
    * and the correctness of the header and the data
    */
-  [[nodiscard]] bool missionFilesSanityCheck();
+  [[nodiscard]] bool missionFileSanityCheck();
 
   /// Nodehandler
   ros::NodeHandle nh_;
