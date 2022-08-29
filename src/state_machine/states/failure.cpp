@@ -30,7 +30,7 @@ void Failure::onEntry(Autonomy& autonomy)
   // seconds
   if (autonomy.opts_->activate_data_recording && autonomy.is_recording_)
   {
-    for (int cnt = 0; cnt <= std::ceil(autonomy.opts_->data_recording_delay_after_failure_s / 10); ++cnt)
+    for (int cnt = 0; cnt <= std::ceil(autonomy.opts_->data_recording_delay_after_failure_s * 100); ++cnt)
     {
       autonomy.polling(10);
     }

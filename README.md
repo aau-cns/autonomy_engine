@@ -3,7 +3,7 @@ title: CNS-FLIGHT Autonomy
 author:
   - Alessandro Fornasier
   - Control of Networked Systems, University of Klagenfurt, Austria
-date: 17.11.2021
+date: 29.08.2022
 subtitle: Version 2.0
 
 documentclass: scrartcl
@@ -20,8 +20,30 @@ Maintainer: Alessandro Fornasier @alfornasier
 
 [[_TOC_]]
 
+## Credit
+This code was written by the [Control of Networked System (CNS)](https://www.aau.at/en/smart-systems-technologies/control-of-networked-systems/), University of Klagenfurt.
+
+## License
+[![License](https://img.shields.io/badge/License-AAUCNS-green.svg)](./LICENSE)
+This software is made available to the public to use (_source-available_), licensed under the terms of the BSD-2-Clause-License with no commercial use allowed, the full terms of which are made available in the `LICENSE` file. No license in patents is granted.
+
+### Usage for academic purposes
+If you use this software in an academic research setting, please cite the
+corresponding paper and consult the `LICENSE` file for a detailed explanation.
+
+```latex
+@inproceedings{cns_flight_stack22,
+   author   = {Martin Scheiber and Alessandro Fornasier and Roland Jung and Christoph Boehm and Rohit Dhakate
+               and Christian Stewart and Jan Steinbrener and Stephan Weiss and Christian Brommer},
+   journal  = {IEEE Robotics and Automation Letters},
+   title    = {CNS Flight Stack for Reproducible, Customizable, and Fully Autonomous Applications},
+   year     = {2022},
+   doi      = {10.1109/LRA.2022.3196117}
+}
+```
+
 ## Description
-The autonomy engine is responsible for the overall mission operation. After launching the node, the autonomy will prompt the user for a predefined mission sequence. After the user confirmed a selection, the autonomy engine sequences through four main states:
+The autonomy engine is responsible for the overall mission operation. After launching the node, the autonomy will prompt the user for a predefined mission sequence. After the user confirmed a selection, the autonomy engine is responsible for the following tasks
 
   - Pre-Flight Checks
   - Mission Operation
@@ -31,214 +53,130 @@ The autonomy engine is responsible for the overall mission operation. After laun
 Errors that might occur during these steps are reported to the user depending on the severity. If the autonomy and consecutive nodes can solve an error without external action, a warning is published to the terminal.
 
 ### Pre-Flight Checks
-Pre-Flight Checks concern all aspects that are necessary to perform a successful flight. This includes:
+Pre-Flight Checks concern all aspects that are necessary to perform a successful flight. The autonomy implements the logic and manages the sub-modules that are responsible for performing the checks, including:
+
 - Communication with the WatchDog node to clarify that all ROS nodes are running, driver status are correct, and sensors provide measurements based on their defined rate. If these conditions are not met and the WatchDog node can not solve the issue, external action is required.
 
-- Checking sensor conditions e.g. the current distance measurement of the Laser Range Finder to determine that the vehicle is placed properly on the ground.
+- Communication with sub-modules responsible for performing checks e.g. check the flatness of the platform before takeoff, or check the distance to the ground, etc.
 
-- Checking with the state estimator that the gravity vector points downwards in the vehicle frame. This should ensure that the angles at which the vehicle is placed are within limits for the takeoff.
+- Communication with the state estimator to ensure that the provided estimation is healty.
 
-- At the end, the autonomy displays the result of the checks and continues with the mission generation.
+- Finally, the autonomy displays the result of the checks, if all the checks succeeded the autonomy starts the data recording and communicates with the mission manager that the platform is ready for taking off.
 
 ### Mission Operation
-The mission operation starts the data recording and ensures that sufficient time has passed before the takeoff.
-
-After this step, the mission operation sends the mission ID to the Mission Planner, which builds the mission waypoint file and sends it to the controller. At this point, the takeoff is performed.
-
-At the end of this state, the mission planner will respond and confirm that the vehicle has landed.
+During the mission the autonomy is responsible for handeling sensor failures and react based on the severity. The autonomy communicates with the watchdog and with the mission sequencer to ensure a safe flight. At the end of the mission, the autonomy communicates with the mission manager that the mission has ended and the platform is ready to land.
 
 ### Data Clean Up
-The autonomy triggers the end of the data recording which leads to a wait time till all data is written and was merged between the two embedded platforms. After this, the mission has ended, which will also be displayed to the user.
+After the mission, the autonomy triggers the end of the data recording which leads to a wait time till all data is written and was merged between the two embedded platforms.
 
 ### Error Handling
 At any time after the Pre-Flight checks, the WatchDog node can communicate an error to the autonomy. The autonomy engine is responsible for triggering an action depending on the severity of the issue. As an example, a failure of the mission camera cant be tolerated and an emergency landing is triggered immediately. On the other side, a failure of the RealSense is not critical but inconvenient for data recording. Thus, the autonomy waits until the autonomy restarted the respective node and continues. However, if a maximum restart time of the node is reached and the error was not solved, the mission can be continued.
 
-## Error Cases and Decisions
-
-### PX4 Sensors
-
-For the PX4, generally, no restart is allowed. Otherwise the vehicle will not be controlable.
-
-| Sensor       | Action | Severity |
-| ------------ | ------ | -------- |
-| GPS          |        | low      |
-| IMU          |        | highest  |
-| Magnetometer |        | moderate |
-| Barometer    |        | moderate |
-
-### All other Sensors
-| Sensor           | Action                  | Severity |
-| ---------------- | ----------------------- | -------- |
-| Mission Camera   | Emergency Landing       | Highest  |
-| RealSense Camera | Wait for a limited time | Moderate |
-| RealSense IMU    | No Restart              | Low      |
-| LSM9DS1 IMU      | Wait for a limited time | Moderate |
-| LRF              | Wait for a limited time | High     |
-
 ### Interaction with the WatchDog Node
-**To be redefined - Work in progress**
 
-The safety node a.k.a. watchdog, only starts if the Autonomy publishes a service request to determine if the system is ready for take-off. After this, the safety node will open two streams; the action service information which will communicate the latest and highest issue of the system which will determine the most likely action of the autonomy engine, and a system info with all 'delta' sensor informations.
+The safety node a.k.a. watchdog is started by the Autonomy via service request. After this, the safety node will open two streams; the status stream which communicates change4s in the status of the various watched sensors, and the action stream which is used by the autonomy engine to communicate actions to be performed to restore the nominal functionalities of a specific sensor.
 
-Possible states for the action and info streams, are:
+Possible states for the status stream, are:
 
-| Value | Description                   | Action | Info | Continue Mission |
-| ----- | ----------------------------- | ------ | ---- | ---------------- |
-| 1     | Nominal Condition             |        | x    | x                |
-| 2     | Non-Critical Failure          |        | x    | x                |
-| 4     | Inconvenient Failure          | x      | x    | x                |
-| 8     | Severe Failure / Mission Hold | x      | x    |                  |
-| 16    | Error / Mission Abort         | x      | x    |                  |
+| Value | Status                        |
+| ----- | ----------------------------- |
+| 0     | Undefined Condition           |
+| 1     | Nominal Condition             |
+| 2     | Starting phase          	|
+| 4     | Inconvenient Failure (defect) |
+| 8     | Error        			|
 
+Possible states for the action stream, are:
 
+| Value | Status        |
+| ----- | ------------- |
+| 0     | No action     |
+| 1     | Fix node      |
+| 2     | Fix driver	|
 
-| Nominal Failure               | Description                                                  |
-| ----------------------------- | ------------------------------------------------------------ |
-| Nominal Condition             | The component is operating as intended                       |
-| Non-Critical Failure          | The component has failed but is not system critical OR a frame rate is not as intended |
-| Inconvenient Failure          | The component has failed and is not critical to the system but losing the data stream for recording is very inconvenient (e.g., the stereo camera). |
-| Severe Failure / Mission Hold | A severe failure occurred, the safety node tries to restart the component, the mission should hold meanwhile. |
-| Error / Mission Abort         | A severe failure could not be resolved, the system needs to land immediately |
+### Configuration of the Autonomy Engine
 
+A configuration file (yaml) has to be created for the autonomy engine. This configuration file specifies the mission to be loaded as well as the severity of the failures for each sensor.
 
-<div style="page-break-after: always;"></div>
+```
+missions:
 
-## System Block-Diagram
-
-![mission_control_layer](./resources/mission_control_layer.png)
-
-## Autonomy Sequence
-
-```plantuml
-@startuml
-
-skinparam monochrome true
-scale max 1000*1000
-
-'title Autonomy Routine
-
-actor User
-participant Autonomy
-participant Watchdog
-
-participant LandingDetection
-participant StateEstimation
-participant MissionPlanner
-participant Control
-participant Datarec
-participant AutoPilot
-
-User->Autonomy++: Select&Start Mission
-
-Autonomy->Watchdog++: Vehicle in nominal condition?
-Watchdog->Watchdog: All nodes & driver running?
-Watchdog->Watchdog: Sensor meas. rate ok?
-Watchdog->Autonomy--: Confirm
-
-Autonomy->AutoPilot++: Check battery level
-AutoPilot->Autonomy--: Confirm
-
-
-Autonomy->LandingDetection++: Vehicle on ground?
-LandingDetection->Autonomy--: Confirm
-
-Autonomy->StateEstimation++: State valid?
-StateEstimation->StateEstimation: Gravity pointing down?
-StateEstimation->Autonomy--: Confirm
-
-Autonomy->User: Display "Ready"
-
-Autonomy->Datarec++: Start Rec.
-Autonomy->MissionPlanner++: Send Mission ID
-MissionPlanner->Autonomy: Confirm
-MissionPlanner->MissionPlanner++: Run Sequencer
-MissionPlanner->Control++: Send Waypoints
-Control->MissionPlanner--: Got last Waypoint
-MissionPlanner->MissionPlanner--: Confirm end of mission
-MissionPlanner->Autonomy--: Confirm end of mission
-
-Autonomy->Datarec: Stop Rec.
-Datarec->Datarec++: Merge Data
-Datarec->Datarec--: Done
-Datarec->Autonomy--: Done
-
-Autonomy->User--: Mission Ended
-
-@enduml
+  mission_1:
+    description: "The first mission of the day"
+    filepaths:
+      - "/home/system/missions/first.csv"
+    entities_actions:
+      - ["px4_imu", "failure"]
+      - ["px4_gps", "land"]
+      - ["px4_mag", "hold"]
+      - ["px4_bar", "hold"]
+      - ["mission_cam", "land"]
+     
+  mission_2:
+    description: "The last mission of the day"
+    filepaths:
+      - "/home/system/missions/last.csv"
+    entities_actions:
+      - ["px4_imu", "failure"]
+      - ["px4_gps", "continue"]
+      - ["px4_mag", "continue"]
+      - ["px4_bar", "continue"]
+      - ["mission_cam", "land"]
 ```
 
-<div style="page-break-after: always;"></div>
+Every mission is specified in a mission file (csv) formatted as follows
 
-## Autonomy Activity Diagram
-
-```plantuml
-@startuml
-
-skinparam monochrome true
-scale max 1000*1000
-
-'title Autonomy Activity
-
-(*) -down-> "Mission Input"
-
-if "Mission Valid" then
-  -down->[true] "Watchdog Checks"
-
-  if "Watchdog Checks Passed?"
-    -right->[true] "Check Battery level"
-
-    if "Level ok for next Mission?"
-      -->[true] "Check LRF Data"
-
-      if "Vehicle on the Ground?"
-        -->[true] "Check State Estimation"
-
-        if "Are States Valid?"
-         -->[true] "Display ready to User"
-        else
-         -->[false] "Outreach"
-        endif
-
-      else
-        -->[false] "Outreach"
-      endif
-
-    else
-    -->[false] "Outreach"
-    endif
-
-  else
-    -->[false] "Evaluate the Severity"
-    if "Can WD fix the Issue?"
-      -right->[true] "Watchdog Checks"
-      else
-      -->[false] "Outreach"
-    endif
-  endif
-
-else
-  ->[false] "Display Error"
-  -up->"Mission Input"
-endif
-
-"Display ready to User"-->"Start Recording\n Mission Data"
--->"Send Mission ID\nto Mission Planner"
-if "Mission Planner Confirm?"
-  -->[True] "Send Takeoff Signal"
-  --> "Wait for\nMission Completion"
-
-  if "Mission Complete?"
-    -->[True] "Stop and Merge\nData Recording"
-
-    if "Data Complete"
-      -->[True] "Display\nMission Completed"
-    endif
-
-  endif
-
-else
-  -->[False] "Outreach"
-endif
-
-@enduml
 ```
+x,y,z,yaw,holdtime
+0,0,1.0,0,1
+1,0,1.0,0,1
+1,1,1.0,0,1
+0,1,1.0,0,1
+-1,1,1.0,0,1
+-1,0,1.0,0,1
+-1,-1,1.0,0,1
+0,-1,1.0,0,1
+1,-1,1.0,0,1
+1,0,1.0,0,1
+0,0,1.0,0,1
+```
+
+The ``holdtime`` column is optional, if not present the holdtime is set to 0 by default.
+
+### Parameter description
+
+| Parameter | Description | Default value |
+| --- | --- |
+| config_filepath | Path of the configuration file | "" |
+| activate_user_interface | Boolean to activate the UI | True |
+| activate_watchdog | Boolean to actiavate the watchdog | False |
+| activate_data_recording | Boolean to actiavate data recording | False |
+| estimator_init_service | Boolean to actiavate the estimator initialization service| False |
+| perform_takeoff_check | Boolean to perform takeoff checks | False |
+| perform_estimator_check | Boolean to perform estimator health checks | False |
+| activate_landing_detection | Boolean to actiavate landing detection | False |
+| inflight_sensors_init_service | Boolean to actiavate inflight sensor initalization | False |
+| hover_after_mission_completion | Boolean to actiavate hovering (instead of landing) after mission completion | False |
+| sequence_multiple_in_flight | Boolean to sequence multiple mission in flight (without perform landing - preflight checks - takeoff in between missions) | False |
+| watchdog_heartbeat_topic | Topic of the watchdog heartbeat message | /watchdog/heartbeat |
+| watchdog_status_topic | Topic of the watchdog status message | /watchdog/status |
+| watchdog_action_topic | Topic for a watchdog action message | /watchdog/action |
+| mission_sequencer_request_topic | Topic for a mission sequencer request message | /missionsequencer/request |
+| mission_sequencer_response_topic | Topic of the mission sequencer response message | /missionsequencer/response |
+| mission_sequencer_waypoints_topic | Topic to communicate waypoints to the mission sequencer | /missionsequencer/waypoints |
+| landing_detection_topic | Topic of the landing detection message | /toland/is_landed |
+| watchdog_start_service_name | Service name to start the watchdog | /watchdog/service/start |
+| data_recrding_service_name | Service name to start and stop data recording | /datarecording/record |
+| takeoff_service_name | Service name to request takeoff checks | /toland/service/takeoff |
+| estimator_supervisor_service_name | Service name to request estimator supervision | /estimator_supervisor/supervise |
+| estimator_init_service_name | Service name to initialize state estimation | /estimator/init |
+| inflight_sensor_init_services_name | Names of services that has to be called after takeoff (Array of service names) | [] |
+| watchdog_rate_Hz | Framerate of watchdog heartbeat | 1.0 |
+| watchdog_startup_time_s | Time the watchdog will check sensors at initialization (in seconds) | 15 |
+| watchdog_heartbeat_timeout_multiplier | multiplier to set the maximum allowed time without receiving watchdog heartbeat | 2.0 |
+| maximum_flight_time_min | Maximum allowed flight time (in minutes) | 10 |
+| fix_timeout_ms | Maximum time to fix an issue (in milliseconds) | 1500 |
+| preflight_fix_timeout_ms | Maximum time to fix an issue in preflight stage (in milliseconds) | 2500 |
+| data_recording_delay_after_failure_s | Time to wait before stopping data recording in case of failure (in seconds) | 5 |
+| mission_id_no_ui | Mission to be performed in case of no UI | 1 |
+| logger_filepath | Path of the logger file | "" |

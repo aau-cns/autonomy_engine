@@ -296,7 +296,7 @@ void Autonomy::parseParams()
   int watchdog_timeout_ms = 0;
   int flight_timeout_ms = 0;
   int fix_timeout_ms = 0;
-  int preflight_fix_timeout_s = 0;
+  int preflight_fix_timeout_ms = 0;
   int data_recording_delay_after_failure_s = 0;
   int mission_id_no_ui = -1;
 
@@ -329,7 +329,7 @@ void Autonomy::parseParams()
   getParameter(logger_filepath, "logger_filepath");
   getParameter(flight_timeout_ms, "maximum_flight_time_min");
   getParameter(fix_timeout_ms, "fix_timeout_ms");
-  getParameter(preflight_fix_timeout_s, "preflight_fix_timeout_s");
+  getParameter(preflight_fix_timeout_ms, "preflight_fix_timeout_ms");
   getParameter(data_recording_delay_after_failure_s, "data_recording_delay_after_failure_s");
 
   // Convert given flight time (in minutes) from minutes to milliseconds
@@ -435,7 +435,7 @@ void Autonomy::parseParams()
                                                               watchdog_timeout_ms,
                                                               flight_timeout_ms,
                                                               fix_timeout_ms,
-                                                              preflight_fix_timeout_s,
+                                                              preflight_fix_timeout_ms,
                                                               watchdog_startup_time_s,
                                                               data_recording_delay_after_failure_s,
                                                               activate_user_interface,

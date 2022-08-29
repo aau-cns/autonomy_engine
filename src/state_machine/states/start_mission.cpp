@@ -35,7 +35,7 @@ void StartMission::onEntry(Autonomy& autonomy)
     {
       autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
                              formatMsg("Trying to fix pending failure before arming... (max waiting time: " +
-                                           std::to_string(autonomy.opts_->preflight_fix_timeout) + " s)",
+                                           std::to_string(autonomy.opts_->preflight_fix_timeout * 1000) + " s)",
                                        2));
       for (int cnt = 0; cnt <= std::ceil(autonomy.opts_->preflight_fix_timeout / 10); ++cnt)
       {
@@ -74,7 +74,7 @@ void StartMission::onEntry(Autonomy& autonomy)
     {
       autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
                              formatMsg("Trying to fix pending failure before taking off... (max waiting time: " +
-                                           std::to_string(autonomy.opts_->preflight_fix_timeout) + " s)",
+                                           std::to_string(autonomy.opts_->preflight_fix_timeout * 1000) + " s)",
                                        2));
       for (int cnt = 0; cnt <= std::ceil(autonomy.opts_->preflight_fix_timeout / 10); ++cnt)
       {
