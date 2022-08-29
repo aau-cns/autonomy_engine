@@ -12,7 +12,9 @@
 
 namespace autonomy
 {
-StartMission::StartMission(){};
+StartMission::StartMission()
+{
+}
 
 State& StartMission::Instance()
 {
@@ -105,7 +107,7 @@ void StartMission::onEntry(Autonomy& autonomy)
 
   // Set filename to waypoint parser
   autonomy.waypoints_parser_->setFilename(
-      autonomy.missions_.at(autonomy.mission_id_).getFilepaths().at(static_cast<size_t>(autonomy.filepaths_cnt_)));
+      autonomy.missions_.at(autonomy.mission_id_).getFilepaths().at(autonomy.filepaths_cnt_));
 
   // Parse waypoint file
   autonomy.waypoints_parser_->readParseCsv();

@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Hold::Hold(){};
+Hold::Hold()
+{
+}
 
 State& Hold::Instance()
 {

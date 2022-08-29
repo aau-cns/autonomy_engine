@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-PerformMission::PerformMission(){};
+PerformMission::PerformMission()
+{
+}
 
 State& PerformMission::Instance()
 {

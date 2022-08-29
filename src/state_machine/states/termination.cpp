@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Termination::Termination(){};
+Termination::Termination()
+{
+}
 
 State& Termination::Instance()
 {

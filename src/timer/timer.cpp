@@ -35,7 +35,7 @@ Timer::~Timer()
   {
     th_.join();
   }
-};
+}
 
 void Timer::setTimeout(const int& ms)
 {

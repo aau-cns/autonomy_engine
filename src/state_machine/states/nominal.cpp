@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Nominal::Nominal(){};
+Nominal::Nominal()
+{
+}
 
 State& Nominal::Instance()
 {

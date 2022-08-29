@@ -12,6 +12,7 @@
     <arg name="mission_sequencer_response_topic"	default="/missionsequencer/response" />
     <arg name="landing_detection_topic"			default="/toland/is_landed" />
     <arg name="mission_sequencer_waypoints_topic"	default="/missionsequencer/waypoints" />
+    <arg name="rc_topic"	                        default="/mavros/rc/in" />
 
     <!-- arguments services -->
     <arg name="watchdog_start_service_name"     	default="/watchdog/service/start" />
@@ -55,6 +56,7 @@
         <param name="mission_sequencer_response_topic"  type="string"   value="$(arg mission_sequencer_response_topic)" />
         <param name="landing_detection_topic"           type="string"   value="$(arg landing_detection_topic)" />
         <param name="mission_sequencer_waypoints_topic" type="string"   value="$(arg mission_sequencer_waypoints_topic)" />
+        <param name="rc_topic"                          type="string"   value="$(arg rc_topic)" />
 
         <!-- services -->
         <param name="watchdog_start_service_name"            type="string"   value="$(arg watchdog_start_service_name)" />

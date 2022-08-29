@@ -110,6 +110,9 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   sub_mission_sequencer_response_ =
       nh_.subscribe(opts_->mission_sequencer_response_topic, 100, &Autonomy::missionSequencerResponceCallback, this);
 
+  // Subscribe to RC
+  sub_rc_ = nh_.subscribe(opts_->rc_topic, 100, &Autonomy::rcCallback, this);
+
   // Instanciate flight timer and connect signal
   flight_timer_ = std::make_unique<Timer>(opts_->flight_timeout);
   flight_timer_->sh_.connect(boost::bind(&Autonomy::flightTimerOverflowHandler, this));
@@ -283,6 +286,7 @@ void Autonomy::parseParams()
   std::string estimator_init_service_name;
   std::string mission_sequencer_waypoints_topic;
   std::string logger_filepath;
+  std::string rc_topic;
 
   // Define auxilliary variables foreach paramter: std::vector
   std::vector<std::string> inflight_sensor_init_services_name;
@@ -299,6 +303,7 @@ void Autonomy::parseParams()
   int preflight_fix_timeout_ms = 0;
   int data_recording_delay_after_failure_s = 0;
   int mission_id_no_ui = -1;
+  int landing_aux_channel = -1;
 
   // Define auxilliary variables foreach paramter: bool
   bool activate_user_interface;
@@ -331,6 +336,7 @@ void Autonomy::parseParams()
   getParameter(fix_timeout_ms, "fix_timeout_ms");
   getParameter(preflight_fix_timeout_ms, "preflight_fix_timeout_ms");
   getParameter(data_recording_delay_after_failure_s, "data_recording_delay_after_failure_s");
+  getParameter(rc_topic, "rc_topic");
 
   // Convert given flight time (in minutes) from minutes to milliseconds
   flight_timeout_ms *= 60000;
@@ -414,6 +420,9 @@ void Autonomy::parseParams()
     getParameter(landing_detection_topic, "landing_detection_topic");
   }
 
+  // Get aux channels
+  getParameter(landing_aux_channel, "landing_aux_channel");
+
   // Get missions
   getMissions();
 
@@ -425,6 +434,7 @@ void Autonomy::parseParams()
                                                               mission_sequencer_response_topic,
                                                               landing_detection_topic,
                                                               mission_sequencer_waypoints_topic,
+                                                              rc_topic,
                                                               watchdog_start_service_name,
                                                               estimator_supervisor_service_name,
                                                               data_recrding_service_name,
@@ -448,7 +458,8 @@ void Autonomy::parseParams()
                                                               inflight_sensors_init_service,
                                                               hover_after_mission_completion,
                                                               sequence_multiple_in_flight,
-                                                              mission_id_no_ui }));
+                                                              mission_id_no_ui,
+                                                              static_cast<size_t>(landing_aux_channel) }));
 }
 
 bool Autonomy::getSensorStatusFromMsg(const watchdog_msgs::Status& msg, SensorStatus& status)
@@ -608,13 +619,13 @@ void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArraySta
       logger_.logMessage(state_->getStringFromState(), opts_->watchdog_status_topic, true,
                          "[watchdog status message] EntityTypeEvent code: " + code);
 
+      // Define auxilliary strings
+      std::string entity;
+      std::string type;
+
       // Check event
       if (status.event != Event::ENTITY_OTHER)
       {
-        // Define auxilliary strings
-        std::string entity;
-        std::string type;
-
         if (status.event == Event::ENTITY_FAILURE)
         {
           // Redundant check, this should never fail.
@@ -701,7 +712,26 @@ void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArraySta
       }
       else if (it.status == watchdog_msgs::Status::DEFECT)
       {
-        // TODO: Log the Defect
+        // Redundant check, this should never fail, if so not all the possible choices are coverd by
+        // getStringFromEntity
+        if (!getStringFromEntity(status.entity, entity))
+        {
+          std::string info = "[watchdogStatusCallback][DEFECT] No string defined for required entity: " +
+                             std::to_string(status.entity);
+          logger_.logInfo(state_->getStringFromState(), info);
+        }
+
+        // Redundant check, this should never fail, if so not all the possible choices are coverd by getStringFromType
+        if (!getStringFromType(status.type, type))
+        {
+          std::string info =
+              "[watchdogStatusCallback][DEFECT] No string defined for required type: " + std::to_string(status.type);
+          logger_.logInfo(state_->getStringFromState(), info);
+        }
+
+        // Log the Defect
+        std::string defect = "Error code: " + code + ", Entity: " + entity + ", Type: " + type;
+        logger_.logInfo(state_->getStringFromState(), "[watchdogStatusCallback][DEFECT] " + defect);
       }
     }
     else
@@ -867,8 +897,7 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
             armed_ = false;
 
             // Stop flight timer
-            if (!multiple_touchdowns_ ||
-                (filepaths_cnt_ == static_cast<int>(missions_.at(mission_id_).getTouchdowns())))
+            if (!multiple_touchdowns_ || (filepaths_cnt_ == missions_.at(mission_id_).getTouchdowns()))
             {
               flight_timer_->stopTimer();
             }
@@ -899,8 +928,8 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
       last_waypoint_reached_ = true;
 
       // Check if sequencing of multiple in-air files happens
-      if (multiple_touchdowns_ && opts_->sequence_multiple_in_flight_ &&
-          (filepaths_cnt_ < static_cast<int>(missions_.at(mission_id_).getTouchdowns())))
+      if (multiple_touchdowns_ && opts_->sequence_multiple_in_flight &&
+          (filepaths_cnt_ < missions_.at(mission_id_).getTouchdowns()))
       {
         stateTransition("mission_iterator");
       }
@@ -1037,6 +1066,83 @@ void Autonomy::missionSequencerRequest(const int& request)
     // At this stage we are not flying yet, state transition to FAILURE
     stateTransition("failure");
   }
+}
+
+void Autonomy::rcCallback(const mavros_msgs::RCInConstPtr& msg)
+{
+  // Check channels field is not empty
+  if (register_aux_ && !aux_registered_)
+  {
+    if (!msg->channels.empty())
+    {
+      // Register aux
+      for (size_t id = 0; id < msg->channels.size(); ++id)
+      {
+        aux_.setValue(id, msg->channels.at(id));
+      }
+
+      // Set aux_registered_
+      aux_registered_ = true;
+    }
+
+    // Check for changes
+    for (size_t id = 0; id < msg->channels.size(); ++id)
+    {
+      if (msg->channels.at(id) != aux_.getValue(id))
+      {
+        // Update aux values
+        std::stringstream ss;
+        ss << "AUX [" << id << "] changed from [" << aux_.getValue(id) << "] to [" << msg->channels.at(id) << "]";
+        logger_.logUI(state_->getStringFromState(), ESCAPE(YELLOW_ESCAPE, GREEN_ESCAPE), formatMsg(ss.str(), 2));
+        aux_.setValue(id, msg->channels.at(id));
+
+        // Check if landing aux changed
+        if (id == opts_->landing_aux_channel)
+        {
+          stateTransition("land");
+        }
+
+        // Manage other aux
+      }
+    }
+  }
+}
+
+bool Autonomy::registerRCAux()
+{
+  // UI AUX registration
+  logger_.logUI(state_->getStringFromState(), ESCAPE(YELLOW_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Please set all the switches on the safety pilot remote, and press [SPACE] and then [ENTER] "
+                          "to register the actual position of the switches",
+                          0));
+  std::cin.clear();
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
+  logger_.logUserInput(state_->getStringFromState(), "[SPACE]");
+  logger_.logUserInput(state_->getStringFromState(), "[ENTER]");
+
+  // Set register_aux_ flag
+  register_aux_ = true;
+
+  // Wait for aux being registered (max wait 10 seconds)
+  int cnt = 0;
+  while (!aux_registered_)
+  {
+    polling(10);
+    if (++cnt == 1000)
+    {
+      // reset register_aux_ and return
+      register_aux_ = false;
+      return false;
+    }
+  }
+
+  // UI
+  logger_.logUI(state_->getStringFromState(), ESCAPE(GREEN_ESCAPE, GREEN_ESCAPE),
+                formatMsg("Remote Switches succesfully registered", 2));
+
+  // reset register_aux_ and return
+  register_aux_ = false;
+  return true;
 }
 
 bool Autonomy::startWatchdog()

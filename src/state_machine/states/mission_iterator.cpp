@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-MissionIterator::MissionIterator(){};
+MissionIterator::MissionIterator()
+{
+}
 
 State& MissionIterator::Instance()
 {

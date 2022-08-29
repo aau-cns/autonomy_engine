@@ -19,8 +19,22 @@ endif()
 ## enforcing cleaner code by adding -Wall and -Werror, the compiler will not ignore warnings anymore
 add_definitions(-Wall -Werror)
 
-# Enable compile optimizations
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+# Optimization flags
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+
+# Define build type
+if (NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release")
+  message(STATUS "UNDEFINED CMAKE_BUILD_TYPE, BUILDING IN RELEASE")
+  message(STATUS "CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+else()
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(STATUS "CMAKE_CXX_FLAGS_DEBUG: ${CMAKE_CXX_FLAGS_DEBUG}")
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        message(STATUS "CMAKE_CXX_FLAGS_RELEASE: ${CMAKE_CXX_FLAGS_RELEASE}")
+    endif()
+endif ()
 
 ## Display compiler flags
 message(STATUS "CMAKE_CXX_FLAGES: ${CMAKE_CXX_FLAGS}")

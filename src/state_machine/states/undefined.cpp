@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Undefined::Undefined(){};
+Undefined::Undefined()
+{
+}
 
 State& Undefined::Instance()
 {

@@ -12,6 +12,7 @@
 #ifndef AUTONOMY_H
 #define AUTONOMY_H
 
+#include <mavros_msgs/RCIn.h>
 #include <mission_sequencer/MissionRequest.h>
 #include <mission_sequencer/MissionResponse.h>
 #include <mission_sequencer/MissionWaypointArray.h>
@@ -72,6 +73,21 @@ public:
   }
 
 private:
+  /// Friend classes (able to access private data members)
+  friend class Failure;
+  friend class Hold;
+  friend class Hover;
+  friend class Initialization;
+  friend class Land;
+  friend class Nominal;
+  friend class Undefined;
+  friend class Preflight;
+  friend class StartMission;
+  friend class PerformMission;
+  friend class MissionIterator;
+  friend class EndMission;
+  friend class Termination;
+
   /**
    * @brief Selection of the mission form the user
    */
@@ -152,6 +168,17 @@ private:
    * @brief Mission sequencer response callback
    */
   void missionSequencerResponceCallback(const mission_sequencer::MissionResponseConstPtr& msg);
+
+  /**
+   * @brief Radio control callback
+   */
+  void rcCallback(const mavros_msgs::RCInConstPtr& msg);
+
+  /**
+   * @brief Register actual status of RC aux channles before flight
+   * @return Boolean
+   */
+  [[nodiscard]] bool registerRCAux();
 
   /**
    * @brief Get SensorStatus from watchdog_msgs::Status, this function will also
@@ -243,6 +270,7 @@ private:
   ros::Subscriber sub_watchdog_status_;
   ros::Subscriber sub_landing_detection_;
   ros::Subscriber sub_mission_sequencer_response_;
+  ros::Subscriber sub_rc_;
 
   /// Publishers
   ros::Publisher pub_watchdog_action_;
@@ -279,6 +307,9 @@ private:
   /// Pointer to State
   State* state_;
 
+  /// Aux channels
+  Aux aux_;
+
   /// Boolean to check if data is getting recorded
   bool is_recording_ = false;
 
@@ -301,7 +332,7 @@ private:
   bool multiple_touchdowns_ = false;
 
   /// filepaths counter, used in case of multiple touchdown to keep track of how many filepaths have been loaded
-  int filepaths_cnt_ = 0;
+  size_t filepaths_cnt_ = 0;
 
   /// Boolean to check if succesfully completed a mission
   bool last_waypoint_reached_ = false;
@@ -312,20 +343,9 @@ private:
   /// Boolean to determine weather there is a pending request to mission sequencer
   bool ms_request_pending_ = false;
 
-  /// Friend classes (able to access private data members)
-  friend class Failure;
-  friend class Hold;
-  friend class Hover;
-  friend class Initialization;
-  friend class Land;
-  friend class Nominal;
-  friend class Undefined;
-  friend class Preflight;
-  friend class StartMission;
-  friend class PerformMission;
-  friend class MissionIterator;
-  friend class EndMission;
-  friend class Termination;
+  /// Booleans used to manage aux registration
+  bool register_aux_ = false;
+  bool aux_registered_ = false;
 
 };  // class Autonomy
 

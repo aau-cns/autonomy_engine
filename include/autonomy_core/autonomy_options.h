@@ -41,6 +41,7 @@ struct autonomyOptions
   const std::string mission_sequencer_response_topic;
   const std::string landing_detection_topic;
   const std::string mission_sequencer_waypoints_topic;
+  const std::string rc_topic;
 
   /// service Names
   const std::string watchdog_start_service_name;
@@ -82,10 +83,13 @@ struct autonomyOptions
   bool hover_after_mission_completion;
 
   /// Bollean to decide if multiple files are sequenced in-flight
-  bool sequence_multiple_in_flight_;
+  const bool sequence_multiple_in_flight;
 
   /// Mission to be loaded in case of no user interface
   const int mission_id_no_ui;
+
+  /// Mission to be loaded in case of no user interface
+  const size_t landing_aux_channel;
 
   /// Print function
   inline const std::string printAutonomyOptions()
@@ -103,7 +107,7 @@ struct autonomyOptions
        << " - Landing detection:                   " << getStringfromBool(activate_landing_detection) << '\n'
        << " - In-flight sensors init:              " << getStringfromBool(inflight_sensors_init_service) << '\n'
        << " - Hover after mission completion:      " << getStringfromBool(hover_after_mission_completion) << '\n'
-       << " - Sequence multiple in-flight:         " << getStringfromBool(sequence_multiple_in_flight_) << '\n';
+       << " - Sequence multiple in-flight:         " << getStringfromBool(sequence_multiple_in_flight) << '\n';
 
     if (!activate_user_interface)
     {
@@ -158,10 +162,14 @@ struct autonomyOptions
     ss << " - Publishing on:                       " << mission_sequencer_response_topic << '\n';
     ss << " - Publishing on:                       " << mission_sequencer_waypoints_topic << '\n';
 
+    ss << " - Subscribed to:                       " << rc_topic << '\n';
+
     ss << " - Maximum flight time:                 " << flight_timeout / 60000 << " min\n";
 
     ss << " - Max time for a sensor fix:           " << fix_timeout << " ms\n";
     ss << " - Max time for a sensor fix preflight: " << preflight_fix_timeout << " s\n";
+
+    ss << " - Landing AUX channel:                 " << landing_aux_channel << '\n';
 
     ss << "-------------------------------------------------\n\n";
 

@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Failure::Failure(){};
+Failure::Failure()
+{
+}
 
 State& Failure::Instance()
 {

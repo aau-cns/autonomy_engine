@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Land::Land(){};
+Land::Land()
+{
+}
 
 State& Land::Instance()
 {

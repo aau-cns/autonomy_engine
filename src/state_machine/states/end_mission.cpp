@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-EndMission::EndMission(){};
+EndMission::EndMission()
+{
+}
 
 State& EndMission::Instance()
 {
@@ -36,7 +38,7 @@ void EndMission::onEntry(Autonomy& autonomy)
 
     // Stop flight timer
     if (!autonomy.multiple_touchdowns_ ||
-        (autonomy.filepaths_cnt_ == static_cast<int>(autonomy.missions_.at(autonomy.mission_id_).getTouchdowns())))
+        (autonomy.filepaths_cnt_ == autonomy.missions_.at(autonomy.mission_id_).getTouchdowns()))
     {
       autonomy.flight_timer_->stopTimer();
     }
@@ -68,8 +70,8 @@ void EndMission::onEntry(Autonomy& autonomy)
   // or if we safely land
   if (autonomy.last_waypoint_reached_)
   {
-    if (autonomy.multiple_touchdowns_ && !autonomy.opts_->sequence_multiple_in_flight_ &&
-        (autonomy.filepaths_cnt_ < static_cast<int>(autonomy.missions_.at(autonomy.mission_id_).getTouchdowns())))
+    if (autonomy.multiple_touchdowns_ && !autonomy.opts_->sequence_multiple_in_flight &&
+        (autonomy.filepaths_cnt_ < autonomy.missions_.at(autonomy.mission_id_).getTouchdowns()))
     {
       autonomy.stateTransition("mission_iterator");
     }

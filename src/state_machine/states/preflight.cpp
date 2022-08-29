@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Preflight::Preflight(){};
+Preflight::Preflight()
+{
+}
 
 State& Preflight::Instance()
 {

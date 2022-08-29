@@ -13,7 +13,9 @@
 
 namespace autonomy
 {
-Initialization::Initialization(){};
+Initialization::Initialization()
+{
+}
 
 State& Initialization::Instance()
 {
@@ -26,22 +28,23 @@ void Initialization::onEntry(Autonomy& autonomy)
   // print info
   autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatStateEntry("INITIALIZATION"));
 
-  // Perform initialization of the watchdog and state transition to either NOMINAL or FAILURE
+  // Perform initialization of the watchdog
   if (autonomy.opts_->activate_watchdog)
   {
-    if (autonomy.startWatchdog())
-    {
-      autonomy.stateTransition("nominal");
-    }
-    else
+    if (!autonomy.startWatchdog())
     {
       autonomy.stateTransition("failure");
     }
   }
-  else
+
+  // Perform registration of RC aux
+  if (!autonomy.registerRCAux())
   {
-    autonomy.stateTransition("nominal");
+    autonomy.stateTransition("failure");
   }
+
+  // Transition to nominal
+  autonomy.stateTransition("nominal");
 }
 
 void Initialization::onExit(Autonomy&)

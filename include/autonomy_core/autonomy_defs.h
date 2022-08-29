@@ -12,6 +12,7 @@
 #ifndef AUTONOMY_DEFS_H
 #define AUTONOMY_DEFS_H
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -117,6 +118,32 @@ struct SensorStatus
       return true;
     }
     return false;
+  }
+};
+
+/**
+ * @brief Aux channels struct
+ */
+struct Aux
+{
+  /// [<aux ID, value>, ..., <aux ID, value>]
+  std::map<size_t, int> aux;
+
+  /**
+   * @brief Set value for a given id
+   */
+  void setValue(const size_t& id, const int& value)
+  {
+    aux.insert(std::pair<size_t, int>(id, value));
+  }
+
+  /**
+   * @brief Get value for a given id
+   */
+  const int& getValue(const size_t& id)
+  {
+    auto it = aux.find(id);
+    return it->second;
   }
 };
 
