@@ -32,6 +32,7 @@
     <arg name="data_recording_delay_after_failure_s"    default ="5" />
     <arg name="mission_id_no_ui"                        default="1" />
     <arg name="logger_filepath"                         default="/home/alfornasier/tmp/log/" />
+    <arg name="landing_aux_channel"                     default="0" />
 
     <!-- arguments flags -->
     <arg name="activate_user_interface"                 default="true" />
@@ -79,6 +80,7 @@
         <param name="preflight_fix_timeout_ms"                  type="int"      value = "$(arg preflight_fix_timeout_ms)" />
         <param name="data_recording_delay_after_failure_s"      type="int"      value = "$(arg data_recording_delay_after_failure_s)" />
         <param name="logger_filepath"                           type="string"   value = "$(arg logger_filepath)" />
+        <param name="landing_aux_channel"                       type="int"      value = "$(arg landing_aux_channel)" />
 
         <!-- flags -->
         <param name="activate_user_interface"                   type="bool"   value = "$(arg activate_user_interface)" />

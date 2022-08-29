@@ -1079,21 +1079,27 @@ void Autonomy::rcCallback(const mavros_msgs::RCInConstPtr& msg)
       for (size_t id = 0; id < msg->channels.size(); ++id)
       {
         aux_.setValue(id, msg->channels.at(id));
+        std::stringstream ss;
+        ss << "Registered AUX [" << id << "] with value [" << aux_.getValue(id) << "]";
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg(ss.str(), 1));
       }
 
       // Set aux_registered_
       aux_registered_ = true;
     }
+  }
 
-    // Check for changes
+  if (aux_registered_ && !register_aux_)
+  {
+    // Check for changes with tollerance of 50
     for (size_t id = 0; id < msg->channels.size(); ++id)
     {
-      if (msg->channels.at(id) != aux_.getValue(id))
+      if (std::abs(msg->channels.at(id) - aux_.getValue(id)) > 50)
       {
         // Update aux values
         std::stringstream ss;
         ss << "AUX [" << id << "] changed from [" << aux_.getValue(id) << "] to [" << msg->channels.at(id) << "]";
-        logger_.logUI(state_->getStringFromState(), ESCAPE(YELLOW_ESCAPE, GREEN_ESCAPE), formatMsg(ss.str(), 2));
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), formatMsg(ss.str(), 2));
         aux_.setValue(id, msg->channels.at(id));
 
         // Check if landing aux changed
@@ -1111,7 +1117,7 @@ void Autonomy::rcCallback(const mavros_msgs::RCInConstPtr& msg)
 bool Autonomy::registerRCAux()
 {
   // UI AUX registration
-  logger_.logUI(state_->getStringFromState(), ESCAPE(YELLOW_ESCAPE, GREEN_ESCAPE),
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
                 formatMsg("Please set all the switches on the safety pilot remote, and press [SPACE] and then [ENTER] "
                           "to register the actual position of the switches",
                           0));
@@ -1119,6 +1125,7 @@ bool Autonomy::registerRCAux()
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
   logger_.logUserInput(state_->getStringFromState(), "[SPACE]");
   logger_.logUserInput(state_->getStringFromState(), "[ENTER]");
+  std::cout << std::endl;
 
   // Set register_aux_ flag
   register_aux_ = true;
@@ -1137,7 +1144,7 @@ bool Autonomy::registerRCAux()
   }
 
   // UI
-  logger_.logUI(state_->getStringFromState(), ESCAPE(GREEN_ESCAPE, GREEN_ESCAPE),
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
                 formatMsg("Remote Switches succesfully registered", 2));
 
   // reset register_aux_ and return
@@ -1366,6 +1373,7 @@ bool Autonomy::estimatorCheck()
   std::cin.ignore(std::numeric_limits<std::streamsize>::max(), ' ');
   logger_.logUserInput(state_->getStringFromState(), "[SPACE]");
   logger_.logUserInput(state_->getStringFromState(), "[ENTER]");
+  std::cout << std::endl;
 
   // Define takeoff request
   std_srvs::Trigger superivsion;

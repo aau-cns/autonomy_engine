@@ -134,7 +134,7 @@ struct Aux
    */
   void setValue(const size_t& id, const int& value)
   {
-    aux.insert(std::pair<size_t, int>(id, value));
+    aux.insert_or_assign(id, value);
   }
 
   /**
