@@ -146,7 +146,7 @@ The ``holdtime`` column is optional, if not present the holdtime is set to 0 by 
 ### Parameter description
 
 | Parameter | Description | Default value |
-| --- | --- |
+| --- | --- | --- |
 | config_filepath | Path of the configuration file | "" |
 | activate_user_interface | Boolean to activate the UI | True |
 | activate_watchdog | Boolean to actiavate the watchdog | False |
