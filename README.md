@@ -1,24 +1,18 @@
----
-title: CNS-FLIGHT Autonomy
-author:
-  - Alessandro Fornasier
-  - Control of Networked Systems, University of Klagenfurt, Austria
-date: 29.08.2022
-subtitle: Version 2.0
-
-documentclass: scrartcl
-highlight: haddock
-numbersections: true
-secnumdepth: 3
-toc: true
----
-
-
 # CNS-FLIGHT Autonomy
 
-Maintainer: Alessandro Fornasier @alfornasier
+Maintainer: [Alessandro Fornasier](mailto:alessandro.fornasier@aau.at)
 
-[[_TOC_]]
+- [Credit](#credit)
+- [License](#license)
+  * [Usage for academic purposes](#usage-for-academic-purposes)
+- [Description](#description)
+  * [Pre-Flight Checks](#pre-flight-checks)
+  * [Mission Operation](#mission-operation)
+  * [Data Clean Up](#data-clean-up)
+  * [Error Handling](#error-handling)
+  * [Interaction with the WatchDog Node](#interaction-with-the-watchdog-node)
+  * [Configuration of the Autonomy Engine](#configuration-of-the-autonomy-engine)
+  * [Parameter description](#parameter-description)
 
 ## Credit
 This code was written by the [Control of Networked System (CNS)](https://www.aau.at/en/smart-systems-technologies/control-of-networked-systems/), University of Klagenfurt.
@@ -32,13 +26,16 @@ If you use this software in an academic research setting, please cite the
 corresponding paper and consult the `LICENSE` file for a detailed explanation.
 
 ```latex
-@inproceedings{cns_flight_stack22,
-   author   = {Martin Scheiber and Alessandro Fornasier and Roland Jung and Christoph Boehm and Rohit Dhakate
-               and Christian Stewart and Jan Steinbrener and Stephan Weiss and Christian Brommer},
-   journal  = {IEEE Robotics and Automation Letters},
-   title    = {CNS Flight Stack for Reproducible, Customizable, and Fully Autonomous Applications},
-   year     = {2022},
-   doi      = {10.1109/LRA.2022.3196117}
+@article{Scheiber2022,
+    title        = {Flight Stack for Reproducible and Customizable Autonomy Applications in Research and Industry},
+    author       = {Scheiber, Martin and Fornasier, Alessandro and Jung, Roland and Böhm, Christoph and Dhakate, Rohit and Stewart, Christian and Steinbrener, Jan and Weiss, Stephan and Brommer, Christian},
+    journal      = {IEEE Robotics and Automation Letters},
+    volume       = {7},
+    number       = {4},
+    year         = {2022},
+    doi          = {10.1109/LRA.2022.3196117},
+    url          = {https://ieeexplore.ieee.org/document/9849131},
+    pages        = {11283--11290}
 }
 ```
 
