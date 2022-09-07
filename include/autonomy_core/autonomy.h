@@ -27,6 +27,7 @@
 #include <watchdog_msgs/StatusChangesArrayStamped.h>
 #include <watchdog_msgs/StatusStamped.h>
 #include <xmlrpcpp/XmlRpcValue.h>
+#include <atomic>
 #include <boost/bind/bind.hpp>
 #include <chrono>
 #include <iostream>
@@ -311,41 +312,41 @@ private:
   Aux aux_;
 
   /// Boolean to check if data is getting recorded
-  bool is_recording_ = false;
+  std::atomic<bool> is_recording_ = false;
 
   /// Boolean to check if the platform is armed
-  bool armed_ = false;
+  std::atomic<bool> armed_ = false;
 
   /// Boolean to check if we are in flight
-  bool in_flight_ = false;
+  std::atomic<bool> in_flight_ = false;
 
   /// Boolean to check if we are in mission
-  bool in_mission_ = false;
+  std::atomic<bool> in_mission_ = false;
 
   /// boolean to check if we are holding
-  bool holding_ = false;
+  std::atomic<bool> holding_ = false;
 
   /// boolean to check if we are hovering
-  bool hovering_ = false;
+  std::atomic<bool> hovering_ = false;
 
   /// Boolean to determine weather a mission with multiple touchdown is loaded
-  bool multiple_touchdowns_ = false;
+  std::atomic<bool> multiple_touchdowns_ = false;
 
   /// filepaths counter, used in case of multiple touchdown to keep track of how many filepaths have been loaded
   size_t filepaths_cnt_ = 0;
 
   /// Boolean to check if succesfully completed a mission
-  bool last_waypoint_reached_ = false;
+  std::atomic<bool> last_waypoint_reached_ = false;
 
   /// Boolean to check if we expect a land
-  bool land_expected_ = false;
+  std::atomic<bool> land_expected_ = false;
 
   /// Boolean to determine weather there is a pending request to mission sequencer
-  bool ms_request_pending_ = false;
+  std::atomic<bool> ms_request_pending_ = false;
 
   /// Booleans used to manage aux registration
-  bool register_aux_ = false;
-  bool aux_registered_ = false;
+  std::atomic<bool> register_aux_ = false;
+  std::atomic<bool> aux_registered_ = false;
 
 };  // class Autonomy
 
