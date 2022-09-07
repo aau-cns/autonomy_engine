@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>autonomy</name>
-  <version>1.0.0</version>
+  <version>1.0</version>
   <description>The CNS-FLIGHT STACK Autonomy package</description>
 
-  <maintainer email="alessandro.fornasier@aau.at">alfornasier</maintainer>
+  <maintainer email="alessandro.fornasier@aau.at">Alessandro Fornasier</maintainer>
 
-  <license>BSD-2 with additional conditions</license>
+  <license>BSD-2-Clause-License with no commercial use allowed. No license in patents is granted.</license>
 
-  <author email="alessandro.fornasier@aau.at">Christian Brommer</author>
+  <author email="alessandro.fornasier@aau.at">Alessandro Fornasier</author>
 
   <!-- Use depend as a shortcut for packages that are both build and exec dependencies -->
   <depend>roscpp</depend>
