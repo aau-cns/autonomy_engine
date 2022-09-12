@@ -190,6 +190,7 @@ list(
 
 ## Declare a C++ library
 add_library(custom_libraries SHARED ${lib_sources})
+add_dependencies(custom_libraries ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS} ${PROJECT_NAME}_generate_messages_cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries

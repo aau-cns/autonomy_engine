@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>autonomy</name>
-  <version>1.0</version>
+  <version>1.0.0</version>
   <description>The CNS-FLIGHT STACK Autonomy package</description>
 
   <maintainer email="alessandro.fornasier@aau.at">Alessandro Fornasier</maintainer>
