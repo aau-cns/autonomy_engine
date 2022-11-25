@@ -2,8 +2,10 @@ missions:
 
   mission_1:
     description: "Template"
+    # filepaths are relative to the `autonomy_engine/trajectory_dir` parameter
     filepaths:
-      - "/home/core/catkin_ws/src/flightstack/flightstack_bringup/trajectories/dh/toland.csv"
+      - "template_dir/template_trajectory.csv"
+    # for a full list of implemented entities see 'include/autonomy_core/autonomy_defs.h'
     entities_actions:
       - ["px4_gps", "continue"]
       - ["px4_imu", "failure"]
