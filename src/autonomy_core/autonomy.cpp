@@ -9,10 +9,11 @@
 //
 // You can contact the author at <alessandro.fornasier@ieee.org>
 
+#include "autonomy_core/autonomy.h"
+
 #include <ctime>
 #include <limits>
 
-#include "autonomy_core/autonomy.h"
 #include "state_machine/states/end_mission.h"
 #include "state_machine/states/failure.h"
 #include "state_machine/states/hold.h"
@@ -45,9 +46,9 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   time_t now = time(nullptr);
   tm* ltm = localtime(&now);
 
-  // Initialize file logger setting filename to yyyy-mm-dd-hh-mm-ss.log
-  std::string filename = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(1 + ltm->tm_mon) + "-" +
-                         std::to_string(ltm->tm_mday) + "-" + std::to_string(ltm->tm_hour) + "-" +
+  // Initialize file logger setting filename to autonomy-yyyy-mm-dd-hh-mm-ss.log
+  std::string filename = "autonomy-" + std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(1 + ltm->tm_mon) +
+                         "-" + std::to_string(ltm->tm_mday) + "-" + std::to_string(ltm->tm_hour) + "-" +
                          std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec) + "." + "log";
   logger_.initFileLogger(opts_->logger_filepath + filename);
 
@@ -186,7 +187,7 @@ void Autonomy::getMissions()
             // assign filepath
             std::string full_path = std::string(opts_->trajectory_dir) + std::string(XRV_filepaths[j]);
             filepaths.emplace_back(opts_->trajectory_dir + std::string(XRV_filepaths[j]));
-//            filepaths.emplace_back(std::string(XRV_filepaths[j]));
+            //            filepaths.emplace_back(std::string(XRV_filepaths[j]));
           }
           else
           {

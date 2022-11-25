@@ -72,7 +72,7 @@
         <rosparam command="load"    file="$(arg config_filepath)" />
 
         <!-- setup -->
-        <param name="watchdog_rate"                          type="double"   value = "$(arg watchdog_rate_Hz)" />
+        <param name="watchdog_rate"                             type="double"   value = "$(arg watchdog_rate_Hz)" />
         <param name="watchdog_startup_time_s"                   type="int"      value = "$(arg watchdog_startup_time_s)" />
         <param name="watchdog_heartbeat_timeout_multiplier"     type="double"   value = "$(arg watchdog_heartbeat_timeout_multiplier)" />
         <param name="maximum_flight_time_min"                   type="int"      value = "$(arg maximum_flight_time_min)" />
