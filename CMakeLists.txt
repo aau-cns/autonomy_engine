@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 
-project(autonomy)
+project(autonomy_engine)
 
 ## Try to compile with newer versions of C++
 include(CheckCXXCompilerFlag)

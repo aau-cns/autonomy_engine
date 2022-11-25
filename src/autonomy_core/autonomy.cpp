@@ -45,10 +45,10 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   time_t now = time(nullptr);
   tm* ltm = localtime(&now);
 
-  // Initialize file logger setting filename to yyyy-mm-dd-hh-mm-ss-log
+  // Initialize file logger setting filename to yyyy-mm-dd-hh-mm-ss.log
   std::string filename = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(1 + ltm->tm_mon) + "-" +
                          std::to_string(ltm->tm_mday) + "-" + std::to_string(ltm->tm_hour) + "-" +
-                         std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec) + "-" + "log";
+                         std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec) + "." + "log";
   logger_.initFileLogger(opts_->logger_filepath + filename);
 
   // Print option

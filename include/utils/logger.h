@@ -15,7 +15,7 @@
 
 #define PAD 1
 
-#include <autonomy/LogMessage.h>
+#include <autonomy_engine/LogMessage.h>
 #include <ros/console.h>
 #include <ros/node_handle.h>
 #include <regex>
@@ -45,11 +45,11 @@ private:
   /**
    * @brief Publish log message as a ros message and log to file if file logger is initialized
    */
-  inline void publishLog(const autonomy::LogMessage::_type_type& type, const std::string& msg, const std::string& state,
+  inline void publishLog(const autonomy_engine::LogMessage::_type_type& type, const std::string& msg, const std::string& state,
                          const std::string& next_state)
   {
     // setup pub msg
-    autonomy::LogMessage pub_msg;
+    autonomy_engine::LogMessage pub_msg;
     pub_msg.header.stamp = ros::Time::now();
     pub_msg.header.seq = pub_seq_++;
     pub_msg.header.frame_id = "global";
@@ -91,7 +91,7 @@ public:
     console_ui_logger_->set_pattern("%v");
 
     // setup publishers
-    pub_log_ = nh_.advertise<autonomy::LogMessage>("logger", 1);
+    pub_log_ = nh_.advertise<autonomy_engine::LogMessage>("logger", 1);
   }
 
   /**
@@ -120,7 +120,7 @@ public:
     file_logger_->set_pattern("[%Y-%m-%d %T.%e] | %-0v");
 
     // setup publishers
-    pub_log_ = nh_.advertise<autonomy::LogMessage>("logger", 1);
+    pub_log_ = nh_.advertise<autonomy_engine::LogMessage>("logger", 1);
   }
 
   /**
@@ -151,7 +151,7 @@ public:
   inline void logStateChange(const std::string& cur_state, const std::string& next_state)
   {
     const std::string msg = padRight("[STATE TRANSITION] ", PAD) + "[" + cur_state + "] -> [" + next_state + "]";
-    publishLog(autonomy::LogMessage::STATE_CHANGE, msg, cur_state, next_state);
+    publishLog(autonomy_engine::LogMessage::STATE_CHANGE, msg, cur_state, next_state);
   }
 
   /**
@@ -161,7 +161,7 @@ public:
                              const std::string& next_state = "")
   {
     const std::string msg = padRight("[CALLED SERVICE] ", PAD) + service;
-    publishLog(autonomy::LogMessage::SERVICE_CALLED, msg, cur_state, next_state);
+    publishLog(autonomy_engine::LogMessage::SERVICE_CALLED, msg, cur_state, next_state);
   }
 
   /**
@@ -171,7 +171,7 @@ public:
                                  const std::string& next_state = "")
   {
     const std::string msg = padRight("[SERVICE: " + service + " RESPONSE] ", PAD) + response;
-    publishLog(autonomy::LogMessage::SERVICE_RESPONSE, msg, cur_state, next_state);
+    publishLog(autonomy_engine::LogMessage::SERVICE_RESPONSE, msg, cur_state, next_state);
   }
 
   /**
@@ -183,12 +183,12 @@ public:
     if (received)
     {
       const std::string msg = padRight("[MESSAGE RECEIVED ON: " + topic + "] ", PAD) + contents;
-      publishLog(autonomy::LogMessage::MESSAGE_RECEIVED, msg, cur_state, next_state);
+      publishLog(autonomy_engine::LogMessage::MESSAGE_RECEIVED, msg, cur_state, next_state);
     }
     else
     {
       const std::string msg = padRight("[MESSAGE SENT ON " + topic + "] ", PAD) + contents;
-      publishLog(autonomy::LogMessage::MESSAGE_SENT, msg, cur_state, next_state);
+      publishLog(autonomy_engine::LogMessage::MESSAGE_SENT, msg, cur_state, next_state);
     }
   }
 
@@ -198,7 +198,7 @@ public:
   inline void logUserInput(const std::string& cur_state, const std::string& input, const std::string& next_state = "")
   {
     const std::string msg = padRight("[USER INPUT] ", PAD) + input;
-    publishLog(autonomy::LogMessage::USER_INPUT, msg, cur_state, next_state);
+    publishLog(autonomy_engine::LogMessage::USER_INPUT, msg, cur_state, next_state);
   }
 
   /**
@@ -207,7 +207,7 @@ public:
   inline void logUserInterface(const std::string& cur_state, const std::string& ui, const std::string& next_state = "")
   {
     const std::string msg = padRight("[USER INTERFACE] ", PAD) + ui;
-    publishLog(autonomy::LogMessage::USER_INTERFACE, msg, cur_state, next_state);
+    publishLog(autonomy_engine::LogMessage::USER_INTERFACE, msg, cur_state, next_state);
   }
 
   /**
@@ -216,7 +216,7 @@ public:
   inline void logInfo(const std::string& cur_state, const std::string& info, const std::string& next_state = "")
   {
     const std::string msg = padRight("[INFO] ", PAD) + info;
-    publishLog(autonomy::LogMessage::INFO, msg, cur_state, next_state);
+    publishLog(autonomy_engine::LogMessage::INFO, msg, cur_state, next_state);
   }
 
   /**
