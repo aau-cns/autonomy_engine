@@ -48,10 +48,6 @@ int main(int argc, char* argv[])
     // Instanciate autonomy
     autonomy::Autonomy autonomy(nh);
 
-    autonomy.logger_.logUI("undefined", ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
-                           " >>> Press [ENTER] to start the CNS-FLIGHT Autonomy\n");
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
     // Sigaction to handle CTRL-C
     //    sigintHandler = std::bind(&autonomy::Autonomy::sigintHandler, &autonomy);
     sigintHandler = [&autonomy]() { autonomy.sigintHandler(); };
@@ -60,6 +56,10 @@ int main(int argc, char* argv[])
     sigemptyset(&sigIntHandler.sa_mask);
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, nullptr);
+
+    autonomy.logger_.logUI("undefined", ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                           " >>> Press [ENTER] to start the CNS-FLIGHT Autonomy\n");
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     // Start the autonomy
     autonomy.startAutonomy();
