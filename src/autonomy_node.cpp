@@ -57,10 +57,6 @@ int main(int argc, char* argv[])
     sigIntHandler.sa_flags = 0;
     sigaction(SIGINT, &sigIntHandler, nullptr);
 
-    autonomy.logger_.logUI("undefined", ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
-                           " >>> Press [ENTER] to start the CNS-FLIGHT Autonomy\n");
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
     // Start the autonomy
     autonomy.startAutonomy();
 

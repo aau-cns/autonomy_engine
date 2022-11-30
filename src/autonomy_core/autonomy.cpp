@@ -1576,6 +1576,10 @@ void Autonomy::DataRecording(const bool& start_stop)
 
 void Autonomy::startAutonomy()
 {
+  logger_.logUI("undefined", ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                " >>> Press [ENTER] to start the CNS-FLIGHT Autonomy\n");
+  std::cin.clear();
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   // Mission selection
   missionSelection();
 

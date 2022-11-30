@@ -28,23 +28,19 @@ void Initialization::onEntry(Autonomy& autonomy)
   // print info
   autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatStateEntry("INITIALIZATION"));
 
-  // Perform initialization of the watchdog
+  // Perform initialization of the watchdog and RC aux registration
   if (autonomy.opts_->activate_watchdog)
   {
-    if (!autonomy.startWatchdog())
+    if (!(autonomy.startWatchdog() && autonomy.registerRCAux()))
     {
       autonomy.stateTransition("failure");
     }
   }
-
-  // Perform registration of RC aux
-  if (!autonomy.registerRCAux())
+  else
   {
-    autonomy.stateTransition("failure");
+    // Transition to nominal
+    autonomy.stateTransition("nominal");
   }
-
-  // Transition to nominal
-  autonomy.stateTransition("nominal");
 }
 
 void Initialization::onExit(Autonomy&)
