@@ -12,7 +12,9 @@
 #include "autonomy_core/autonomy.h"
 
 #include <ctime>
+#include <iomanip>
 #include <limits>
+#include <sstream>
 
 #include "state_machine/states/end_mission.h"
 #include "state_machine/states/failure.h"
@@ -36,21 +38,27 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   // Setting state to UNDEFINED
   state_ = &Undefined::Instance();
 
-  // Init message
-  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatInitMsg());
-
-  // Parse parameters and options
-  parseParams();
-
   // Get actual time
   time_t now = time(nullptr);
   tm* ltm = localtime(&now);
 
+  // Parse parameters and options
+  parseParams();
+
   // Initialize file logger setting filename to autonomy-yyyy-mm-dd-hh-mm-ss.log
-  std::string filename = "autonomy-" + std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(1 + ltm->tm_mon) +
-                         "-" + std::to_string(ltm->tm_mday) + "-" + std::to_string(ltm->tm_hour) + "-" +
-                         std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec) + "." + "log";
-  logger_.initFileLogger(opts_->logger_filepath + filename);
+  //  std::string filename = "autonomy-" + std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(1 + ltm->tm_mon) +
+  //                         "-" + std::to_string(ltm->tm_mday) + "-" + std::to_string(ltm->tm_hour) + "-" +
+  //                         std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec) + "." + "log";
+  //  logger_.initFileLogger(opts_->logger_filepath + filename);
+  std::ostringstream ss;
+  ss << "autonomy-" << std::setw(4) << std::setfill('0') << (1900 + ltm->tm_year) << "-" << std::setw(2)
+     << std::setfill('0') << int(1 + ltm->tm_mon) << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_mday)
+     <<  "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_hour) << "-"
+     << std::setw(2) << std::setfill('0') << int(ltm->tm_min) << "-" << int(ltm->tm_sec) << ".log";
+  logger_.initFileLogger(std::string(opts_->logger_filepath) + ss.str());
+
+  // Init message
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatInitMsg());
 
   // Print option
   logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), opts_->printAutonomyOptions());
