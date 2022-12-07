@@ -35,6 +35,11 @@ void Initialization::onEntry(Autonomy& autonomy)
     {
       autonomy.stateTransition("failure");
     }
+    else
+    {
+      // Transition to nominal
+      autonomy.stateTransition("nominal");
+    }
   }
   else
   {
