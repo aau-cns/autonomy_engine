@@ -9,10 +9,13 @@
 //
 // You can contact the author at <alessandro.fornasier@ieee.org>
 
-#include <ctime>
-#include <limits>
-
 #include "autonomy_core/autonomy.h"
+
+#include <ctime>
+#include <iomanip>
+#include <limits>
+#include <sstream>
+
 #include "state_machine/states/end_mission.h"
 #include "state_machine/states/failure.h"
 #include "state_machine/states/hold.h"
@@ -35,21 +38,22 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   // Setting state to UNDEFINED
   state_ = &Undefined::Instance();
 
-  // Init message
-  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatInitMsg());
-
-  // Parse parameters and options
-  parseParams();
-
   // Get actual time
   time_t now = time(nullptr);
   tm* ltm = localtime(&now);
 
-  // Initialize file logger setting filename to yyyy-mm-dd-hh-mm-ss-log
-  std::string filename = std::to_string(1900 + ltm->tm_year) + "-" + std::to_string(1 + ltm->tm_mon) + "-" +
-                         std::to_string(ltm->tm_mday) + "-" + std::to_string(ltm->tm_hour) + "-" +
-                         std::to_string(ltm->tm_min) + "-" + std::to_string(ltm->tm_sec) + "-" + "log";
-  logger_.initFileLogger(opts_->logger_filepath + filename);
+  // Parse parameters and options
+  parseParams();
+
+  std::ostringstream ss;
+  ss << "autonomy-" << std::setw(4) << std::setfill('0') << (1900 + ltm->tm_year) << "-" << std::setw(2)
+     << std::setfill('0') << int(1 + ltm->tm_mon) << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_mday)
+     << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_hour) << "-" << std::setw(2) << std::setfill('0')
+     << int(ltm->tm_min) << "-" << int(ltm->tm_sec) << ".log";
+  logger_.initFileLogger(std::string(opts_->logger_filepath) + ss.str());
+
+  // Init message
+  logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatInitMsg());
 
   // Print option
   logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), opts_->printAutonomyOptions());
@@ -184,7 +188,9 @@ void Autonomy::getMissions()
           if (XRV_filepaths[j].getType() == XmlRpc::XmlRpcValue::TypeString)
           {
             // assign filepath
-            filepaths.emplace_back(std::string(XRV_filepaths[j]));
+            std::string full_path = std::string(opts_->trajectory_dir) + std::string(XRV_filepaths[j]);
+            filepaths.emplace_back(opts_->trajectory_dir + std::string(XRV_filepaths[j]));
+            //            filepaths.emplace_back(std::string(XRV_filepaths[j]));
           }
           else
           {
@@ -286,6 +292,7 @@ void Autonomy::parseParams()
   std::string estimator_init_service_name;
   std::string mission_sequencer_waypoints_topic;
   std::string logger_filepath;
+  std::string trajectory_dir;
   std::string rc_topic;
 
   // Define auxilliary variables foreach paramter: std::vector
@@ -332,6 +339,7 @@ void Autonomy::parseParams()
   getParameter(mission_sequencer_response_topic, "mission_sequencer_response_topic");
   getParameter(mission_sequencer_waypoints_topic, "mission_sequencer_waypoints_topic");
   getParameter(logger_filepath, "logger_filepath");
+  getParameter(trajectory_dir, "trajectory_dir");
   getParameter(flight_timeout_ms, "maximum_flight_time_min");
   getParameter(fix_timeout_ms, "fix_timeout_ms");
   getParameter(preflight_fix_timeout_ms, "preflight_fix_timeout_ms");
@@ -423,9 +431,6 @@ void Autonomy::parseParams()
   // Get aux channels
   getParameter(landing_aux_channel, "landing_aux_channel");
 
-  // Get missions
-  getMissions();
-
   // Make options
   opts_ = std::make_unique<autonomyOptions>(autonomyOptions({ watchdog_heartbeat_topic,
                                                               watchdog_status_topic,
@@ -441,6 +446,7 @@ void Autonomy::parseParams()
                                                               takeoff_service_name,
                                                               estimator_init_service_name,
                                                               logger_filepath,
+                                                              trajectory_dir,
                                                               inflight_sensor_init_services_name,
                                                               watchdog_timeout_ms,
                                                               flight_timeout_ms,
@@ -460,6 +466,9 @@ void Autonomy::parseParams()
                                                               sequence_multiple_in_flight,
                                                               mission_id_no_ui,
                                                               static_cast<size_t>(landing_aux_channel) }));
+
+  // Get missions
+  getMissions();
 }
 
 bool Autonomy::getSensorStatusFromMsg(const watchdog_msgs::Status& msg, SensorStatus& status)
@@ -1570,6 +1579,10 @@ void Autonomy::DataRecording(const bool& start_stop)
 
 void Autonomy::startAutonomy()
 {
+  logger_.logUI("undefined", ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
+                " >>> Press [ENTER] to start the CNS-FLIGHT Autonomy\n");
+  std::cin.clear();
+  std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
   // Mission selection
   missionSelection();
 

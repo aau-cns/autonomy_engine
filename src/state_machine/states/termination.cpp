@@ -65,11 +65,8 @@ void Termination::onEntry(Autonomy& autonomy)
   autonomy.sub_landing_detection_.shutdown();
   autonomy.sub_mission_sequencer_response_.shutdown();
 
-  // Wait
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-
   // Shoutdown
-  autonomy.nh_.shutdown();
+  ros::shutdown();
 }
 
 void Termination::onExit(Autonomy&)

@@ -50,6 +50,7 @@ struct autonomyOptions
   const std::string takeoff_service_name;
   const std::string estimator_init_service_name;
   const std::string logger_filepath;
+  const std::string trajectory_dir;
   const std::vector<std::string> inflight_sensor_init_services_name;
 
   /// Timeout in milliseconds for watchdog heartbeat
@@ -99,6 +100,7 @@ struct autonomyOptions
        << "LOADED PARAMETERS:\n\n"
        << " - User Interface:                      " << getStringfromBool(activate_user_interface) << '\n'
        << " - Logger filepath:                     " << logger_filepath << '\n'
+       << " - Trajectories Directory:              " << trajectory_dir << '\n'
        << " - Watchdog:                            " << getStringfromBool(activate_watchdog) << '\n'
        << " - Data recording:                      " << getStringfromBool(activate_data_recording) << '\n'
        << " - Estimator init service:              " << getStringfromBool(estimator_init_service) << '\n'
