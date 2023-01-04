@@ -31,7 +31,18 @@ void Initialization::onEntry(Autonomy& autonomy)
   // Perform initialization of the watchdog and RC aux registration
   if (autonomy.opts_->activate_watchdog)
   {
-    if (!(autonomy.startWatchdog() && autonomy.registerRCAux()))
+    if (!autonomy.startWatchdog())
+    {
+      autonomy.stateTransition("failure");
+    }
+    else
+    {
+      autonomy.stateTransition("nominal");
+    }
+  }
+  else if (autonomy.opts_->register_aux)
+  {
+    if (!autonomy.registerRCAux())
     {
       autonomy.stateTransition("failure");
     }
@@ -42,15 +53,8 @@ void Initialization::onEntry(Autonomy& autonomy)
   }
   else
   {
-    if (!autonomy.registerRCAux())
-    {
-      autonomy.stateTransition("failure");
-    }
-    else
-    {
-      // Transition to nominal
-      autonomy.stateTransition("nominal");
-    }
+    // Transition to nominal
+    autonomy.stateTransition("nominal");
   }
 }
 

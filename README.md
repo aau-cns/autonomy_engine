@@ -177,6 +177,7 @@ The parameters of the launchfile are described here.
 | `perform_estimator_check` | Boolean to perform estimator health checks | `False` |
 | `activate_landing_detection` | Boolean to actiavate landing detection | `False` |
 | `inflight_sensors_init_service` | Boolean to actiavate inflight sensor initalization | `False` |
+| `register aux` | Boolean to actiavate aux channels (rc channels) registration | `False` |
 | `hover_after_mission_completion` | Boolean to actiavate hovering (instead of landing) after mission completion | `False` |
 | `sequence_multiple_in_flight` | Boolean to sequence multiple mission in flight (without perform landing - preflight checks - takeoff in between missions) | `False` |
 | `watchdog_heartbeat_topic` | Topic of the watchdog heartbeat message | `/watchdog/heartbeat` |

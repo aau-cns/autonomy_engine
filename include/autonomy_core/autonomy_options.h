@@ -78,12 +78,13 @@ struct autonomyOptions
   const bool perform_estimator_check;
   const bool activate_landing_detection;
   const bool inflight_sensors_init_service;
+  const bool register_aux;
 
   /// Boolean to decide what to do in case of mission completion
   /// Note: This is not const because it can be overwritten during runtime
   bool hover_after_mission_completion;
 
-  /// Bollean to decide if multiple files are sequenced in-flight
+  /// Bolean to decide if multiple files are sequenced in-flight
   const bool sequence_multiple_in_flight;
 
   /// Mission to be loaded in case of no user interface
