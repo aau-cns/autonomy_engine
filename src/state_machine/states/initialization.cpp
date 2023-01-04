@@ -37,14 +37,20 @@ void Initialization::onEntry(Autonomy& autonomy)
     }
     else
     {
-      // Transition to nominal
       autonomy.stateTransition("nominal");
     }
   }
   else
   {
-    // Transition to nominal
-    autonomy.stateTransition("nominal");
+    if (!autonomy.registerRCAux())
+    {
+      autonomy.stateTransition("failure");
+    }
+    else
+    {
+      // Transition to nominal
+      autonomy.stateTransition("nominal");
+    }
   }
 }
 
