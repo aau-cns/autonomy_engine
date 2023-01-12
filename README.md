@@ -1,6 +1,6 @@
 # CNS Flight Stack: Autonomy Engine
 
-[![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](./LICENSE) [![Paper](https://img.shields.io/badge/IEEEXplore-10.1109/LRA.2022.3196117-00629B.svg?logo=ieee)](https://doi.org/10.1109/LRA.2022.3196117)
+[![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](./LICENSE) [![Paper](https://img.shields.io/badge/IEEEXplore-10.1109/LRA.2022.3196117-00629B.svg?logo=ieee)](https://doi.org/10.1109/LRA.2022.3196117) [![Release](https://img.shields.io/github/v/release/aau-cns/autonomy_engine?include_prereleases&logo=github)](https://github.com/aau-cns/autonomy_engine/releases)
 
 Maintainer: [Alessandro Fornasier](mailto:alessandro.fornasier@aau.at)
 
@@ -84,17 +84,17 @@ Pre-Flight Checks concern all aspects that are necessary to perform a successful
 - Finally, the autonomy displays the result of the checks, if all the checks succeeded the autonomy starts the data recording and communicates with the mission manager that the platform is ready for taking off.
 
 ### Mission Operation
-During the mission the autonomy is responsible for handeling sensor failures and react based on the severity. The autonomy communicates with the watchdog and with the mission sequencer to ensure a safe flight. At the end of the mission, the autonomy communicates with the mission manager that the mission has ended and the platform is ready to land.
+During the mission, the autonomy is responsible for handling sensor failures and react based on the severity. The autonomy communicates with the watchdog and with the mission sequencer to ensure a safe flight. At the end of the mission, the autonomy communicates with the mission manager that the mission has ended and the platform is ready to land.
 
 ### Data Clean Up
 After the mission, the autonomy triggers the end of the data recording which leads to a wait time till all data is written and was merged between the two embedded platforms.
 
 ### Error Handling
-At any time after the Pre-Flight checks, the WatchDog node can communicate an error to the autonomy. The autonomy engine is responsible for triggering an action depending on the severity of the issue. As an example, a failure of the mission camera cant be tolerated and an emergency landing is triggered immediately. On the other side, a failure of the RealSense is not critical but inconvenient for data recording. Thus, the autonomy waits until the autonomy restarted the respective node and continues. However, if a maximum restart time of the node is reached and the error was not solved, the mission can be continued.
+At any time after the Pre-Flight checks, the WatchDog node can communicate an error to the autonomy. The autonomy engine is responsible for triggering an action depending on the severity of the issue. As an example, a failure of the mission camera can't be tolerated and an emergency landing is triggered immediately. On the other side, a failure of the RealSense is not critical but inconvenient for data recording. Thus, the autonomy waits until the autonomy restarted the respective node and continues. However, if a maximum restart time of the node is reached and the error was not solved, the mission can be continued.
 
 ### Interaction with the WatchDog Node
 
-The safety node a.k.a. watchdog is started by the Autonomy via service request. After this, the safety node will open two streams; the status stream which communicates changes in the status of the various watched sensors, and the action stream which is used by the autonomy engine to communicate actions to be performed to restore the nominal functionalities of a specific sensor.
+The safety node a.k.a. watchdog is started by the Autonomy via a service request. After this, the safety node will open two streams; the status stream which communicates changes in the status of the various watched sensors, and the action stream which is used by the autonomy engine to communicate actions to be performed to restore the nominal functionalities of a specific sensor.
 
 Possible states for the status stream, are:
 
