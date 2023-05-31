@@ -189,7 +189,7 @@ void Autonomy::getMissions()
 
       // Get mission parmaters
       getParameter(description, "missions/mission_" + std::to_string(i) + "/description");
-      getParameter(XRV_filepaths, "/autonomy/missions/mission_" + std::to_string(i) + "/filepaths");
+      getParameter(XRV_filepaths, "missions/mission_" + std::to_string(i) + "/filepaths");
 
       // Check type to be array
       if (XRV_filepaths.getType() == XmlRpc::XmlRpcValue::TypeArray)
