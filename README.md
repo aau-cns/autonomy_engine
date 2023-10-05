@@ -123,6 +123,7 @@ missions:
 
   mission_1:
     description: "The first mission of the day"
+    instances: 1 # run this mission once
     filepaths:
       - "/home/system/missions/first.csv"
     entities_actions:
@@ -134,6 +135,7 @@ missions:
 
   mission_2:
     description: "The last mission of the day"
+    instances: -1 # repeat indefinetly
     filepaths:
       - "/home/system/missions/last.csv"
     entities_actions:
