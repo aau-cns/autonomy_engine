@@ -27,6 +27,7 @@
 #include <watchdog_msgs/StatusChangesArrayStamped.h>
 #include <watchdog_msgs/StatusStamped.h>
 #include <xmlrpcpp/XmlRpcValue.h>
+
 #include <atomic>
 #include <boost/bind/bind.hpp>
 #include <chrono>
@@ -332,8 +333,10 @@ private:
   /// Boolean to determine weather a mission with multiple touchdown is loaded
   std::atomic<bool> multiple_touchdowns_ = false;
 
-  /// filepaths counter, used in case of multiple touchdown to keep track of how many filepaths have been loaded
+  /// filepaths counter, and instances cointer used in case of multiple touchdown to keep track of how many filepaths
+  /// have been loaded, and how many instances of the mession have been performed
   size_t filepaths_cnt_ = 0;
+  size_t instances_cnt_ = 0;
 
   /// Boolean to check if succesfully completed a mission
   std::atomic<bool> last_waypoint_reached_ = false;

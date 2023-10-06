@@ -31,10 +31,25 @@ void MissionIterator::onEntry(Autonomy& autonomy)
 
   // Print info
   autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
-                         formatMsg("Iteration " + std::to_string(autonomy.filepaths_cnt_) + " of mission ID: " +
-                                   std::to_string(autonomy.mission_id_) + " succesfully completed"));
+                         formatMsg("Sub-Mission " + std::to_string(1 + autonomy.filepaths_cnt_) + " of mission ID: " +
+                                   std::to_string(autonomy.mission_id_) + " succesfully completed. Mission instance: " +
+                                   std::to_string(1 + autonomy.instances_cnt_)));
   autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
-                         formatMsg("Continuing with iteration " + std::to_string(++autonomy.filepaths_cnt_), 2));
+                         formatMsg("Continuing with Sub-Mission " + std::to_string(1 + autonomy.filepaths_cnt_), 2));
+
+  // Increment filepaths counter
+  ++autonomy.filepaths_cnt_;
+
+  // If the filepaths counter is equal to the number of filepaths than reset it to zero, and icrement the instance
+  // counter by one
+  if (autonomy.filepaths_cnt_ == autonomy.missions_.at(autonomy.mission_id_).getFilepaths().size())
+  {
+    ++autonomy.instances_cnt_;
+    autonomy.filepaths_cnt_ = 0;
+  }
+
+  // TODO: do i need to handle in here the reset to 0 ???? no because if i reset to 0 immediatly after the last one,
+  // let's say 5 then it will never be 5 on the checks, i probably need to reset to 0 immediatly after the check
 
   // Check flags to manage mission iterations
   if (autonomy.armed_ && autonomy.in_flight_ && autonomy.in_mission_)

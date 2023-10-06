@@ -37,8 +37,12 @@ void EndMission::onEntry(Autonomy& autonomy)
     autonomy.in_flight_ = false;
 
     // Stop flight timer
+    // If doing multiple touchdown i do so when the filepaths counter is equal to the number of filepaths -1, and when
+    // the istances counter is equal to the number of instances -1 (since both counters start at 0)
     if (!autonomy.multiple_touchdowns_ ||
-        (autonomy.filepaths_cnt_ == autonomy.missions_.at(autonomy.mission_id_).getTouchdowns()))
+        (autonomy.filepaths_cnt_ == (autonomy.missions_.at(autonomy.mission_id_).getFilepaths().size() - 1) &&
+         autonomy.instances_cnt_ ==
+             (static_cast<size_t>(autonomy.missions_.at(autonomy.mission_id_).getInstances()) - 1)))
     {
       autonomy.flight_timer_->stopTimer();
     }
@@ -70,8 +74,13 @@ void EndMission::onEntry(Autonomy& autonomy)
   // or if we safely land
   if (autonomy.last_waypoint_reached_)
   {
+    // Check if we need to iterate
+    // (filepaths counter + 1) * (instance counter + 1) is grater than the number of touchdowns only at the last
+    // iteration, thus stop iterating
+    size_t t = (autonomy.filepaths_cnt_ + 1) * (autonomy.instances_cnt_ + 1);
+
     if (autonomy.multiple_touchdowns_ && !autonomy.opts_->sequence_multiple_in_flight &&
-        (autonomy.filepaths_cnt_ < autonomy.missions_.at(autonomy.mission_id_).getTouchdowns()))
+        t <= autonomy.missions_.at(autonomy.mission_id_).getTouchdowns())
     {
       autonomy.stateTransition("mission_iterator");
     }
