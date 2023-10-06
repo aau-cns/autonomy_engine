@@ -173,6 +173,7 @@ void Autonomy::getMissions()
       std::vector<std::string> filepaths;
       Entity entity;
       std::map<Entity, std::string> entity_state_map;
+      int instances;
 
       // Get mission parmaters
       getParameter(description, "missions/mission_" + std::to_string(i) + "/description");
@@ -206,6 +207,19 @@ void Autonomy::getMissions()
         logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
                       formatParamWrong("mission_" + std::to_string(i) + "/filepaths", "wrongly defined, it must be a "
                                                                                       "list"));
+        stateTransition("failure");
+      }
+
+      // get the mission repetitions
+      getParameter(instances, "missions/mission_" + std::to_string(i) + "/instances");
+
+      // Check value of instances of the mission
+      // If it is less then -1 or 0 trigger a failure
+      if (instances == 0 || instances < -1)
+      {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
+                      formatParamWrong("mission_" + std::to_string(i) + "/repetitions", "wrongly defined, it must be a "
+                                                                                        "-1 or grater than 0"));
         stateTransition("failure");
       }
 
@@ -271,7 +285,9 @@ void Autonomy::getMissions()
       }
 
       // Build the mission
-      missions_.try_emplace(i, Mission(i, description, filepaths, entity_state_map));
+      missions_.try_emplace(
+          i, Mission(i, description, filepaths, entity_state_map,
+                     instances == -1 ? std::numeric_limits<float>::infinity() : static_cast<float>(instances)));
     }
   }
 }
@@ -323,6 +339,7 @@ void Autonomy::parseParams()
   bool hover_after_mission_completion;
   bool sequence_multiple_in_flight;
   bool inflight_sensors_init_service;
+  bool register_aux;
 
   // Get general parmaters from ros param server
   getParameter(activate_user_interface, "activate_user_interface");
@@ -345,6 +362,7 @@ void Autonomy::parseParams()
   getParameter(preflight_fix_timeout_ms, "preflight_fix_timeout_ms");
   getParameter(data_recording_delay_after_failure_s, "data_recording_delay_after_failure_s");
   getParameter(rc_topic, "rc_topic");
+  getParameter(register_aux, "register_aux");
 
   // Convert given flight time (in minutes) from minutes to milliseconds
   flight_timeout_ms *= 60000;
@@ -462,6 +480,7 @@ void Autonomy::parseParams()
                                                               perform_estimator_check,
                                                               activate_landing_detection,
                                                               inflight_sensors_init_service,
+                                                              register_aux,
                                                               hover_after_mission_completion,
                                                               sequence_multiple_in_flight,
                                                               mission_id_no_ui,
@@ -906,7 +925,11 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
             armed_ = false;
 
             // Stop flight timer
-            if (!multiple_touchdowns_ || (filepaths_cnt_ == missions_.at(mission_id_).getTouchdowns()))
+            // If doing multiple touchdown i do so when the filepaths counter is equal to the number of filepaths -1,
+            // and when the istances counter is equal to the number of instances -1 (since both counters start at 0)
+            if (!multiple_touchdowns_ ||
+                (filepaths_cnt_ == (missions_.at(mission_id_).getFilepaths().size() - 1) &&
+                 instances_cnt_ == (static_cast<size_t>(missions_.at(mission_id_).getInstances()) - 1)))
             {
               flight_timer_->stopTimer();
             }
@@ -937,8 +960,11 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
       last_waypoint_reached_ = true;
 
       // Check if sequencing of multiple in-air files happens
+      // (filepaths counter + 1) * (instance counter + 1) is grater than the number of touchdowns only at the last
+      // iteration, thus stop iterating
+      size_t t = (filepaths_cnt_ + 1) * (instances_cnt_ + 1);
       if (multiple_touchdowns_ && opts_->sequence_multiple_in_flight &&
-          (filepaths_cnt_ < missions_.at(mission_id_).getTouchdowns()))
+          (t <= missions_.at(mission_id_).getTouchdowns()))
       {
         stateTransition("mission_iterator");
       }

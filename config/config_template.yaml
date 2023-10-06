@@ -2,6 +2,7 @@ missions:
 
   mission_1:
     description: "Template"
+    instances: 1 # number of repetitions to run
     # filepaths are relative to the `autonomy_engine/trajectory_dir` parameter
     filepaths:
       - "template_dir/template_trajectory.csv"

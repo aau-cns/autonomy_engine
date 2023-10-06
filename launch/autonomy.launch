@@ -46,6 +46,7 @@
     <arg name="inflight_sensors_init_service"           default="false" />
     <arg name="hover_after_mission_completion"          default="false" />
     <arg name="sequence_multiple_in_flight"             default="false" />
+    <arg name="register_aux"                            default="false" />
 
     <!-- autonomy node -->
     <node name="autonomy" pkg="autonomy_engine" type="autonomy" output="screen" clear_params="true" required="true">
@@ -95,6 +96,8 @@
         <param name="inflight_sensors_init_service"             type="bool"   value = "$(arg inflight_sensors_init_service)" />
         <param name="hover_after_mission_completion"            type="bool"   value = "$(arg hover_after_mission_completion)" />
         <param name="sequence_multiple_in_flight"               type="bool"   value = "$(arg sequence_multiple_in_flight)" />
+        <param name="register_aux"                              type="bool"   value = "$(arg register_aux)" />
+
 
     </node>
 

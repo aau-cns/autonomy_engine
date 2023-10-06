@@ -9,26 +9,27 @@
 //
 // You can contact the author at <alessandro.fornasier@ieee.org>
 
-#include <climits>
-
 #include "autonomy_core/mission.h"
+
+#include <limits>
+
 #include "utils/except.h"
 
 namespace autonomy
 {
 Mission::Mission(const int& id, const std::string& description, const std::vector<std::string>& filepaths,
-                 const std::map<Entity, std::string>& entity_state_map)
-  : id_(id), description_(description), filepaths_(filepaths), entity_state_map_(entity_state_map)
+                 const std::map<Entity, std::string>& entity_state_map, const float& instances)
+  : id_(id)
+  , description_(description)
+  , filepaths_(filepaths)
+  , entity_state_map_(entity_state_map)
+  , instances_(instances)
 {
-  if (filepaths_.size() > INT_MAX)
-  {
-    throw DataOverflowException();
-  }
-  else
-  {
-    // Number of touchdown equal the number of sub-missions - 1
-    number_of_touchdown_ = filepaths_.size() - 1;
-  }
+  // Number of touchdown equal the number of (sub-missions * instances) - 1
+  instances_ == std::numeric_limits<float>::infinity() ?
+      number_of_touchdown_ = std::numeric_limits<size_t>::max() :
+      number_of_touchdown_ = (filepaths_.size() * static_cast<size_t>(instances_) - 1);
+  ;
 }
 
 }  // namespace autonomy

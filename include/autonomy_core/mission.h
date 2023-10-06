@@ -32,7 +32,7 @@ public:
    * @brief EntityEvent default constructor
    */
   Mission(const int& id, const std::string& description, const std::vector<std::string>& filepaths,
-          const std::map<Entity, std::string>& entity_state_map);
+          const std::map<Entity, std::string>& entity_state_map, const float& instances);
 
   /**
    * @brief Get next state string for a given entity
@@ -64,11 +64,20 @@ public:
 
   /**
    * @brief Get number of touchdowns
-   * @return reference to int
+   * @return reference to size_t
    */
   inline const size_t& getTouchdowns() const
   {
     return number_of_touchdown_;
+  }
+
+  /**
+   * @brief Get number of instances
+   * @return reference to float
+   */
+  inline const float& getInstances() const
+  {
+    return instances_;
   }
 
 private:
@@ -84,8 +93,13 @@ private:
   /// Entity - Next state map
   std::map<Entity, std::string> entity_state_map_;
 
-  /// Number of touchdown (number of filepaths - 1)
+  /// Number of touchdown ((number of filepaths * instances) - 1)
   size_t number_of_touchdown_;
+
+  /// Number of instances of the mission mission (-1 means infinite)
+  /// instances_ indicate how many time the whole mission (multiple flights eventually) has to be performed
+  /// float variable to handle inf
+  float instances_;
 };
 
 }  // namespace autonomy
