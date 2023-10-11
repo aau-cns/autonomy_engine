@@ -254,6 +254,13 @@ private:
   void getParameter(T& param, const std::string& name, const std::string& msg = "");
 
   /**
+   * @brief Method to get a parameter from the parameter server and handle UI, logging and default value if parameter is
+   * not found
+   */
+  template <typename T>
+  void getParameterDefault(T& param, const std::string& name, const T& value, const std::string& msg = "");
+
+  /**
    * @brief Method to get the missions from the parameter server and handle UI, logging and failure
    */
   void getMissions();

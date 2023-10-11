@@ -138,6 +138,18 @@ void Autonomy::getParameter(T& param, const std::string& name, const std::string
   }
 }
 
+template <typename T>
+void Autonomy::getParameterDefault(T& param, const std::string& name, const T& value, const std::string& msg)
+{
+  if (!nh_.getParam(name, param))
+  {
+    param = value;
+    logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE), formatParamNotFound(name, msg));
+    logger_.logInfo(state_->getStringFromState(),
+                    "[" + name + "] parameter not defined, using " + std::to_string(value) + ".");
+  }
+}
+
 void Autonomy::getMissions()
 {
   // Define auxilliary variables foreach paramter: XmlRpc::XmlRpcValue
@@ -211,7 +223,8 @@ void Autonomy::getMissions()
       }
 
       // get the mission repetitions
-      getParameter(instances, "missions/mission_" + std::to_string(i) + "/instances");
+      getParameterDefault(instances, "missions/mission_" + std::to_string(i) + "/instances", 1,
+                          "Defaulting to single instance.");
 
       // Check value of instances of the mission
       // If it is less then -1 or 0 trigger a failure
