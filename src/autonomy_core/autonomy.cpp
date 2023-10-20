@@ -1137,10 +1137,13 @@ void Autonomy::rcCallback(const mavros_msgs::RCInConstPtr& msg)
     }
   }
 
-  if (aux_registered_ && !register_aux_)
+  if (aux_registered_ && register_aux_)
   {
     // Check for changes with tollerance of 50
-    for (size_t id = 0; id < msg->channels.size(); ++id)
+    // for (size_t id = 0; id < msg->channels.size(); ++id)
+    // {
+    size_t id = opts_->landing_aux_channel;
+    if (msg->channels.size() >= id)
     {
       if (std::abs(msg->channels.at(id) - aux_.getValue(id)) > 50)
       {
@@ -1151,14 +1154,15 @@ void Autonomy::rcCallback(const mavros_msgs::RCInConstPtr& msg)
         aux_.setValue(id, msg->channels.at(id));
 
         // Check if landing aux changed
-        if (id == opts_->landing_aux_channel)
-        {
-          stateTransition("land");
-        }
+        // if (id == opts_->landing_aux_channel)
+        // {
+        stateTransition("land");
+        // }
 
         // Manage other aux
       }
     }
+    // }
   }
 }
 
