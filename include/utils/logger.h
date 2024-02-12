@@ -18,6 +18,7 @@
 #include <autonomy_engine/LogMessage.h>
 #include <ros/console.h>
 #include <ros/node_handle.h>
+
 #include <regex>
 
 #include "spdlog/sinks/basic_file_sink.h"
@@ -42,11 +43,14 @@ private:
   ros::Publisher pub_log_;
   uint pub_seq_{ 0 };
 
+  // Settings
+  int log_display_level_{ 0 };
+
   /**
    * @brief Publish log message as a ros message and log to file if file logger is initialized
    */
-  inline void publishLog(const autonomy_engine::LogMessage::_type_type& type, const std::string& msg, const std::string& state,
-                         const std::string& next_state)
+  inline void publishLog(const autonomy_engine::LogMessage::_type_type& type, const std::string& msg,
+                         const std::string& state, const std::string& next_state)
   {
     // setup pub msg
     autonomy_engine::LogMessage pub_msg;
@@ -222,10 +226,11 @@ public:
   /**
    * @brief Print UI and log user interface
    */
-  inline void logUI(const std::string& cur_state, const std::string& escape_str, const std::string& ui)
+  inline void logUI(const std::string& cur_state, const std::string& escape_str, const std::string& ui,
+                    const int& display_level = 0)
   {
     // Try to log to console (UI)
-    if (console_ui_logger_ != nullptr)
+    if (console_ui_logger_ != nullptr && display_level <= log_display_level_)
     {
       console_ui_logger_->trace(escape_str + ui + RESET);
       console_ui_logger_->flush();
@@ -233,6 +238,11 @@ public:
 
     // Log to file and publish
     logUserInterface(cur_state, removeFormat(ui));
+  }
+
+  void setLogDisplayLevel(const int& level)
+  {
+    log_display_level_ = level;
   }
 
 };  // class Logger

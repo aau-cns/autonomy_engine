@@ -16,6 +16,7 @@
 #include <mission_sequencer/MissionRequest.h>
 #include <mission_sequencer/MissionResponse.h>
 #include <mission_sequencer/MissionWaypointArray.h>
+#include <mission_sequencer/MissionWaypointStamped.h>
 #include <ros/ros.h>
 #include <sensor_msgs/Imu.h>
 #include <std_msgs/Bool.h>
@@ -172,6 +173,11 @@ private:
   void missionSequencerResponceCallback(const mission_sequencer::MissionResponseConstPtr& msg);
 
   /**
+   * @brief Mission sequencer waypoint reached callback, used for logging.
+   */
+  void missionSequencerWaypointReachedCallback(const mission_sequencer::MissionWaypointStampedConstPtr& msg);
+
+  /**
    * @brief Radio control callback
    */
   void rcCallback(const mavros_msgs::RCInConstPtr& msg);
@@ -280,6 +286,9 @@ private:
   ros::Subscriber sub_landing_detection_;
   ros::Subscriber sub_mission_sequencer_response_;
   ros::Subscriber sub_rc_;
+
+  /// Subscribers for logging
+  ros::Subscriber sub_ms_waypoint_reached_;
 
   /// Publishers
   ros::Publisher pub_watchdog_action_;
