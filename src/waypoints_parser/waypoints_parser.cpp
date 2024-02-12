@@ -159,8 +159,9 @@ bool WaypointsParser::fileSanityCheck()
     {
       std::vector<std::string> tmp;
       parseLine(line, tmp);
-      if (tmp.size() != indices.size())
+      if (tmp.size() != 0 && tmp.size() != indices.size())
       {
+        // only care for wrongly formatted lines, not empty lines
         return false;
       }
       for (const auto& it : tmp)
