@@ -93,6 +93,9 @@ struct autonomyOptions
   /// Mission to be loaded in case of no user interface
   const size_t landing_aux_channel;
 
+  /// Log Display Level
+  const int log_display_level;  // 0: basic log, 1: waypoint logs, 2: interaction logs, 3: all logs
+
   /// Print function
   inline const std::string printAutonomyOptions()
   {
@@ -173,6 +176,8 @@ struct autonomyOptions
     ss << " - Max time for a sensor fix preflight: " << preflight_fix_timeout << " s\n";
 
     ss << " - Landing AUX channel:                 " << landing_aux_channel << '\n';
+
+    ss << " - Display Logging Level:               " << log_display_level << '\n';
 
     ss << "-------------------------------------------------\n\n";
 

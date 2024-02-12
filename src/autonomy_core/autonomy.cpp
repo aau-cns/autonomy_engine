@@ -45,6 +45,9 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   // Parse parameters and options
   parseParams();
 
+  // Setup LogDisplay Level
+  logger_.setLogDisplayLevel(opts_->log_display_level);
+
   std::ostringstream ss;
   ss << "autonomy-" << std::setw(4) << std::setfill('0') << (1900 + ltm->tm_year) << "-" << std::setw(2)
      << std::setfill('0') << int(1 + ltm->tm_mon) << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_mday)
@@ -116,6 +119,13 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
 
   // Subscribe to RC
   sub_rc_ = nh_.subscribe(opts_->rc_topic, 100, &Autonomy::rcCallback, this);
+
+  // Subscribe to info callbacks (for logging only)
+  if (opts_->log_display_level > 0)
+  {
+    sub_ms_waypoint_reached_ = nh_.subscribe("mission_sequencer/waypoint_reached", 100,
+                                             &Autonomy::missionSequencerWaypointReachedCallback, this);
+  }
 
   // Instanciate flight timer and connect signal
   flight_timer_ = std::make_unique<Timer>(opts_->flight_timeout);
@@ -340,6 +350,7 @@ void Autonomy::parseParams()
   int data_recording_delay_after_failure_s = 0;
   int mission_id_no_ui = -1;
   int landing_aux_channel = -1;
+  int log_display_level = 0;
 
   // Define auxilliary variables foreach paramter: bool
   bool activate_user_interface;
@@ -462,6 +473,9 @@ void Autonomy::parseParams()
   // Get aux channels
   getParameter(landing_aux_channel, "landing_aux_channel");
 
+  // Get Log Display level
+  getParameter(log_display_level, "log_display_level");
+
   // Make options
   opts_ = std::make_unique<autonomyOptions>(autonomyOptions({ watchdog_heartbeat_topic,
                                                               watchdog_status_topic,
@@ -497,7 +511,8 @@ void Autonomy::parseParams()
                                                               hover_after_mission_completion,
                                                               sequence_multiple_in_flight,
                                                               mission_id_no_ui,
-                                                              static_cast<size_t>(landing_aux_channel) }));
+                                                              static_cast<size_t>(landing_aux_channel),
+                                                              log_display_level }));
 
   // Get missions
   getMissions();
@@ -1098,6 +1113,16 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
     logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
                   formatMsg("Received response from mission sequencer to a unknown request. Ignoring it", 2));
   }
+}
+
+void Autonomy::missionSequencerWaypointReachedCallback(const mission_sequencer::MissionWaypointStampedConstPtr& msg)
+{
+  logger_.logUI(state_->getStringFromState(), GREEN_ESCAPE,
+                formatMsg("Waypoint [" + std::to_string(msg->waypoint.x) + ", " + std::to_string(msg->waypoint.y) +
+                              ", " + std::to_string(msg->waypoint.z) + ", " + std::to_string(msg->waypoint.yaw) + ", " +
+                              "] reached.",
+                          2),
+                1);
 }
 
 void Autonomy::missionSequencerRequest(const int& request)
