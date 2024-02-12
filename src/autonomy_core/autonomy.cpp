@@ -49,7 +49,7 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   ss << "autonomy-" << std::setw(4) << std::setfill('0') << (1900 + ltm->tm_year) << "-" << std::setw(2)
      << std::setfill('0') << int(1 + ltm->tm_mon) << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_mday)
      << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_hour) << "-" << std::setw(2) << std::setfill('0')
-     << int(ltm->tm_min) << "-" << int(ltm->tm_sec) << ".log";
+     << int(ltm->tm_min) << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_sec) << ".log";
   logger_.initFileLogger(std::string(opts_->logger_filepath) + ss.str());
 
   // Init message
