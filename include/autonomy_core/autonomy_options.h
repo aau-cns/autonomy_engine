@@ -41,6 +41,7 @@ struct autonomyOptions
   const std::string mission_sequencer_response_topic;
   const std::string landing_detection_topic;
   const std::string mission_sequencer_waypoints_topic;
+  const std::string mission_sequencer_waypoint_reached_topic;
   const std::string rc_topic;
 
   /// service Names
@@ -178,6 +179,10 @@ struct autonomyOptions
     ss << " - Landing AUX channel:                 " << landing_aux_channel << '\n';
 
     ss << " - Display Logging Level:               " << log_display_level << '\n';
+    if (log_display_level > 0)
+    {
+      ss << " - Subscribed to:                       " << mission_sequencer_waypoint_reached_topic << '\n';
+    }
 
     ss << "-------------------------------------------------\n\n";
 
