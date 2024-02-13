@@ -34,7 +34,7 @@
     <arg name="logger_filepath"                         default="$(env HOME)/.ros/log/autonomy/" />
     <arg name="trajectory_dir"                          default="$(find autonomy_engine)/config/trajectories/" />
     <arg name="landing_aux_channel"                     default="0" />
-    <arg name="log_display_level"                       default="0" />
+    <arg name="log_display_level"                       default="1" />
 
     <!-- arguments flags -->
     <arg name="activate_user_interface"                 default="true" />

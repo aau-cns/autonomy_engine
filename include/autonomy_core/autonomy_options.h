@@ -95,7 +95,7 @@ struct autonomyOptions
   const size_t landing_aux_channel;
 
   /// Log Display Level
-  const int log_display_level;  // 0: basic log, 1: waypoint logs, 2: interaction logs, 3: all logs
+  const LogDisplayLevel log_display_level;  // 0: basic log, 1: waypoint logs, 2: interaction logs, 3: all logs
 
   /// Print function
   inline const std::string printAutonomyOptions()
