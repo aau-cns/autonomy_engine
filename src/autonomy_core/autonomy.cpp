@@ -31,6 +31,15 @@
 #include "utils/colors.h"
 #include "utils/format.h"
 
+namespace std
+{
+/// Overload to_string for std::string
+static string to_string(const std::string& str)
+{
+  return str;
+}
+}  // namespace std
+
 namespace autonomy
 {
 Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
@@ -123,7 +132,7 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   // Subscribe to info callbacks (for logging only)
   if (opts_->log_display_level > 0)
   {
-    sub_ms_waypoint_reached_ = nh_.subscribe("mission_sequencer/waypoint_reached", 100,
+    sub_ms_waypoint_reached_ = nh_.subscribe(opts_->mission_sequencer_waypoint_reached_topic, 100,
                                              &Autonomy::missionSequencerWaypointReachedCallback, this);
   }
 
@@ -330,6 +339,7 @@ void Autonomy::parseParams()
   std::string landing_detection_topic;
   std::string estimator_init_service_name;
   std::string mission_sequencer_waypoints_topic;
+  std::string mission_sequencer_waypoint_reached_topic;
   std::string logger_filepath;
   std::string trajectory_dir;
   std::string rc_topic;
@@ -473,8 +483,17 @@ void Autonomy::parseParams()
   // Get aux channels
   getParameter(landing_aux_channel, "landing_aux_channel");
 
+  // New Parameters with backward compatibility
+
   // Get Log Display level
-  getParameter(log_display_level, "log_display_level");
+  getParameterDefault<int>(log_display_level, "log_display_level", 0);
+
+  // Get mission sequencer waypoint reached topic only if log display level for waypoints is enabled
+  if (log_display_level > 0)
+  {
+    getParameterDefault<std::string>(mission_sequencer_waypoint_reached_topic,
+                                     "mission_sequencer_waypoint_reached_topic", "/mission_sequencer/waypoint_reached");
+  }
 
   // Make options
   opts_ = std::make_unique<autonomyOptions>(autonomyOptions({ watchdog_heartbeat_topic,
@@ -484,6 +503,7 @@ void Autonomy::parseParams()
                                                               mission_sequencer_response_topic,
                                                               landing_detection_topic,
                                                               mission_sequencer_waypoints_topic,
+                                                              mission_sequencer_waypoint_reached_topic,
                                                               rc_topic,
                                                               watchdog_start_service_name,
                                                               estimator_supervisor_service_name,
@@ -1105,9 +1125,10 @@ void Autonomy::missionSequencerWaypointReachedCallback(const mission_sequencer::
 {
   logger_.logUI(state_->getStringFromState(), GREEN_ESCAPE,
                 formatMsg("Waypoint [" + std::to_string(msg->waypoint.x) + ", " + std::to_string(msg->waypoint.y) +
-                              ", " + std::to_string(msg->waypoint.z) + ", " + std::to_string(msg->waypoint.yaw) + ", " +
-                              "] reached.",
-                          2),
+                              ", " + std::to_string(msg->waypoint.z) + ", " + std::to_string(msg->waypoint.yaw) +
+                              "] reached." + "\n       Holding at this waypoint for " +
+                              std::to_string(msg->waypoint.holdtime) + "s..",
+                          1),
                 1);
 }
 
