@@ -360,7 +360,7 @@ void Autonomy::parseParams()
   int data_recording_delay_after_failure_s = 0;
   int mission_id_no_ui = -1;
   int landing_aux_channel = -1;
-  int log_display_level = 0;
+  LogDisplayLevel log_display_level = LogDisplayLevel::BASIC;
 
   // Define auxilliary variables foreach paramter: bool
   bool activate_user_interface;
@@ -486,10 +486,12 @@ void Autonomy::parseParams()
   // New Parameters with backward compatibility
 
   // Get Log Display level
-  getParameterDefault<int>(log_display_level, "log_display_level", 0);
+  int ldl;
+  getParameterDefault<int>(ldl, "log_display_level", 0);
+  log_display_level = static_cast<LogDisplayLevel>(ldl);
 
   // Get mission sequencer waypoint reached topic only if log display level for waypoints is enabled
-  if (log_display_level > 0)
+  if (log_display_level != LogDisplayLevel::BASIC)
   {
     getParameterDefault<std::string>(mission_sequencer_waypoint_reached_topic,
                                      "mission_sequencer_waypoint_reached_topic", "/mission_sequencer/waypoint_reached");
@@ -1137,13 +1139,14 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
 
 void Autonomy::missionSequencerWaypointReachedCallback(const mission_sequencer::MissionWaypointStampedConstPtr& msg)
 {
-  logger_.logUI(state_->getStringFromState(), GREEN_ESCAPE,
-                formatMsg("Waypoint [" + std::to_string(msg->waypoint.x) + ", " + std::to_string(msg->waypoint.y) +
-                              ", " + std::to_string(msg->waypoint.z) + ", " + std::to_string(msg->waypoint.yaw) +
-                              "] reached." + "\n       Holding at this waypoint for " +
-                              std::to_string(msg->waypoint.holdtime) + "s..",
-                          1),
-                1);
+  // format msg
+  std::stringstream ss;
+  ss << "Waypoint [" << std::fixed << std::setprecision(3) << msg->waypoint.x << ", " << msg->waypoint.y << ", "
+     << msg->waypoint.z << ", " << msg->waypoint.yaw << "] reached."
+     << "\n"
+     << "       Holding at this waypoint for " << msg->waypoint.holdtime << "s..";
+
+  logger_.logUI(state_->getStringFromState(), GREEN_ESCAPE, formatMsg(ss.str(), 1), LogDisplayLevel::WAYPOINT);
 }
 
 void Autonomy::missionSequencerRequest(const int& request)

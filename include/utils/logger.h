@@ -44,7 +44,7 @@ private:
   uint pub_seq_{ 0 };
 
   // Settings
-  int log_display_level_{ 0 };
+  LogDisplayLevel log_display_level_{ LogDisplayLevel::BASIC };
 
   /**
    * @brief Publish log message as a ros message and log to file if file logger is initialized
@@ -227,7 +227,7 @@ public:
    * @brief Print UI and log user interface
    */
   inline void logUI(const std::string& cur_state, const std::string& escape_str, const std::string& ui,
-                    const int& display_level = 0)
+                    const LogDisplayLevel& display_level = LogDisplayLevel::BASIC)
   {
     // Try to log to console (UI)
     if (console_ui_logger_ != nullptr && display_level <= log_display_level_)
@@ -241,6 +241,11 @@ public:
   }
 
   void setLogDisplayLevel(const int& level)
+  {
+    log_display_level_ = static_cast<LogDisplayLevel>(level);
+  }
+
+  void setLogDisplayLevel(const LogDisplayLevel& level)
   {
     log_display_level_ = level;
   }
