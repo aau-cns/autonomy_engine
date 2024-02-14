@@ -695,7 +695,14 @@ void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArraySta
           // perform any state transition
           if (missions_.at(mission_id_).getNextState(status.entity).compare("failure") != 0)
           {
-            if (in_flight_)
+            // check if next state is continue, then we only log the failure and continue
+            if (missions_.at(mission_id_).getNextState(status.entity).compare("continue") == 0)
+            {
+              logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                            formatMsg("Failure logged,; Action: continue -> continuing..."));
+            }
+            // otherwise check if we are flying to execute state transition
+            else if (in_flight_)
             {
               stateTransition(missions_.at(mission_id_).getNextState(status.entity));
             }
@@ -781,7 +788,7 @@ void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArraySta
                     formatMsg("[watchdogStatusCallback] Wrong message received from watchdog"));
     }
   }
-}
+}  // namespace autonomy
 
 void Autonomy::watchdogActionRequest(SensorStatus& status, const watchdog_msgs::Status& status_msg)
 {
