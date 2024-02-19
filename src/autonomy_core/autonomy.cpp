@@ -1054,11 +1054,30 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
       // Check if landing detection is active, if not transit to END_MISSION
       if (!opts_->activate_landing_detection && land_expected_)
       {
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Landing completed"));
+
         // reset land_expected_ flag
         land_expected_ = false;
 
         // Call state transition to END MISSION
         stateTransition("end_mission");
+      }
+    }
+    else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::DISARM)
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Disarming completed"));
+
+      // Reset armed_ flag
+      armed_ = false;
+
+      // Stop flight timer
+      // If doing multiple touchdown i do so when the filepaths counter is equal to the number of filepaths -1,
+      // and when the istances counter is equal to the number of instances -1 (since both counters start at 0)
+      if (!multiple_touchdowns_ ||
+          (filepaths_cnt_ == (missions_.at(mission_id_).getFilepaths().size() - 1) &&
+           instances_cnt_ == (static_cast<size_t>(missions_.at(mission_id_).getInstances()) - 1)))
+      {
+        flight_timer_->stopTimer();
       }
     }
     else
