@@ -1437,7 +1437,7 @@ bool Autonomy::estimatorCheck()
       logger_.logServiceResponse(state_->getStringFromState(), opts_->estimator_supervisor_service_name,
                                  "State estimator checks succeeded");
       logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE),
-                    formatMsg("State estimator Correctly initilized", 2));
+                    formatMsg("State estimator correctly initialized", 2));
     }
     else
     {
@@ -1638,6 +1638,10 @@ void Autonomy::stateTransition(std::string str)
   // Execute predefined behavior on Exiting old state
   state_->onExit(*this);
 
+  // Check if we are currently in failure or termination state -> no state transition allowed
+  bool failure =
+      state_->getStringFromState().compare("failure") == 0 || state_->getStringFromState().compare("termination") == 0;
+
   // Execute state transition
   logger_.logStateChange(state_->getStringFromState(), str);
   if (str.compare("undefined") == 0)
@@ -1648,50 +1652,50 @@ void Autonomy::stateTransition(std::string str)
   {
     state_ = &Initialization::Instance();
   }
-  else if ((str.compare("nominal") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("nominal") == 0) && !failure)
   {
     state_ = &Nominal::Instance();
   }
-  else if ((str.compare("failure") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("failure") == 0) && !failure)
   {
     state_ = &Failure::Instance();
   }
-  else if ((str.compare("preflight") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("preflight") == 0) && !failure)
   {
     state_ = &Preflight::Instance();
   }
-  else if ((str.compare("start_mission") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("start_mission") == 0) && !failure)
   {
     state_ = &StartMission::Instance();
   }
-  else if ((str.compare("perform_mission") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("perform_mission") == 0) && !failure)
   {
     state_ = &PerformMission::Instance();
   }
-  else if ((str.compare("mission_iterator") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("mission_iterator") == 0) && !failure)
   {
     state_ = &MissionIterator::Instance();
   }
-  else if ((str.compare("end_mission") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("end_mission") == 0) && !failure)
   {
     state_ = &EndMission::Instance();
   }
-  else if ((str.compare("land") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("land") == 0) && !failure)
   {
     state_ = &Land::Instance();
   }
-  else if ((str.compare("hold") == 0) && (state_->getStringFromState().compare("failure") != 0))
+  else if ((str.compare("hold") == 0) && !failure)
   {
     state_ = &Hold::Instance();
   }
-  else if (str.compare("termination") == 0)
+  else if (str.compare("termination") == 0 && state_->getStringFromState().compare("termination") != 0)
   {
     state_ = &Termination::Instance();
   }
   else
   {
     logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE),
-                  formatMsg("Wrong state transition required", 2));
+                  formatMsg("Not allowed to transition to '" + str + "' state", 2));
     state_ = &Failure::Instance();
   }
 
