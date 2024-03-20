@@ -358,6 +358,23 @@ private:
   std::atomic<bool> register_aux_ = false;
   std::atomic<bool> aux_registered_ = false;
 
+  /// Allowed state transitions
+  const std::unordered_map<std::string, std::vector<std::string>> allowed_state_transitions_ = {
+    { "undefined", { "initialization", "termination" } },
+    { "initialization", { "nominal", "failure", "termination" } },
+    { "nominal", { "preflight", "failure", "termination" } },
+    { "preflight", { "start_mission", "failure", "termination" } },
+    { "start_mission", { "perform_mission", "hold", "land", "failure", "termination" } },
+    { "perform_mission", { "hold", "land", "failure", "termination" } },
+    { "mission_iterator", { "preflight", "start_mission", "hold", "land", "failure", "termination" } },
+    { "end_mission", { "mission_iterator", "hold", "land", "failure", "termination" } },
+    { "land", { "end_mission", "hold", "failure", "termination" } },
+    { "hold",
+      { "start_mission", "perform_mission", "mission_iterator", "end_mission", "land", "failure", "termination" } },
+    { "failure", { "termination" } },
+    { "termination", {} }
+  };
+
 };  // class Autonomy
 
 }  // namespace autonomy
