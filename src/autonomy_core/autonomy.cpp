@@ -1638,57 +1638,60 @@ void Autonomy::stateTransition(std::string str)
   // Execute predefined behavior on Exiting old state
   state_->onExit(*this);
 
-  // Check if we are currently in failure or termination state -> no state transition allowed
-  bool failure =
-      state_->getStringFromState().compare("failure") == 0 || state_->getStringFromState().compare("termination") == 0;
+  auto transitionAllowed = [&]() {
+    const auto& allowed = allowed_state_transitions_.at(state_->getStringFromState());
+    return std::find(allowed.begin(), allowed.end(), str) != allowed.end() ? true : false;
+  };
+
+  // Log
+  logger_.logStateChange(state_->getStringFromState(), str);
 
   // Execute state transition
-  logger_.logStateChange(state_->getStringFromState(), str);
-  if (str.compare("undefined") == 0)
+  if (str.compare("undefined") == 0 && transitionAllowed())
   {
     state_ = &Undefined::Instance();
   }
-  else if (str.compare("initialization") == 0)
+  else if (str.compare("initialization") == 0 && transitionAllowed())
   {
     state_ = &Initialization::Instance();
   }
-  else if ((str.compare("nominal") == 0) && !failure)
+  else if ((str.compare("nominal") == 0) && transitionAllowed())
   {
     state_ = &Nominal::Instance();
   }
-  else if ((str.compare("failure") == 0) && !failure)
+  else if ((str.compare("failure") == 0) && transitionAllowed())
   {
     state_ = &Failure::Instance();
   }
-  else if ((str.compare("preflight") == 0) && !failure)
+  else if ((str.compare("preflight") == 0) && transitionAllowed())
   {
     state_ = &Preflight::Instance();
   }
-  else if ((str.compare("start_mission") == 0) && !failure)
+  else if ((str.compare("start_mission") == 0) && transitionAllowed())
   {
     state_ = &StartMission::Instance();
   }
-  else if ((str.compare("perform_mission") == 0) && !failure)
+  else if ((str.compare("perform_mission") == 0) && transitionAllowed())
   {
     state_ = &PerformMission::Instance();
   }
-  else if ((str.compare("mission_iterator") == 0) && !failure)
+  else if ((str.compare("mission_iterator") == 0) && transitionAllowed())
   {
     state_ = &MissionIterator::Instance();
   }
-  else if ((str.compare("end_mission") == 0) && !failure)
+  else if ((str.compare("end_mission") == 0) && transitionAllowed())
   {
     state_ = &EndMission::Instance();
   }
-  else if ((str.compare("land") == 0) && !failure)
+  else if ((str.compare("land") == 0) && transitionAllowed())
   {
     state_ = &Land::Instance();
   }
-  else if ((str.compare("hold") == 0) && !failure)
+  else if ((str.compare("hold") == 0) && transitionAllowed())
   {
     state_ = &Hold::Instance();
   }
-  else if (str.compare("termination") == 0 && state_->getStringFromState().compare("termination") != 0)
+  else if (str.compare("termination") == 0 && transitionAllowed())
   {
     state_ = &Termination::Instance();
   }
