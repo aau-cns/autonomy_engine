@@ -941,19 +941,6 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
 
           case mission_sequencer::MissionRequest::DISARM:
 
-            // Reset armed_ flag
-            armed_ = false;
-
-            // Stop flight timer
-            // If doing multiple touchdown i do so when the filepaths counter is equal to the number of filepaths -1,
-            // and when the istances counter is equal to the number of instances -1 (since both counters start at 0)
-            if (!multiple_touchdowns_ ||
-                (filepaths_cnt_ == (missions_.at(mission_id_).getFilepaths().size() - 1) &&
-                 instances_cnt_ == (static_cast<size_t>(missions_.at(mission_id_).getInstances()) - 1)))
-            {
-              flight_timer_->stopTimer();
-            }
-
             break;
         }
       }
@@ -967,8 +954,6 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
                                 2));
         stateTransition("failure");
       }
-
-      // Check if mission has been compoleted (last waypoint reached)
     }
     else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::UNDEF)
     {
@@ -1063,7 +1048,8 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
       {
         logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Landing completed"));
 
-        // reset land_expected_ flag
+        // Reset in_flight_ and land_expected_ flag
+        in_flight_ = false;
         land_expected_ = false;
 
         // Call state transition to END MISSION
@@ -1074,11 +1060,11 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
     {
       logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Disarming completed"));
 
-      // Reset armed_ flag
+      // Reset armed_ and in_flight_ flag
       armed_ = false;
 
-      // Stop flight timer
-      // If doing multiple touchdown i do so when the filepaths counter is equal to the number of filepaths -1,
+      // Stop flight timer.
+      // If doing multiple touchdown stop the timer when the filepaths counter is equal to the number of filepaths -1,
       // and when the istances counter is equal to the number of instances -1 (since both counters start at 0)
       if (!multiple_touchdowns_ ||
           (filepaths_cnt_ == (missions_.at(mission_id_).getFilepaths().size() - 1) &&
