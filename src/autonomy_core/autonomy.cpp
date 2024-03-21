@@ -1330,12 +1330,8 @@ void Autonomy::missionSelection()
   {
     logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, RED_ESCAPE), "\n >>> Wrong mission ID chosen\n\n");
 
-    // HACK(scm): CTRL+C creates mission_id_ = -1, so only continue if mission_id_ is not -1
-    if (mission_id_ != -1)
-    {
-      // Call recursively mission selection
-      missionSelection();
-    }
+    // Call recursively mission selection
+    missionSelection();
   }
   else
   {
