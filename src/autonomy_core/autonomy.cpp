@@ -788,7 +788,7 @@ void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArraySta
                     formatMsg("[watchdogStatusCallback] Wrong message received from watchdog"));
     }
   }
-}  // namespace autonomy
+}
 
 void Autonomy::watchdogActionRequest(SensorStatus& status, const watchdog_msgs::Status& status_msg)
 {

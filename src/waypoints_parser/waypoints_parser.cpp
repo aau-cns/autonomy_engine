@@ -161,7 +161,6 @@ bool WaypointsParser::fileSanityCheck()
       parseLine(line, tmp);
       if (tmp.size() != 0 && tmp.size() != indices.size())
       {
-        // only care for wrongly formatted lines, not empty lines
         return false;
       }
       for (const auto& it : tmp)
