@@ -29,6 +29,18 @@
 
 namespace autonomy
 {
+
+/**
+ * @brief Log display level
+ */
+enum LogDisplayLevel
+{
+  BASIC = 0,     //!< display basic log
+  WAYPOINT = 1,  //!< display also waypoints
+  SYSTEM = 2,    //!< display system info such as battery level and flight time
+  ALL = 3        //!< display every information received also by nodes
+};
+
 class Logger
 {
 private:

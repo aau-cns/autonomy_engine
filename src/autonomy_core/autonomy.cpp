@@ -33,8 +33,10 @@
 
 namespace std
 {
-/// Overload to_string for std::string
-static string to_string(const std::string& str)
+/**
+ * @brief Overload std::to_string for std::string
+ */
+static string to_string(const string& str)
 {
   return str;
 }
@@ -482,8 +484,6 @@ void Autonomy::parseParams()
 
   // Get aux channels
   getParameter(landing_aux_channel, "landing_aux_channel");
-
-  // New Parameters with backward compatibility
 
   // Get Log Display level
   int ldl;

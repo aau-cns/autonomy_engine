@@ -21,6 +21,7 @@
 #include "autonomy_core/autonomy_defs.h"
 #include "autonomy_core/mission.h"
 #include "utils/colors.h"
+#include "utils/logger.h"
 #include "utils/utilities.h"
 
 namespace autonomy
