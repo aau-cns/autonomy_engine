@@ -49,7 +49,7 @@ Autonomy::Autonomy(ros::NodeHandle& nh) : logger_(nh), nh_(nh)
   ss << "autonomy-" << std::setw(4) << std::setfill('0') << (1900 + ltm->tm_year) << "-" << std::setw(2)
      << std::setfill('0') << int(1 + ltm->tm_mon) << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_mday)
      << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_hour) << "-" << std::setw(2) << std::setfill('0')
-     << int(ltm->tm_min) << "-" << int(ltm->tm_sec) << ".log";
+     << int(ltm->tm_min) << "-" << std::setw(2) << std::setfill('0') << int(ltm->tm_sec) << ".log";
   logger_.initFileLogger(std::string(opts_->logger_filepath) + ss.str());
 
   // Init message
@@ -695,7 +695,14 @@ void Autonomy::watchdogStatusCallback(const watchdog_msgs::StatusChangesArraySta
           // perform any state transition
           if (missions_.at(mission_id_).getNextState(status.entity).compare("failure") != 0)
           {
-            if (in_flight_)
+            // check if next state is continue, then we only log the failure and continue
+            if (missions_.at(mission_id_).getNextState(status.entity).compare("continue") == 0)
+            {
+              logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
+                            formatMsg("Failure logged,; Action: continue -> continuing..."));
+            }
+            // otherwise check if we are flying to execute state transition
+            else if (in_flight_)
             {
               stateTransition(missions_.at(mission_id_).getNextState(status.entity));
             }
@@ -934,19 +941,6 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
 
           case mission_sequencer::MissionRequest::DISARM:
 
-            // Reset armed_ flag
-            armed_ = false;
-
-            // Stop flight timer
-            // If doing multiple touchdown i do so when the filepaths counter is equal to the number of filepaths -1,
-            // and when the istances counter is equal to the number of instances -1 (since both counters start at 0)
-            if (!multiple_touchdowns_ ||
-                (filepaths_cnt_ == (missions_.at(mission_id_).getFilepaths().size() - 1) &&
-                 instances_cnt_ == (static_cast<size_t>(missions_.at(mission_id_).getInstances()) - 1)))
-            {
-              flight_timer_->stopTimer();
-            }
-
             break;
         }
       }
@@ -960,8 +954,6 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
                                 2));
         stateTransition("failure");
       }
-
-      // Check if mission has been compoleted (last waypoint reached)
     }
     else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::UNDEF)
     {
@@ -1054,11 +1046,31 @@ void Autonomy::missionSequencerResponceCallback(const mission_sequencer::Mission
       // Check if landing detection is active, if not transit to END_MISSION
       if (!opts_->activate_landing_detection && land_expected_)
       {
-        // reset land_expected_ flag
+        logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Landing completed"));
+
+        // Reset in_flight_ and land_expected_ flag
+        in_flight_ = false;
         land_expected_ = false;
 
         // Call state transition to END MISSION
         stateTransition("end_mission");
+      }
+    }
+    else if (!msg->response && msg->completed && msg->request.request == mission_sequencer::MissionRequest::DISARM)
+    {
+      logger_.logUI(state_->getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Disarming completed"));
+
+      // Reset armed_ and in_flight_ flag
+      armed_ = false;
+
+      // Stop flight timer.
+      // If doing multiple touchdown stop the timer when the filepaths counter is equal to the number of filepaths -1,
+      // and when the istances counter is equal to the number of instances -1 (since both counters start at 0)
+      if (!multiple_touchdowns_ ||
+          (filepaths_cnt_ == (missions_.at(mission_id_).getFilepaths().size() - 1) &&
+           instances_cnt_ == (static_cast<size_t>(missions_.at(mission_id_).getInstances()) - 1)))
+      {
+        flight_timer_->stopTimer();
       }
     }
     else

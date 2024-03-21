@@ -159,7 +159,7 @@ bool WaypointsParser::fileSanityCheck()
     {
       std::vector<std::string> tmp;
       parseLine(line, tmp);
-      if (tmp.size() != indices.size())
+      if (tmp.size() != 0 && tmp.size() != indices.size())
       {
         return false;
       }

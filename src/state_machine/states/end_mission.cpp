@@ -25,33 +25,16 @@ State& EndMission::Instance()
 
 void EndMission::onEntry(Autonomy& autonomy)
 {
+  // This state is reached, if the landing has been confirmed by mission sequencer or landing detector
+
   // print info
   autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatStateEntry("MISSION (ENDING)"));
 
-  // Assume the disarm will happen automatically if we do not activate the landing detection thus set the armed_ flag
-  // Otherwise send a disarm request and wait for disarming
-  if (!autonomy.opts_->activate_landing_detection)
-  {
-    // Reset armed_ and in_flight_ flag
-    autonomy.armed_ = false;
-    autonomy.in_flight_ = false;
+  // Print info
+  autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Disarm...", 2));
 
-    // Stop flight timer
-    // If doing multiple touchdown i do so when the filepaths counter is equal to the number of filepaths -1, and when
-    // the istances counter is equal to the number of instances -1 (since both counters start at 0)
-    if (!autonomy.multiple_touchdowns_ ||
-        (autonomy.filepaths_cnt_ == (autonomy.missions_.at(autonomy.mission_id_).getFilepaths().size() - 1) &&
-         autonomy.instances_cnt_ ==
-             (static_cast<size_t>(autonomy.missions_.at(autonomy.mission_id_).getInstances()) - 1)))
-    {
-      autonomy.flight_timer_->stopTimer();
-    }
-  }
-  else
+  if (autonomy.opts_->activate_landing_detection)
   {
-    // Print info
-    autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, GREEN_ESCAPE), formatMsg("Disarm...", 2));
-
     // Disarm request
     if (autonomy.armed_)
     {
@@ -62,12 +45,20 @@ void EndMission::onEntry(Autonomy& autonomy)
       autonomy.logger_.logUI(getStringFromState(), ESCAPE(BOLD_ESCAPE, YELLOW_ESCAPE),
                              formatMsg("The platform is already disarmed, skipped DISARM request", 2));
     }
+  }
+  // else
+  // {
+  //   // If landing detection is not active assume the disarm will happen automatically otherwise send a disarm request
+  //   // and wait for disarming. Assuming the disarm will happen automatically rather than sending an explicit request is
+  //   // safer since we are not sure the platform is on the ground. For the sake of completeness, a commented disarm
+  //   // request is kept here
+  //   autonomy.missionSequencerRequest(mission_sequencer::MissionRequest::DISARM);
+  // }
 
-    // Wait until disarm request got accepted
-    while (autonomy.armed_)
-    {
-      autonomy.polling(10);
-    }
+  // Wait until disarm request got accepted
+  while (autonomy.armed_)
+  {
+    autonomy.polling(10);
   }
 
   // Check if we are here because mission got succesfully completed (last waypoint reached)
