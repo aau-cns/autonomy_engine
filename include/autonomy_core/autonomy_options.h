@@ -119,7 +119,8 @@ struct autonomyOptions
        << " - Landing detection:                   " << getStringfromBool(activate_landing_detection) << '\n'
        << " - In-flight sensors init:              " << getStringfromBool(inflight_sensors_init_service) << '\n'
        << " - Hover after mission completion:      " << getStringfromBool(hover_after_mission_completion) << '\n'
-       << " - Sequence multiple in-flight:         " << getStringfromBool(sequence_multiple_in_flight) << '\n';
+       << " - Sequence multiple in-flight:         " << getStringfromBool(sequence_multiple_in_flight) << '\n'
+       << " - Register RC AUX channels:            " << getStringfromBool(register_aux) << '\n';
 
     if (!activate_user_interface)
     {

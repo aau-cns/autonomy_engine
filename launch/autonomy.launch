@@ -5,27 +5,27 @@
     <arg name="config_filepath" default="$(find autonomy_engine)/config/config_template.yaml" />
 
     <!-- arguments topics -->
-    <arg name="watchdog_heartbeat_topic"          default="/watchdog/status" />
-    <arg name="watchdog_status_topic"             default="/watchdog/log" />
-    <arg name="watchdog_action_topic"             default="/watchdog/action" />
-    <arg name="mission_sequencer_request_topic"   default="/missionsequencer/request" />
-    <arg name="mission_sequencer_response_topic"  default="/missionsequencer/response" />
-    <arg name="landing_detection_topic"           default="/toland/is_landed" />
-    <arg name="mission_sequencer_waypoints_topic"	default="/missionsequencer/waypoints" />
-    <arg name="rc_topic"                          default="/mavros/rc/in" />
+    <arg name="watchdog_heartbeat_topic"                default="/watchdog/status" />
+    <arg name="watchdog_status_topic"                   default="/watchdog/log" />
+    <arg name="watchdog_action_topic"                   default="/watchdog/action" />
+    <arg name="mission_sequencer_request_topic"         default="/missionsequencer/request" />
+    <arg name="mission_sequencer_response_topic"        default="/missionsequencer/response" />
+    <arg name="landing_detection_topic"                 default="/toland/is_landed" />
+    <arg name="mission_sequencer_waypoints_topic"       default="/missionsequencer/waypoints" />
+    <arg name="rc_topic"                                default="/mavros/rc/in" />
 
     <!-- arguments services -->
-    <arg name="watchdog_start_service_name"         default="/watchdog/service/start" />
-    <arg name="data_recrding_service_name"          default="/datarecording/record" />
-    <arg name="takeoff_service_name"                default="/toland/service/takeoff" />
-    <arg name="estimator_supervisor_service_name"   default="/estimator_supervisor/supervise" />
-    <arg name="estimator_init_service_name"         default="/estimator/init" />
-    <arg name="inflight_sensor_init_services_name"  default="[/uwb_init/start]" />
+    <arg name="watchdog_start_service_name"             default="/watchdog/service/start" />
+    <arg name="data_recrding_service_name"              default="/datarecording/record" />
+    <arg name="takeoff_service_name"                    default="/toland/service/takeoff" />
+    <arg name="estimator_supervisor_service_name"       default="/estimator_supervisor/supervise" />
+    <arg name="estimator_init_service_name"             default="/estimator/init" />
+    <arg name="inflight_sensor_init_services_name"      default="[/uwb_init/start]" />
 
     <!-- arguments setup -->
-    <arg name="watchdog_rate_Hz"	                      default="1.0" />
-    <arg name="watchdog_startup_time_s"			            default="10" />
-    <arg name="watchdog_heartbeat_timeout_multiplier"	  default="2.0" />
+    <arg name="watchdog_rate_Hz"                        default="1.0" />
+    <arg name="watchdog_startup_time_s"                 default="10" />
+    <arg name="watchdog_heartbeat_timeout_multiplier"   default="2.0" />
     <arg name="maximum_flight_time_min"                 default="10" />
     <arg name="fix_timeout_ms"                          default="1500" />
     <arg name="preflight_fix_timeout_ms"                default="2500" />
